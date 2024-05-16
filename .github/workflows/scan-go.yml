@@ -1,0 +1,76 @@
+name: Code Scanning
+
+on:
+  workflow_call:
+    inputs:
+      cover-command:
+        description: 'The command to use to run the tests (defaults to go test -v -vet=all ./...)'
+        required: false
+        type: string
+        default: go test -v -race -covermode=atomic -coverpkg=./...
+      sonar-configuration:
+        required: true
+        description: "Path to the configuration file"
+        type: string
+    secrets:
+      github:
+        required: true
+      sonar:
+        required: true
+      codecov:
+        required: true
+      semgrep:
+        required: true
+
+permissions: {}
+
+jobs:
+  Cover:
+    uses: ./.github/workflows/coverage-go.yml
+    with:
+      command: ${{ inputs.cover-command }}
+
+  Semgrep:
+    runs-on: ubuntu-22.04
+    env:
+      SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
+    container:
+      image: semgrep/semgrep
+    if: (github.actor != 'dependabot[bot]')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b
+      - run: semgrep ci
+
+  Codecov:
+    runs-on: ubuntu-latest
+    needs: Cover
+    steps:
+      - name: Download code coverage report
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+        with:
+          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+
+      - uses: bytemare/actions/codecov@9d34c2ecdaa6860cd53d058f47f338c07289812d
+        env:
+          CODECOV_TOKEN: ${{ secrets.codecov }}
+        with:
+          coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
+          
+  Sonar:
+    runs-on: ubuntu-latest
+    needs: Cover
+    permissions:
+      contents: read
+    steps:
+      - name: Download code coverage report
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+        with:
+          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+
+      - uses: bytemare/actions/sonar-scan@9d34c2ecdaa6860cd53d058f47f338c07289812d
+        env:
+          GITHUB_TOKEN: ${{ secrets.github }}
+          SONAR_TOKEN: ${{ secrets.sonar }}
+        with:
+          configuration: ${{ inputs.sonar-configuration }}

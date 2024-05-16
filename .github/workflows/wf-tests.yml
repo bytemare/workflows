@@ -1,0 +1,22 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  Test:
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ '1.22', '1.21' ]
+    uses: ./.github/workflows/test-go.yml
+    with:
+      command: go test -v -vet=all ./...
+      version: ${{ matrix.go }}
