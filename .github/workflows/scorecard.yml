@@ -1,0 +1,61 @@
+name: Scorecard Analysis
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+
+permissions: read-all
+
+jobs:
+  scorecard:
+    name: Scorecard Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed if using Code scanning alerts
+      security-events: write
+      # Needed for GitHub OIDC token if publish_results is true
+      id-token: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9ff9d14760a73102d9fa2f47131624137f50ead8
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            api.osv.dev:443
+            api.scorecard.dev:443
+            api.securityscorecards.dev:443
+            fulcio.sigstore.dev:443
+            github.com:443
+            oss-fuzz-build-logs.storage.googleapis.com:443
+            rekor.sigstore.dev:443
+            tuf-repo-cdn.sigstore.dev:443
+            www.bestpractices.dev:443
+
+      - name: "Checkout code"
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b
+        with:
+          persist-credentials: false
+
+      - name: "Run analysis"
+        uses: ossf/scorecard-action@c64f0a7231aa68a6849c2b65bf16af3daa23d3e6
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          repo_token: ${{ secrets.token }}
+          publish_results: true
+
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@552bf3722c16e81001aea7db72d8cedf64eb5f68
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: "Upload SARIF results to code scanning"
+        uses: github/codeql-action/upload-sarif@7fd4900b29c9865d61ace089788ac5c913cb730b
+        with:
+          sarif_file: results.sarif

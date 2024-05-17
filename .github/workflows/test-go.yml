@@ -1,0 +1,33 @@
+name: Test Go
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: 'The command to use to run the tests (defaults to go test -v -vet=all ./...)'
+        required: false
+        type: string
+        default: go test -v -vet=all ./...
+      version:
+        description: 'The Go version to use'
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9ff9d14760a73102d9fa2f47131624137f50ead8
+        with:
+          egress-policy: audit
+
+      - name: Init go
+        uses: bytemare/actions/init-go@9d34c2ecdaa6860cd53d058f47f338c07289812d
+        with:
+          version: ${{ inputs.version }}
+
+      - name: Run Tests
+        run: ${{ inputs.command }}
