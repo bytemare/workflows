@@ -75,7 +75,7 @@ jobs:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
       - name: Show coverage report
-        run: echo ${{ inputs.coverage-output-file }}
+        run: cat ${{ inputs.coverage-output-file }}
 
       - uses: bytemare/actions/sonar-scan@b7e5199ae151599349287076bcccf7014ae98d99
         env:
