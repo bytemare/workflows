@@ -27,6 +27,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/scan-go.yml
     with:
+      coverage-output-file: .github/coverage.out
       sonar-configuration: .github/sonar-project.properties
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}

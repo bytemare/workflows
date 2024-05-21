@@ -3,11 +3,16 @@ name: Code Scanning
 on:
   workflow_call:
     inputs:
-      cover-command:
+      coverage-command:
         description: 'The command to use to run the tests (defaults to go test -v -vet=all ./...)'
         required: false
         type: string
         default: go test -v -race -covermode=atomic -coverpkg=./...
+      coverage-output-file:
+        description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
+        required: false
+        type: string
+        default: .github/coverage.out
       sonar-configuration:
         required: true
         description: "Path to the configuration file"
@@ -28,7 +33,8 @@ jobs:
   Cover:
     uses: ./.github/workflows/coverage-go.yml
     with:
-      command: ${{ inputs.cover-command }}
+      command: ${{ inputs.coverage-command }}
+      output-file: ${{ inputs.coverage-output-file }}
 
   Semgrep:
     runs-on: ubuntu-22.04

@@ -14,10 +14,10 @@ on:
         type: string
         default: go test -v -race -covermode=atomic -coverpkg=./...
       output-file:
-        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
+        description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
         required: false
         type: string
-        default: coverage.out
+        default: .github/coverage.out
       scope:
         description: 'The location to run the command on (defaults to ./...)'
         required: false
