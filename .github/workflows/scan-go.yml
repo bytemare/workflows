@@ -76,7 +76,7 @@ jobs:
           path: .
 
       - name: Show coverage report
-        run: pwd && cat ./${{ needs.Cover.outputs.coverage-output-file }} && echo "\n" && cat ./${{ needs.Cover.outputs.coverage-output-file }}
+        run: pwd && ls -al && cat ./${{ needs.Cover.outputs.coverage-output-file }}
 
       - uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
         env:
