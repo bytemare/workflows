@@ -30,7 +30,7 @@ jobs:
 
       # Coverage
       - name: Run coverage
-        run: cd .github && make cover
+        run: go test -v -race -covermode=atomic -coverpkg=../... -coverprofile=../coverage.out ../...
 
       # Sonar
       - name: SonarCloud Scan
