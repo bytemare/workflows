@@ -30,7 +30,7 @@ jobs:
 
       # Coverage
       - name: Run coverage
-        run: go test -v -race -covermode=atomic -coverpkg=../... -coverprofile=../coverage.out ../...
+        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=./coverage.out ./...
 
       # Sonar
       - name: SonarCloud Scan
