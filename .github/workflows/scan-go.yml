@@ -78,9 +78,26 @@ jobs:
       - name: Show coverage report
         run: pwd && ls -al && cat ./${{ needs.Cover.outputs.coverage-output-file }}
 
-      - uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
+      #- uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.github }}
+      #    SONAR_TOKEN: ${{ secrets.sonar }}
+      #  with:
+      #    configuration: ${{ inputs.sonar-configuration }}
+      # Sonar
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@6bbd64e0cb2194e04addb429d669a9ee873eeeef
         env:
-          GITHUB_TOKEN: ${{ secrets.github }}
-          SONAR_TOKEN: ${{ secrets.sonar }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          configuration: ${{ inputs.sonar-configuration }}
+          args: >
+            -Dsonar.projectKey=bytemare_secp256k1
+            -Dsonar.organization=bytemare
+            -Dsonar.go.coverage.reportPaths=${{ needs.Cover.outputs.coverage-output-file }}
+            -Dsonar.sources=.
+            -Dsonar.coverage.exclusions=examples_test.go,tests/**
+            -Dsonar.test.exclusions=examples_test.go,tests/**
+            -Dsonar.cpd.exclusions=examples_test.go,tests/**
+            -Dsonar.tests=tests/
+            -Dsonar.verbose=true
