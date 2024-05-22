@@ -77,10 +77,9 @@ jobs:
       - name: Show coverage report
         run: cat ${{ needs.Cover.outputs.coverage-output-file }}
 
-      - uses: bytemare/actions/sonar-scan@b5820b301740a29f1dcd6be92d8a727caffbde96
+      - uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-          coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
