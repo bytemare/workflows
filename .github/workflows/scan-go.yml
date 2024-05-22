@@ -57,9 +57,6 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - name: Show coverage report
-        run: cat ${{ needs.Cover.outputs.coverage-output-file }}
-
       - uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
@@ -80,10 +77,10 @@ jobs:
       - name: Show coverage report
         run: cat ${{ needs.Cover.outputs.coverage-output-file }}
 
-      - uses: bytemare/actions/sonar-scan@b7e5199ae151599349287076bcccf7014ae98d99
+      - uses: bytemare/actions/sonar-scan@260967d9a83e73aecd2b2a4654a545133f229763
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-          args: -Dsonar.go.coverage.reportPaths=${{ needs.Cover.outputs.coverage-output-file }}
+          coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
