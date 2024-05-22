@@ -77,7 +77,7 @@ jobs:
           path: ${{ inputs.coverage-output-file }}
 
       - name: Show coverage report
-        run: ls -al ${{ needs.Cover.outputs.coverage-output-file }}
+        run: cat ${{ needs.Cover.outputs.coverage-output-file }} || echo "backup\n" && cat ${{ inputs.coverage-output-file }}
 
       - uses: bytemare/actions/sonar-scan@b7e5199ae151599349287076bcccf7014ae98d99
         env:
@@ -85,4 +85,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-          args: -Dsonar.go.coverage.reportPaths=.github/coverage.out
+          args: -Dsonar.go.coverage.reportPaths=${{ GITHUB_WORKSPACE }}/${{ inputs.coverage-output-file }}
