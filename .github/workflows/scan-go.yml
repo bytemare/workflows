@@ -92,12 +92,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           args: >
-            -Dsonar.projectKey=bytemare_workflows
             -Dsonar.organization=bytemare
-            -Dsonar.go.coverage.reportPaths=${{ needs.Cover.outputs.coverage-output-file }}
+            -Dsonar.projectKey=bytemare_workflows
             -Dsonar.sources=.
-            -Dsonar.coverage.exclusions=examples_test.go,tests/**
             -Dsonar.test.exclusions=examples_test.go,tests/**
-            -Dsonar.cpd.exclusions=examples_test.go,tests/**
-            -Dsonar.tests=tests/
             -Dsonar.verbose=true
+            -Dsonar.coverage.exclusions=examples_test.go,tests/**
+            -Dsonar.go.coverage.reportPaths=${{ needs.Cover.outputs.coverage-output-file }}
+            -Dsonar.cpd.exclusions=examples_test.go,tests/**
+#            -Dsonar.tests=tests/
