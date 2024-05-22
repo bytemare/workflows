@@ -73,10 +73,10 @@ jobs:
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
-          path: .
+          path: /github/workspace/.scannerwork
 
       - name: Show coverage report
-        run: pwd && ls -al && cat ./${{ needs.Cover.outputs.coverage-output-file }}
+        run: pwd && ls /github/workspace/.scannerwork && cat /github/workspace/.scannerwork/coverage.out
 
       #- uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
       #  env:
