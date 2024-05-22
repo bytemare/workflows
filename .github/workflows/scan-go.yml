@@ -86,7 +86,7 @@ jobs:
       #    configuration: ${{ inputs.sonar-configuration }}
       # Sonar
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@6bbd64e0cb2194e04addb429d669a9ee873eeeef
+        uses: SonarSource/sonarcloud-github-action@79420c17e80e77e5c2a43c61fc488fe0a29416c8
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
