@@ -41,7 +41,7 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=bytemare_secp256k1
-            -Dsonar.organization=bytemare-github
+            -Dsonar.organization=bytemare
             -Dsonar.go.coverage.reportPaths=coverage.out
             -Dsonar.sources=.
             -Dsonar.coverage.exclusions=examples_test.go,tests/**
