@@ -31,14 +31,10 @@ permissions: {}
 
 jobs:
   Cover:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: ./.github/workflows/coverage-go.yml
-        with:
-          command: ${{ inputs.coverage-command }}
-          output-file: ${{ inputs.coverage-output-file }}
-      - name: Show coverage report
-        run: cat ${{ inputs.coverage-output-file }}
+    uses: ./.github/workflows/coverage-go.yml
+    with:
+      command: ${{ inputs.coverage-command }}
+      output-file: ${{ inputs.coverage-output-file }}
 
   Semgrep:
     runs-on: ubuntu-22.04
