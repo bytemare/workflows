@@ -85,4 +85,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-          args: -Dsonar.go.coverage.reportPaths=${{ GITHUB_WORKSPACE }}/${{ inputs.coverage-output-file }}
+          args: -Dsonar.go.coverage.reportPaths=${{ inputs.coverage-output-file }}
