@@ -3,6 +3,10 @@ name: Code Scanning
 on:
   workflow_call:
     inputs:
+      sonar-configuration:
+        required: true
+        description: "Path to the configuration file"
+        type: string
       coverage-command:
         description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
         required: false
@@ -13,10 +17,6 @@ on:
         required: false
         type: string
         default: coverage.out
-      sonar-configuration:
-        required: true
-        description: "Path to the configuration file"
-        type: string
     secrets:
       github:
         required: true
@@ -30,12 +30,6 @@ on:
 permissions: {}
 
 jobs:
-  Cover:
-    uses: ./.github/workflows/coverage-go.yml
-    with:
-      command: ${{ inputs.coverage-command }}
-      output-file: ${{ inputs.coverage-output-file }}
-
   Semgrep:
     runs-on: ubuntu-22.04
     env:
@@ -48,55 +42,30 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       - run: semgrep ci
 
-  Codecov:
+  CodeScan:
+    name: Code scan and coverage analysis
     runs-on: ubuntu-latest
-    needs: Cover
+    permissions:
+      contents: read
     steps:
-      - name: Download code coverage report
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      - name: Run Coverage
+        uses: ./.github/workflows/coverage-go.yml
         with:
-          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+          command: ${{ inputs.coverage-command }}
+          output-file: ${{ inputs.coverage-output-file }}
 
-      - uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
+      - name: Codecov
+        uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
           coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
-          
-  Sonar:
-    runs-on: ubuntu-latest
-    needs: Cover
-    permissions:
-      contents: read
-    steps:
-      - name: Download code coverage report
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
-        with:
-          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - name: Show coverage report
-        run: pwd && ls /home/runner/work/workflows/workflows && cat /home/runner/work/workflows/workflows/coverage.out
-
-      #- uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.github }}
-      #    SONAR_TOKEN: ${{ secrets.sonar }}
-      #  with:
-      #    configuration: ${{ inputs.sonar-configuration }}
-      # Sonar
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@a69a8edf1df352adece45acf0c3b810050657eda
+      - name: SonarCloud
+        uses: bytemare/actions/sonar-scan@8b964e6bc8fa68d84be77b0d601957e4b1c56aac
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
-          args: >
-            -Dsonar.organization=bytemare
-            -Dsonar.projectKey=bytemare_workflows
-            -Dsonar.sources=.
-            -Dsonar.test.exclusions=examples_test.go,tests/**
-            -Dsonar.verbose=true
-            -Dsonar.coverage.exclusions=examples_test.go,tests/**
-            -Dsonar.go.coverage.reportPaths=/home/runner/work/workflows/workflows/${{ needs.Cover.outputs.coverage-output-file }}
-            -Dsonar.cpd.exclusions=examples_test.go,tests/**
-#            -Dsonar.tests=tests/
+          configuration: ${{ inputs.sonar-configuration }}
+          coverage: /home/runner/work/workflows/workflows/${{ needs.Cover.outputs.coverage-output-file }}
