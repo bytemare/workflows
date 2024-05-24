@@ -3,20 +3,25 @@ name: Code Scanning
 on:
   workflow_call:
     inputs:
-      coverage-command:
-        description: 'The command to use to run the tests (defaults to go test -v -vet=all ./...)'
-        required: false
-        type: string
-        default: go test -v -race -covermode=atomic -coverpkg=./...
-      coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
-        required: false
-        type: string
-        default: .github/coverage.out
       sonar-configuration:
         required: true
         description: "Path to the configuration file"
         type: string
+      coverage-command:
+        description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
+        required: false
+        type: string
+        default: go test -v -race -covermode=atomic -coverpkg=./...
+      coverage-output-file:
+        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
+        required: false
+        type: string
+        default: coverage.out
+      go-mod:
+        description: 'Go mod file'
+        required: false
+        type: string
+        default: ./go.mod
     secrets:
       github:
         required: true
@@ -62,7 +67,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
           coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
-          
+
   Sonar:
     runs-on: ubuntu-latest
     needs: Cover
@@ -74,7 +79,7 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - uses: bytemare/actions/sonar-scan@b7e5199ae151599349287076bcccf7014ae98d99
+      - uses: bytemare/actions/sonar-scan@553a8016fb3048dce43df9eeb5935430218e3ae7
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
