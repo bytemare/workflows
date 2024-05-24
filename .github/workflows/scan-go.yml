@@ -85,4 +85,3 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-          coverage: /home/runner/work/workflows/workflows/${{ needs.Cover.outputs.coverage-output-file }}
