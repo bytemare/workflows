@@ -35,6 +35,12 @@ on:
 permissions: {}
 
 jobs:
+  Cover:
+    uses: ./.github/workflows/coverage-go.yml
+    with:
+      command: ${{ inputs.coverage-command }}
+      output-file: ${{ inputs.coverage-output-file }}
+
   Semgrep:
     runs-on: ubuntu-22.04
     env:
@@ -47,32 +53,33 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       - run: semgrep ci
 
-  CodeScan:
-    name: Code scan and coverage analysis
+  Codecov:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    needs: Cover
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@9ff9d14760a73102d9fa2f47131624137f50ead8
+      - name: Download code coverage report
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
-          egress-policy: audit
-      - uses: bytemare/actions/init-go@b7e5199ae151599349287076bcccf7014ae98d99
-        with:
-          go-mod: ${{ inputs.go-mod }}
+          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - name: Run coverage
-        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.scope }}
-
-      - name: Codecov
-        uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
+      - uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
           coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
 
-      - name: SonarCloud
-        uses: bytemare/actions/sonar-scan@8b964e6bc8fa68d84be77b0d601957e4b1c56aac
+  Sonar:
+    runs-on: ubuntu-latest
+    needs: Cover
+    permissions:
+      contents: read
+    steps:
+      - name: Download code coverage report
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+        with:
+          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+
+      - uses: bytemare/actions/sonar-scan@8d2ae0caf870a04b4524079d288ab09e27da2faf
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
