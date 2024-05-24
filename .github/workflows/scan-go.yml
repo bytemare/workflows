@@ -79,7 +79,7 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - uses: bytemare/actions/sonar-scan@02fd456bc430f784b641ca39ac950a4e711c392a
+      - uses: bytemare/actions/sonar-scan@553a8016fb3048dce43df9eeb5935430218e3ae7
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
