@@ -93,7 +93,6 @@ jobs:
           args: >
             -Dsonar.organization=bytemare
             -Dsonar.projectKey=bytemare_workflows
-            -Dsonar.scm.provider=git
             -Dsonar.sources=.
             -Dsonar.test.exclusions=examples_test.go,tests/**
             -Dsonar.verbose=true
