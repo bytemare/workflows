@@ -75,7 +75,7 @@ jobs:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
       - name: Show coverage report
-        run: pwd && ls /github/workspace/.scannerwork && cat /github/workspace/.scannerwork/coverage.out
+        run: pwd && ls /home/runner/work/workflows/workflows && cat /home/runner/work/workflows/workflows/coverage.out
 
       #- uses: bytemare/actions/sonar-scan@79420c17e80e77e5c2a43c61fc488fe0a29416c8
       #  env:
@@ -98,6 +98,6 @@ jobs:
             -Dsonar.test.exclusions=examples_test.go,tests/**
             -Dsonar.verbose=true
             -Dsonar.coverage.exclusions=examples_test.go,tests/**
-            -Dsonar.go.coverage.reportPaths=${{ needs.Cover.outputs.coverage-output-file }}
+            -Dsonar.go.coverage.reportPaths=/home/runner/work/workflows/workflows${{ needs.Cover.outputs.coverage-output-file }}
             -Dsonar.cpd.exclusions=examples_test.go,tests/**
 #            -Dsonar.tests=tests/
