@@ -97,6 +97,6 @@ jobs:
             -Dsonar.test.exclusions=examples_test.go,tests/**
             -Dsonar.verbose=true
             -Dsonar.coverage.exclusions=examples_test.go,tests/**
-            -Dsonar.go.coverage.reportPaths=/home/runner/work/workflows/workflows${{ needs.Cover.outputs.coverage-output-file }}
+            -Dsonar.go.coverage.reportPaths=/home/runner/work/workflows/workflows/${{ needs.Cover.outputs.coverage-output-file }}
             -Dsonar.cpd.exclusions=examples_test.go,tests/**
 #            -Dsonar.tests=tests/
