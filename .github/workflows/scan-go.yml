@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: coverage.out
+      go-mod:
+        description: 'Go mod file'
+        required: false
+        type: string
+        default: ./go.mod
     secrets:
       github:
         required: true
@@ -48,11 +53,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Run Coverage
-        uses: ./.github/workflows/coverage-go.yml
+      - name: Harden Runner
+        uses: step-security/harden-runner@9ff9d14760a73102d9fa2f47131624137f50ead8
         with:
-          command: ${{ inputs.coverage-command }}
-          output-file: ${{ inputs.coverage-output-file }}
+          egress-policy: audit
+      - uses: bytemare/actions/init-go@b7e5199ae151599349287076bcccf7014ae98d99
+        with:
+          go-mod: ${{ inputs.go-mod }}
+
+      - name: Run coverage
+        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.scope }}
 
       - name: Codecov
         uses: bytemare/actions/codecov@b7e5199ae151599349287076bcccf7014ae98d99
