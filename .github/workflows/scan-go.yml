@@ -85,7 +85,7 @@ jobs:
               pwd &&
               cat ${{ needs.Cover.outputs.coverage-output-file }} &&
               echo ">>>>>>>>> ###########\n" &&
-              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/.github/cov.out
+              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/.github/
 
       - uses: bytemare/actions/sonar-scan@3064051aafaf87d0ada862e55f5222b8cf021bdf
         env:
