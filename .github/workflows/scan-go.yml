@@ -82,14 +82,15 @@ jobs:
       - name: Inspect
         shell: bash
         run: |
+              pwd &&
               cat ${{ needs.Cover.outputs.coverage-output-file }} &&
               echo ">>>>>>>>> ###########\n" &&
-              cat /github/workspace/.github/coverage.out &&
+              cat .github/coverage.out &&
               echo ">>>>>>>>> ###########\n" &&
-              rm /github/workspace/.github/coverage.out &&
-              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/.github/ &&
-              ls -al /github/workspace/.github/coverage.out &&
-              cat /github/workspace/.github/coverage.out
+              rm .github/coverage.out &&
+              mv ${{ needs.Cover.outputs.coverage-output-file }} .github/ &&
+              ls -al .github/coverage.out &&
+              cat .github/coverage.out
 
       - uses: bytemare/actions/sonar-scan@3064051aafaf87d0ada862e55f5222b8cf021bdf
         env:
