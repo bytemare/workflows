@@ -79,6 +79,14 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
+      - name: Inspect
+        shell: bash
+        run: |
+              pwd &&
+              cat ${{ needs.Cover.outputs.coverage-output-file }} &&
+              echo ">>>>>>>>> ###########\n" &&
+              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/
+
       - uses: bytemare/actions/sonar-scan@3064051aafaf87d0ada862e55f5222b8cf021bdf
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
