@@ -85,12 +85,12 @@ jobs:
               pwd &&
               cat ${{ needs.Cover.outputs.coverage-output-file }} &&
               echo ">>>>>>>>> ###########\n" &&
-              cat .github/coverage.out &&
+              cat /home/runner/work/workflows/workflows/.github/coverage.out &&
               echo ">>>>>>>>> ###########\n" &&
-              rm .github/coverage.out &&
+              rm /home/runner/work/workflows/workflows/.github/coverage.out &&
               mv ${{ needs.Cover.outputs.coverage-output-file }} .github/ &&
-              ls -al .github/coverage.out &&
-              cat .github/coverage.out
+              ls -al /home/runner/work/workflows/workflows/.github/coverage.out &&
+              cat /home/runner/work/workflows/workflows/.github/coverage.out
 
       - uses: bytemare/actions/sonar-scan@3064051aafaf87d0ada862e55f5222b8cf021bdf
         env:
