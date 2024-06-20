@@ -79,18 +79,13 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      #- name: Inspect
-      #  shell: bash
-      #  run: |
-      #        pwd &&
-      #        cat ${{ needs.Cover.outputs.coverage-output-file }} &&
-      #        echo ">>>>>>>>> ###########\n" &&
-      #        cat /home/runner/work/workflows/workflows/.github/coverage.out &&
-      #        echo ">>>>>>>>> ###########\n" &&
-      #        rm /home/runner/work/workflows/workflows/.github/coverage.out &&
-      #        mv ${{ needs.Cover.outputs.coverage-output-file }} .github/ &&
-      #        ls -al /home/runner/work/workflows/workflows/.github/coverage.out &&
-      #        cat /home/runner/work/workflows/workflows/.github/coverage.out
+      - name: Inspect
+        shell: bash
+        run: |
+              pwd &&
+              cat ${{ needs.Cover.outputs.coverage-output-file }} &&
+              echo ">>>>>>>>> ###########\n" &&
+              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/.github/cov.out
 
       - uses: bytemare/actions/sonar-scan@3064051aafaf87d0ada862e55f5222b8cf021bdf
         env:
@@ -98,16 +93,3 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
-
-      - name: Inspect
-        shell: bash
-        run: |
-          pwd &&
-          cat ${{ needs.Cover.outputs.coverage-output-file }} &&
-          echo ">>>>>>>>> ###########\n" &&
-          cat /home/runner/work/workflows/workflows/.github/coverage.out &&
-          echo ">>>>>>>>> ###########\n" &&
-          rm /home/runner/work/workflows/workflows/.github/coverage.out &&
-          mv ${{ needs.Cover.outputs.coverage-output-file }} .github/ &&
-          ls -al /home/runner/work/workflows/workflows/.github/coverage.out &&
-          cat /home/runner/work/workflows/workflows/.github/coverage.out
