@@ -82,12 +82,12 @@ jobs:
       - name: Inspect
         shell: bash
         run: |
-              cat /home/runner/work/workflows/workflows/coverage.out &&
+              cat ${{ needs.Cover.outputs.coverage-output-file }} &&
               echo ">>>>>>>>> ###########\n" &&
               cat /github/workspace/.github/coverage.out &&
               echo ">>>>>>>>> ###########\n" &&
               rm /github/workspace/.github/coverage.out &&
-              mv /home/runner/work/workflows/workflows/coverage.out /github/workspace/.github/ &&
+              mv ${{ needs.Cover.outputs.coverage-output-file }} /github/workspace/.github/ &&
               ls -al /github/workspace/.github/coverage.out &&
               cat /github/workspace/.github/coverage.out
 
