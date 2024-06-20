@@ -70,16 +70,16 @@ jobs:
 
   Sonar:
     runs-on: ubuntu-latest
-    needs: Cover
+    #needs: Cover
     permissions:
       contents: read
     steps:
-      - name: Download code coverage report
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
-        with:
-          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+      #- name: Download code coverage report
+      #  uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      #  with:
+      #    name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - uses: bytemare/actions/sonar-scan@dc2c0b5e3cec884fca52b707decbb2798a1072fb
+      - uses: bytemare/actions/sonar-scan@50c59287765c534b6ed88ec7993a8b01251328c3
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
