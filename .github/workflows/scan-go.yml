@@ -70,14 +70,14 @@ jobs:
 
   Sonar:
     runs-on: ubuntu-latest
-    needs: Cover
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@6ecbd331d218928b71ae0e81ea546b60e0b09fb4
+      - uses: bytemare/actions/sonar-scan@b5df0586e4b3930b4302e3053774e030afdf17c9
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
           go-mod: ${{ inputs.go-mod }}
+          coverage-output-file: ${{ inputs.coverage-output-file }}
