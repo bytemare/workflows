@@ -73,7 +73,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@c226acff0bd39d9657bc834549d9c12908852244
+      - uses: bytemare/actions/sonar-scan@b5df0586e4b3930b4302e3053774e030afdf17c9
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
