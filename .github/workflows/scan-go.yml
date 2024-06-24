@@ -14,7 +14,7 @@ on:
         default: go test -v -race -covermode=atomic -coverpkg=./...
       coverage-output-file:
         description: 'The output file name to store the coverage results in (defaults to coverage.out)'
-        required: false
+        required: true
         type: string
         default: coverage.out
       coverage-scope:
