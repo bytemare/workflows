@@ -80,7 +80,7 @@ jobs:
     steps:
       - name: Sonar Coverage
         shell: bash
-        run: ${{ inputs.cover-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.cover-scope }}
+        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
         
       - uses: bytemare/actions/sonar-scan@8babe250116e9e79ce4420a04304661ac9caf73f
         env:

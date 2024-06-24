@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/bytemare/actions/internal"
+	"github.com/bytemare/workflows/internal"
 )
 
 type test struct {
