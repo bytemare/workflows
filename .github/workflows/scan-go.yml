@@ -14,9 +14,14 @@ on:
         default: go test -v -race -covermode=atomic -coverpkg=./...
       coverage-output-file:
         description: 'The output file name to store the coverage results in (defaults to coverage.out)'
+        required: true
+        type: string
+        default: coverage.out
+      coverage-scope:
+        description: 'The location to run the command on (defaults to ./...)'
         required: false
         type: string
-        default: .github/coverage.out
+        default: ./...
       go-mod:
         description: 'Go mod file'
         required: false
@@ -35,12 +40,6 @@ on:
 permissions: {}
 
 jobs:
-  Cover:
-    uses: ./.github/workflows/coverage-go.yml
-    with:
-      command: ${{ inputs.coverage-command }}
-      output-file: ${{ inputs.coverage-output-file }}
-
   Semgrep:
     runs-on: ubuntu-22.04
     env:
@@ -55,14 +54,22 @@ jobs:
 
   Codecov:
     runs-on: ubuntu-latest
-    needs: Cover
     steps:
-      - name: Download code coverage report
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      - name: Harden Runner
+        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
         with:
-          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+          egress-policy: audit
 
-      - uses: bytemare/actions/codecov@b5df0586e4b3930b4302e3053774e030afdf17c9
+      - name: Init go
+        uses: bytemare/actions/init-go@b5df0586e4b3930b4302e3053774e030afdf17c9
+        with:
+          go-mod: ${{ inputs.go-mod }}
+
+      - name: Code Coverage
+        shell: bash
+        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
+
+      - uses: bytemare/actions/codecov@8babe250116e9e79ce4420a04304661ac9caf73f
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -73,11 +80,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@b5df0586e4b3930b4302e3053774e030afdf17c9
+      - uses: bytemare/actions/sonar-scan@39f4521a131c0b55aaf999bf1915260fe46d877e
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
+          coverage-output-file: ${{ inputs.coverage-output-file }}
           go-mod: ${{ inputs.go-mod }}
-          cover-file: ${{ inputs.coverage-output-file }}

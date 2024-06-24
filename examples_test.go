@@ -3,7 +3,7 @@ package actions_test
 import (
 	"fmt"
 
-	"github.com/bytemare/actions/internal"
+	"github.com/bytemare/workflows/internal"
 )
 
 // ExampleAddition shows how to add numbers.
