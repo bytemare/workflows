@@ -62,7 +62,7 @@ jobs:
         with:
           name: ${{ needs.Cover.outputs.coverage-output-artefact }}
 
-      - uses: bytemare/actions/codecov@b5df0586e4b3930b4302e3053774e030afdf17c9
+      - uses: bytemare/actions/codecov@8babe250116e9e79ce4420a04304661ac9caf73f
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -73,11 +73,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@b5df0586e4b3930b4302e3053774e030afdf17c9
+      - uses: bytemare/actions/sonar-scan@8babe250116e9e79ce4420a04304661ac9caf73f
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
           go-mod: ${{ inputs.go-mod }}
-          cover-file: ${{ inputs.coverage-output-file }}
