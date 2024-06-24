@@ -80,4 +80,4 @@ jobs:
         with:
           configuration: ${{ inputs.sonar-configuration }}
           go-mod: ${{ inputs.go-mod }}
-          coverage-output-file: ${{ inputs.coverage-output-file }}
+          cover-file: ${{ inputs.coverage-output-file }}
