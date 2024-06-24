@@ -13,10 +13,15 @@ on:
         type: string
         default: go test -v -race -covermode=atomic -coverpkg=./...
       coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
+        description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
         required: false
         type: string
         default: .github/coverage.out
+      coverage-scope:
+        description: 'The location to run the command on (defaults to ./...)'
+        required: false
+        type: string
+        default: ./...
       go-mod:
         description: 'Go mod file'
         required: false
@@ -73,6 +78,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Sonar Coverage
+        shell: bash
+        run: ${{ inputs.cover-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.cover-scope }}
+        
       - uses: bytemare/actions/sonar-scan@8babe250116e9e79ce4420a04304661ac9caf73f
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
