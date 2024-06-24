@@ -16,7 +16,7 @@ on:
         description: 'The output file name to store the coverage results in (defaults to coverage.out)'
         required: false
         type: string
-        default: coverage.out
+        default: .github/coverage.out
       go-mod:
         description: 'Go mod file'
         required: false
@@ -80,4 +80,4 @@ jobs:
         with:
           configuration: ${{ inputs.sonar-configuration }}
           go-mod: ${{ inputs.go-mod }}
-          coverage-output-file: ${{ inputs.coverage-output-file }}
+          cover-file: ${{ inputs.coverage-output-file }}
