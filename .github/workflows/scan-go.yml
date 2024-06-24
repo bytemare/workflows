@@ -40,12 +40,6 @@ on:
 permissions: {}
 
 jobs:
-  Cover:
-    uses: ./.github/workflows/coverage-go.yml
-    with:
-      command: ${{ inputs.coverage-command }}
-      output-file: ${{ inputs.coverage-output-file }}
-
   Semgrep:
     runs-on: ubuntu-22.04
     env:
@@ -62,10 +56,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: Cover
     steps:
-      - name: Download code coverage report
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+      - name: Harden Runner
+        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
         with:
-          name: ${{ needs.Cover.outputs.coverage-output-artefact }}
+          egress-policy: audit
+
+      - name: Init go
+        uses: bytemare/actions/init-go@b5df0586e4b3930b4302e3053774e030afdf17c9
+        with:
+          go-mod: ${{ inputs.go-mod }}
+
+      - name: Code Coverage
+        shell: bash
+        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
       - uses: bytemare/actions/codecov@8babe250116e9e79ce4420a04304661ac9caf73f
         env:
@@ -78,7 +81,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Sonar Coverage
+      - name: Harden Runner
+        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
+        with:
+          egress-policy: audit
+      - name: Init go
+        uses: bytemare/actions/init-go@b5df0586e4b3930b4302e3053774e030afdf17c9
+        with:
+          go-mod: ${{ inputs.go-mod }}
+
+      - name: Code Coverage
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
         
