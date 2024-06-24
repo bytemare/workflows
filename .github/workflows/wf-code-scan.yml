@@ -28,7 +28,9 @@ jobs:
     uses: ./.github/workflows/scan-go.yml
     with:
       sonar-configuration: .github/sonar-project.properties
+      coverage-command: go test -v -race -covermode=atomic -coverpkg=./...
       coverage-output-file: coverage.out
+      coverage-scope: ./...
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
       sonar: ${{ secrets.SONAR_TOKEN }}
