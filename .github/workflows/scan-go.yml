@@ -16,7 +16,7 @@ on:
         description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
         required: false
         type: string
-        default: .github/coverage.out
+        default: coverage.out
       coverage-scope:
         description: 'The location to run the command on (defaults to ./...)'
         required: false
