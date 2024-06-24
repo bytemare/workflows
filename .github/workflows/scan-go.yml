@@ -13,7 +13,7 @@ on:
         type: string
         default: go test -v -race -covermode=atomic -coverpkg=./...
       coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to .github/coverage.out)'
+        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
         required: false
         type: string
         default: coverage.out
@@ -80,23 +80,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
-        with:
-          egress-policy: audit
-      - name: Init go
-        uses: bytemare/actions/init-go@b5df0586e4b3930b4302e3053774e030afdf17c9
-        with:
-          go-mod: ${{ inputs.go-mod }}
-
-      - name: Code Coverage
-        shell: bash
-        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
-        
-      - uses: bytemare/actions/sonar-scan@8babe250116e9e79ce4420a04304661ac9caf73f
+      - uses: bytemare/actions/sonar-scan@7d8b87f67c3615276bad968bf1461ecc9acc0f4c
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           configuration: ${{ inputs.sonar-configuration }}
+          coverage-output-file: ${{ inputs.coverage-output-file }}
           go-mod: ${{ inputs.go-mod }}
