@@ -61,7 +61,7 @@ jobs:
           egress-policy: audit
 
       - name: Init go
-        uses: bytemare/actions/init-go@b5df0586e4b3930b4302e3053774e030afdf17c9
+        uses: bytemare/actions/init-go@84a2f5eb2e77aa545aed89d04134bc97b9751f2e
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@8babe250116e9e79ce4420a04304661ac9caf73f
+      - uses: bytemare/actions/codecov@84a2f5eb2e77aa545aed89d04134bc97b9751f2e
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -80,7 +80,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@39f4521a131c0b55aaf999bf1915260fe46d877e
+      - uses: bytemare/actions/sonar-scan@84a2f5eb2e77aa545aed89d04134bc97b9751f2e
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
