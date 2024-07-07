@@ -40,6 +40,26 @@ on:
 permissions: {}
 
 jobs:
+  Dependency-Review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            api.securityscorecards.dev:443
+            github.com:443
+
+      - name: 'Checkout Repository'
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@df5d74f5d3fc9748a904ea2f1dc6bdddea6439d6
+
   Semgrep:
     runs-on: ubuntu-22.04
     env:
