@@ -25,7 +25,7 @@ jobs:
           egress-policy: audit
 
       - name: Init go
-        uses: bytemare/actions/init-go@f557d070fea2f5182be2be66ca7e8546785ed3c1
+        uses: bytemare/actions/init-go@48da5177ddbc1f7a9d3697bf56ad8fcbf8945379
         with:
           version: ${{ inputs.version }}
 
