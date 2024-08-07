@@ -46,7 +46,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f0db2aa8a570959027d6be2a227028ad19fd9e8f
+        uses: step-security/harden-runner@951b48540b429070694bc8abd82fd6901eb123ca
         with:
           disable-sudo: true
           egress-policy: block
@@ -80,12 +80,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f0db2aa8a570959027d6be2a227028ad19fd9e8f
+        uses: step-security/harden-runner@951b48540b429070694bc8abd82fd6901eb123ca
         with:
           egress-policy: audit
 
       - name: Init go
-        uses: bytemare/actions/init-go@960556840bba0b55b5a07d8742e0aeb8de1d13bb
+        uses: bytemare/actions/init-go@b82a23a79fb3bcaef272d55f222ec2e6b02cd278
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -93,7 +93,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@960556840bba0b55b5a07d8742e0aeb8de1d13bb
+      - uses: bytemare/actions/codecov@b82a23a79fb3bcaef272d55f222ec2e6b02cd278
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -104,7 +104,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@960556840bba0b55b5a07d8742e0aeb8de1d13bb
+      - uses: bytemare/actions/sonar-scan@b82a23a79fb3bcaef272d55f222ec2e6b02cd278
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
