@@ -56,6 +56,6 @@ jobs:
           retention-days: 5
 
       - name: "Upload SARIF results to code scanning"
-        uses: github/codeql-action/upload-sarif@25ad3c8e4067d58361177f34122cf9ae8abb4bd0
+        uses: github/codeql-action/upload-sarif@0d5982aa33b304cca5a9269bccaa65962f580015
         with:
           sarif_file: results.sarif
