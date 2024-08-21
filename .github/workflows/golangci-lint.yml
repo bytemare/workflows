@@ -36,7 +36,7 @@ jobs:
             proxy.golang.org:443
             raw.githubusercontent.com:443
 
-      - uses: bytemare/actions/init-go@01dbbbac57af5d0e099d5890d66e92624fc4bb9f
+      - uses: bytemare/actions/init-go@62d9a5e8d4a2a7c6981ac83bb5c52a47e213643f
         with:
           go-mod: ${{ inputs.go-mod }}
 
