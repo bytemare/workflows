@@ -36,7 +36,7 @@ jobs:
             www.bestpractices.dev:443
 
       - name: "Checkout code"
-        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
         with:
           persist-credentials: false
 

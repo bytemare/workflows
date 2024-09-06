@@ -57,7 +57,7 @@ jobs:
             github.com:443
 
       - name: 'Checkout Repository'
-        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@526b7f2f9ba3878d35c1a34067c085fedb109e0c
         with:
@@ -73,7 +73,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Checkout repo
-        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
       - run: semgrep ci
 
   Codecov:

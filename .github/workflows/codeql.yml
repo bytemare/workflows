@@ -36,7 +36,7 @@ jobs:
             uploads.github.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@821ab42c90a42d1d5cd3241930dff56a7c7dcfb2
