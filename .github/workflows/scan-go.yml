@@ -65,7 +65,7 @@ jobs:
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
   Semgrep:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
     container:
