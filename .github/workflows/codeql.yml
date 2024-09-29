@@ -36,15 +36,15 @@ jobs:
             uploads.github.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@323f5ef653b88011bf10e9a0a56d70d742463c9a
+        uses: github/codeql-action/init@2617ff2d3f2bf8dd95abadcd289352a4023a4758
         with:
           languages: ${{ inputs.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@323f5ef653b88011bf10e9a0a56d70d742463c9a
+        uses: github/codeql-action/autobuild@2617ff2d3f2bf8dd95abadcd289352a4023a4758
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@323f5ef653b88011bf10e9a0a56d70d742463c9a
+        uses: github/codeql-action/analyze@2617ff2d3f2bf8dd95abadcd289352a4023a4758

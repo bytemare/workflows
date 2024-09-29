@@ -36,11 +36,11 @@ jobs:
             proxy.golang.org:443
             raw.githubusercontent.com:443
 
-      - uses: bytemare/actions/init-go@bdd15d7ad800e184306260e77e21763da919bc17
+      - uses: bytemare/actions/init-go@f2cf8288750014cf906d21065e47f66bb1186512
         with:
           go-mod: ${{ inputs.go-mod }}
 
-      - uses: golangci/golangci-lint-action@06c3f3a5515ecb115aa8e1a90cbb3d4b3001936c
+      - uses: golangci/golangci-lint-action@ebae5cee81ffe470becee7802f187bbbcd08e8c4
         with:
           version: latest
           args: --config=${{ inputs.config-path }} ${{ inputs.scope }}
