@@ -46,7 +46,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7
         with:
           disable-sudo: true
           egress-policy: block
@@ -57,15 +57,15 @@ jobs:
             github.com:443
 
       - name: 'Checkout Repository'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@df5d74f5d3fc9748a904ea2f1dc6bdddea6439d6
+        uses: actions/dependency-review-action@32b7d886d598aa8c3119a0a5fdbb89d7afa11812
         with:
           base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
   Semgrep:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
     container:
@@ -73,14 +73,14 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Checkout repo
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - run: semgrep ci
 
   Codecov:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7
         with:
           egress-policy: block
 
