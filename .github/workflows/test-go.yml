@@ -23,6 +23,12 @@ jobs:
         uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7
         with:
           egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            objects.githubusercontent.com:443
+            proxy.golang.org:443
+            storage.googleapis.com:443
+            sum.golang.org:443
 
       - name: Init go
         uses: bytemare/actions/init-go@f2cf8288750014cf906d21065e47f66bb1186512
