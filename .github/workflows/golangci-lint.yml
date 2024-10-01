@@ -32,11 +32,14 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             github.com:443
+            golang.org:443
             objects.githubusercontent.com:443
             proxy.golang.org:443
             raw.githubusercontent.com:443
+            storage.googleapis.com:443
+            sum.golang.org:443
 
-      - uses: bytemare/actions/init-go@f2cf8288750014cf906d21065e47f66bb1186512
+      - uses: bytemare/actions/init-go@c50a6904f8086ab63fc28a1c9a7302ec92feb4f6
         with:
           go-mod: ${{ inputs.go-mod }}
 
