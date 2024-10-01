@@ -33,7 +33,7 @@ jobs:
       - name: Init go
         uses: bytemare/actions/init-go@6f0cffa18f8a410f974bb7619809fd79b7039990
         with:
-          version: ${{ inputs.version }}
+          go-version: ${{ inputs.version }}
 
       - name: Run Tests
         run: ${{ inputs.command }}
