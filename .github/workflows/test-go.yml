@@ -22,12 +22,12 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@6d3c2fe731c8f225990c8018cb71c337c0d9dfcd
         with:
-          egress-policy: audit
+          egress-policy: block
 
       - name: Init go
-        uses: bytemare/actions/init-go@9b8eb9b94f9badf3b1adcd2db24a2af798360ec1
+        uses: bytemare/actions/init-go@6f0cffa18f8a410f974bb7619809fd79b7039990
         with:
-          version: ${{ inputs.version }}
+          go-version: ${{ inputs.version }}
 
       - name: Run Tests
         run: ${{ inputs.command }}
