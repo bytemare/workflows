@@ -92,7 +92,7 @@ jobs:
             storage.googleapis.com:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@6f0cffa18f8a410f974bb7619809fd79b7039990
+        uses: bytemare/actions/init-go@c50a6904f8086ab63fc28a1c9a7302ec92feb4f6
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@6f0cffa18f8a410f974bb7619809fd79b7039990
+      - uses: bytemare/actions/codecov@c50a6904f8086ab63fc28a1c9a7302ec92feb4f6
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -111,7 +111,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@6f0cffa18f8a410f974bb7619809fd79b7039990
+      - uses: bytemare/actions/sonar-scan@c50a6904f8086ab63fc28a1c9a7302ec92feb4f6
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
