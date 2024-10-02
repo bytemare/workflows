@@ -40,6 +40,21 @@ on:
 permissions: {}
 
 jobs:
+  GoVulnCheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-package: ./...
+
   Dependency-Review:
     runs-on: ubuntu-latest
     permissions:
