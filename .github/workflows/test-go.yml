@@ -33,7 +33,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@3122e2ae93bb8801f8dea7426b48c0d40a555cb8
+        uses: bytemare/actions/init-go@7fc48db6ca4d65e044156e839a15768cc39c50e1
         with:
           go-version: ${{ inputs.version }}
 
