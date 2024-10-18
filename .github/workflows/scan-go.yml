@@ -79,7 +79,7 @@ jobs:
             github.com:443
 
       - name: 'Checkout Repository'
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@163217dfcd28294438ea1c1c149cfaf66eec283e
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@3e334b7ca7ffb970f87176830a03bae8956b56cb
         with:
@@ -95,7 +95,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Checkout repo
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@163217dfcd28294438ea1c1c149cfaf66eec283e
       - run: semgrep ci
 
   Codecov:
@@ -117,7 +117,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@21dfbcf0d1841e48517a24f02500ac5533252ecc
+        uses: bytemare/actions/init-go@2bb2fd97240b8fffe1e5fb5fb790a3d8258176e0
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -125,7 +125,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@21dfbcf0d1841e48517a24f02500ac5533252ecc
+      - uses: bytemare/actions/codecov@2bb2fd97240b8fffe1e5fb5fb790a3d8258176e0
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -136,7 +136,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@21dfbcf0d1841e48517a24f02500ac5533252ecc
+      - uses: bytemare/actions/sonar-scan@2bb2fd97240b8fffe1e5fb5fb790a3d8258176e0
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
