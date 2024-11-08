@@ -39,11 +39,11 @@ jobs:
             storage.googleapis.com:443
             sum.golang.org:443
 
-      - uses: bytemare/actions/init-go@65cb4e5bdd73729be95e6daecdfedf05b82e9b27
+      - uses: bytemare/actions/init-go@78df7970535dff027c121aea9c130a9293af3dd4
         with:
           go-mod: ${{ inputs.go-mod }}
 
-      - uses: golangci/golangci-lint-action@523baec22869af19237b7a37a8c5f0a208da7f7b
+      - uses: golangci/golangci-lint-action@ea0c88120e8fe1b09b2134dc97e879870b61b7ce
         with:
           version: latest
           args: --config=${{ inputs.config-path }} ${{ inputs.scope }}
