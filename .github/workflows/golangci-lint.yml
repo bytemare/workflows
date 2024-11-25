@@ -43,7 +43,7 @@ jobs:
         with:
           go-mod: ${{ inputs.go-mod }}
 
-      - uses: golangci/golangci-lint-action@160a1d779cee256901ff3d68ef8ccc63ac8a04f8
+      - uses: golangci/golangci-lint-action@eab1d2f3d76f26c09e2ab8c957fe5bb64bf46b89
         with:
           version: latest
           args: --config=${{ inputs.config-path }} ${{ inputs.scope }}
