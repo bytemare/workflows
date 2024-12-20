@@ -51,7 +51,7 @@ jobs:
             sum.golang.org:443
             uploads.github.com:443
 
-      - uses: bytemare/actions/init-go@a41a3d4ef3b02c44a7a0a4ce2fe41a6fbcfcfeed
+      - uses: bytemare/actions/init-go@122d0a91772a10d71e9f16dbcbab431ceba484d9
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -60,7 +60,7 @@ jobs:
         run: ${{ inputs.command }} -coverprofile=${{ inputs.output-file }} ${{ inputs.scope }}
 
       - name: Archive code coverage results
-        uses: actions/upload-artifact@184d73b71b93c222403b2e7f1ffebe4508014249
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b
         with:
           name: code-coverage-report
           path: ${{ inputs.output-file }}
