@@ -46,7 +46,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350
         with:
           disable-sudo: true
           egress-policy: block
@@ -68,7 +68,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350
         with:
           disable-sudo: true
           egress-policy: block
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -117,7 +117,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@f134a880e99461ef1ee112e41b9206901412c3ff
+        uses: bytemare/actions/init-go@0ba6fa75807a32bdccbe0bd102a8a37205994562
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -125,7 +125,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@f134a880e99461ef1ee112e41b9206901412c3ff
+      - uses: bytemare/actions/codecov@0ba6fa75807a32bdccbe0bd102a8a37205994562
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -136,7 +136,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@f134a880e99461ef1ee112e41b9206901412c3ff
+      - uses: bytemare/actions/sonar-scan@0ba6fa75807a32bdccbe0bd102a8a37205994562
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
