@@ -51,7 +51,7 @@ jobs:
             sum.golang.org:443
             uploads.github.com:443
 
-      - uses: bytemare/actions/init-go@65cb4e5bdd73729be95e6daecdfedf05b82e9b27
+      - uses: bytemare/actions/init-go@5793d397be5699456d7e10e48859f3ce0995a73c
         with:
           go-mod: ${{ inputs.go-mod }}
 

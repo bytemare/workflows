@@ -117,7 +117,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@65cb4e5bdd73729be95e6daecdfedf05b82e9b27
+        uses: bytemare/actions/init-go@5793d397be5699456d7e10e48859f3ce0995a73c
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -125,7 +125,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@65cb4e5bdd73729be95e6daecdfedf05b82e9b27
+      - uses: bytemare/actions/codecov@5793d397be5699456d7e10e48859f3ce0995a73c
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -136,7 +136,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@65cb4e5bdd73729be95e6daecdfedf05b82e9b27
+      - uses: bytemare/actions/sonar-scan@5793d397be5699456d7e10e48859f3ce0995a73c
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
