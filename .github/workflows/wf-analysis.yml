@@ -31,7 +31,7 @@ jobs:
     with:
       language: go
 
-  Code Scans:
+  CodeScans:
     permissions:
       contents: read
     uses: ./.github/workflows/scan-go.yml
