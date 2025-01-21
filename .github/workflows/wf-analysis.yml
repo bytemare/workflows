@@ -1,4 +1,4 @@
-name: Code Scan
+name: Analysis
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
     with:
       language: go
 
-  Analyze:
+  Code Scans:
     permissions:
       contents: read
     uses: ./.github/workflows/scan-go.yml
