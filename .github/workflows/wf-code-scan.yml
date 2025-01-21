@@ -22,9 +22,20 @@ jobs:
       config-path: ./.github/golangci.yml
       scope: ./...
 
+  CodeQL:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/codeql.yml
+    with:
+      language: go
+
   Analyze:
     permissions:
+      actions: read
       contents: read
+      security-events: write
     uses: ./.github/workflows/scan-go.yml
     with:
       sonar-configuration: .github/sonar-project.properties
@@ -34,3 +45,27 @@ jobs:
       sonar: ${{ secrets.SONAR_TOKEN }}
       codecov: ${{ secrets.CODECOV_TOKEN }}
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  ScoreCards:
+    permissions:
+      # Needed if using Code scanning alerts
+      security-events: write
+      # Needed for GitHub OIDC token if publish_results is true
+      id-token: write
+      # Needed for nested workflow
+      actions: read
+      attestations: read
+      checks: read
+      contents: read
+      deployments: read
+      issues: read
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
+
+    uses: ./.github/workflows/scorecard.yml
+    secrets:
+      token: ${{ secrets.SCORECARD_TOKEN }}
