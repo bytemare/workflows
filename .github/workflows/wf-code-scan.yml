@@ -33,9 +33,7 @@ jobs:
 
   Analyze:
     permissions:
-      actions: read
       contents: read
-      security-events: write
     uses: ./.github/workflows/scan-go.yml
     with:
       sonar-configuration: .github/sonar-project.properties
