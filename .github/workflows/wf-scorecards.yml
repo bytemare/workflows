@@ -8,8 +8,8 @@ on:
     branches:
       - main
   schedule:
-    # Weekly on Saturdays.
-    - cron: '30 1 * * 6'
+    # Every 3 days at 7 a.m.
+    - cron: '0 7 */3 * *'
 
 permissions: {}
 

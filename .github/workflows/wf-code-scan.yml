@@ -8,8 +8,8 @@ on:
     branches:
       - main
   schedule:
-    # random HH:MM to avoid a load spike on GitHub Actions at 00:00
-    - cron: '4 1 * * *'
+    # Every 3 days at 7 a.m.
+    - cron: '0 7 */3 * *'
 
 permissions: {}
 
