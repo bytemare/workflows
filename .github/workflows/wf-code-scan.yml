@@ -46,7 +46,7 @@ jobs:
       codecov: ${{ secrets.CODECOV_TOKEN }}
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-  ScoreCards:
+  Scorecard:
     permissions:
       # Needed if using Code scanning alerts
       security-events: write
