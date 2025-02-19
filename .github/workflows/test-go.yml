@@ -12,6 +12,11 @@ on:
         description: 'The Go version to use'
         required: false
         type: string
+      cache:
+        description: 'Whether to use the cache'
+        required: false
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -36,6 +41,7 @@ jobs:
         uses: bytemare/actions/init-go@2a408fa01e57869bc8e92ded1963b07a602b2500
         with:
           go-version: ${{ inputs.version }}
+          cache: ${{ inputs.cache }}
 
       - name: Run Tests
         run: ${{ inputs.command }}

@@ -23,7 +23,6 @@ linters:
     - errorlint
     - exhaustive
     - exhaustruct
-    - exportloopref
     - fatcontext
     - forbidigo
     - forcetypeassert
@@ -91,7 +90,6 @@ linters:
     - stylecheck
     - tagalign
     - tagliatelle
-    - tenv
     - testableexamples
     - testifylint
     - testpackage
