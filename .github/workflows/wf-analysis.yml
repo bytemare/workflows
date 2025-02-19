@@ -1,0 +1,69 @@
+name: Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Every 3 days at 7 a.m.
+    - cron: '0 7 */3 * *'
+
+permissions: {}
+
+jobs:
+  Lint:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/golangci-lint.yml
+    with:
+      config-path: ./.github/golangci.yml
+      scope: ./...
+
+  CodeQL:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/codeql.yml
+    with:
+      language: go
+
+  CodeScans:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/scan-go.yml
+    with:
+      sonar-configuration: .github/sonar-project.properties
+      coverage-output-file: coverage.out
+    secrets:
+      github: ${{ secrets.GITHUB_TOKEN }}
+      sonar: ${{ secrets.SONAR_TOKEN }}
+      codecov: ${{ secrets.CODECOV_TOKEN }}
+      semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  Scorecard:
+    permissions:
+      # Needed if using Code scanning alerts
+      security-events: write
+      # Needed for GitHub OIDC token if publish_results is true
+      id-token: write
+      # Needed for nested workflow
+      actions: read
+      attestations: read
+      checks: read
+      contents: read
+      deployments: read
+      issues: read
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
+
+    uses: ./.github/workflows/scorecard.yml
+    secrets:
+      token: ${{ secrets.SCORECARD_TOKEN }}
