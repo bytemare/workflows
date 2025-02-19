@@ -46,14 +46,15 @@ jobs:
 
   Scorecard:
     permissions:
-      # Needed if using Code scanning alerts
+      # Needed to upload the results to code-scanning dashboard.
       security-events: write
-      # Needed for GitHub OIDC token if publish_results is true
+      # Needed for GitHub OIDC token if publish_results is true.
       id-token: write
       # Needed for nested workflow
       actions: read
-      attestations: read
+      # To detect SAST tools
       checks: read
+      attestations: read
       contents: read
       deployments: read
       issues: read
