@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e
+        uses: step-security/harden-runner@a22641e386edd6104ead99416bac876f4d9b806d
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -51,7 +51,7 @@ jobs:
             sum.golang.org:443
             uploads.github.com:443
 
-      - uses: bytemare/actions/init-go@2a408fa01e57869bc8e92ded1963b07a602b2500
+      - uses: bytemare/actions/init-go@8757fcffe67903ee4573bf09c87c1a4488ebcbb9
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -60,7 +60,7 @@ jobs:
         run: ${{ inputs.command }} -coverprofile=${{ inputs.output-file }} ${{ inputs.scope }}
 
       - name: Archive code coverage results
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: code-coverage-report
           path: ${{ inputs.output-file }}
