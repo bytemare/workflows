@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e
+        uses: step-security/harden-runner@a22641e386edd6104ead99416bac876f4d9b806d
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -38,7 +38,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@2a408fa01e57869bc8e92ded1963b07a602b2500
+        uses: bytemare/actions/init-go@8757fcffe67903ee4573bf09c87c1a4488ebcbb9
         with:
           go-version: ${{ inputs.version }}
           cache: ${{ inputs.cache }}
