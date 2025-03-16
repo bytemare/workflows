@@ -46,7 +46,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@18fe9c66a7c14dce4adc80e7d728e33a541f67d9
+        uses: step-security/harden-runner@8a09271fed8277ab7fb02dbb5917c8d0e78323b4
         with:
           disable-sudo: true
           egress-policy: block
@@ -68,7 +68,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@18fe9c66a7c14dce4adc80e7d728e33a541f67d9
+        uses: step-security/harden-runner@8a09271fed8277ab7fb02dbb5917c8d0e78323b4
         with:
           disable-sudo: true
           egress-policy: block
@@ -81,7 +81,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@bf0431a34222d43b6fa4afd81f80381020d83cf4
+        uses: actions/dependency-review-action@ac9b193bebc6a308717bebfeaedd0204c20b693c
         with:
           base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@18fe9c66a7c14dce4adc80e7d728e33a541f67d9
+        uses: step-security/harden-runner@8a09271fed8277ab7fb02dbb5917c8d0e78323b4
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -119,7 +119,7 @@ jobs:
             sum.golang.org:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@303efff89da19c2419b6c9b3eb2b7e7352f30a88
+        uses: bytemare/actions/init-go@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
         with:
           go-mod: ${{ inputs.go-mod }}
 
@@ -127,7 +127,7 @@ jobs:
         shell: bash
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
-      - uses: bytemare/actions/codecov@303efff89da19c2419b6c9b3eb2b7e7352f30a88
+      - uses: bytemare/actions/codecov@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
@@ -138,7 +138,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: bytemare/actions/sonar-scan@303efff89da19c2419b6c9b3eb2b7e7352f30a88
+      - uses: bytemare/actions/sonar-scan@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
