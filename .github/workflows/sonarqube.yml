@@ -21,11 +21,11 @@ on:
         required: false
         type: string
         default: ./...
-      secrets:
-        github:
-          required: true
-        sonar:
-          required: true
+    secrets:
+      github:
+        required: true
+      sonar:
+        required: true
 
 permissions: {}
 
