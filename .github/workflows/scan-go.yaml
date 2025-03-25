@@ -7,21 +7,6 @@ on:
         required: true
         description: "Path to the configuration file"
         type: string
-      coverage-command:
-        description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
-        required: false
-        type: string
-        default: go test -v -race -covermode=atomic -coverpkg=./...
-      coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
-        required: true
-        type: string
-        default: coverage.out
-      coverage-scope:
-        description: 'The location to run the command on (defaults to ./...)'
-        required: false
-        type: string
-        default: ./...
     secrets:
       github:
         required: true
@@ -60,10 +45,6 @@ jobs:
     uses: ./.github/workflows/codecov.yaml
     secrets:
       codecov: ${{ secrets.codecov }}
-    with:
-      coverage-command: ${{ inputs.coverage-command }}
-      coverage-output-file: ${{ inputs.coverage-output-file }}
-      coverage-scope: ${{ inputs.coverage-scope }}
 
   Sonar:
     permissions:
@@ -76,6 +57,3 @@ jobs:
       sonar: ${{ secrets.sonar }}
     with:
       configuration: ${{ inputs.sonar-configuration }}
-      coverage-command: ${{ inputs.coverage-command }}
-      coverage-output-file: ${{ inputs.coverage-output-file }}
-      coverage-scope: ${{ inputs.coverage-scope }}

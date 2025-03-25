@@ -3,26 +3,11 @@ name: Codecov
 on:
   workflow_call:
     inputs:
-      coverage-command:
-        description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
-        required: false
-        type: string
-        default: go test -v -race -covermode=atomic -coverpkg=./...
-      coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
-        required: false
-        type: string
-        default: coverage.out
-      coverage-scope:
-        description: 'The location to run the command on (defaults to ./...)'
-        required: false
-        type: string
-        default: ./...
       disable_search:
         description: 'Disable search for coverage files. This is helpful when specifying what files you want to upload with the files option.'
         required: false
         type: string
-        default: 'false'
+        default: 'true'
     secrets:
       codecov:
         required: true
@@ -56,11 +41,11 @@ jobs:
 
       - name: Code Coverage
         shell: bash
-        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
+        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
       - uses: codecov/codecov-action@3440e5ef70c638a9f44602a80ab017feee1309fe
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
-          files: ${{ inputs.coverage-output-file }}
+          files: coverage.out
           disable_search: ${{ inputs.disable_search }}

@@ -7,21 +7,6 @@ on:
         description: "Path to the configuration file."
         type: string
         required: true
-      coverage-command:
-        description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
-        required: false
-        type: string
-        default: go test -v -race -covermode=atomic -coverpkg=./...
-      coverage-output-file:
-        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
-        required: false
-        type: string
-        default: coverage.out
-      coverage-scope:
-        description: 'The location to run the command on (defaults to ./...)'
-        required: false
-        type: string
-        default: ./...
     secrets:
       github:
         required: true
@@ -63,7 +48,7 @@ jobs:
 
       - name: Code Coverage
         shell: bash
-        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
+        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
       - uses: SonarSource/sonarqube-scan-action@961628671dd1017f26f7f0b1ff7bb6236182cc71
         env:
