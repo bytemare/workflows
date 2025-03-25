@@ -1,0 +1,65 @@
+name: SonarQube
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        description: "Path to the configuration file."
+        required: true
+      coverage-command:
+        description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
+        required: false
+        type: string
+        default: go test -v -race -covermode=atomic -coverpkg=./...
+      coverage-output-file:
+        description: 'The output file name to store the coverage results in (defaults to coverage.out)'
+        required: false
+        type: string
+        default: coverage.out
+      coverage-scope:
+        description: 'The location to run the command on (defaults to ./...)'
+        required: false
+        type: string
+        default: ./...
+
+permissions: {}
+
+jobs:
+  Scan:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+          # init-go
+              api.github.com:443
+              github.com:443
+              golang.org:443
+              objects.githubusercontent.com:443
+              proxy.golang.org:443
+              storage.googleapis.com:443
+              sum.golang.org:443
+          # sonarqube
+              api.sonarcloud.io:443
+              ea6ne4j2sb.execute-api.eu-central-1.amazonaws.com:443
+              scanner.sonarcloud.io:443
+              sonarcloud.io:443
+
+      - name: Init go
+        uses: bytemare/actions/init-go@981f181f7b5b37944a59e3e1e68d18bbc4049cd3
+
+      - name: Code Coverage
+        shell: bash
+        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
+
+      - uses: SonarSource/sonarqube-scan-action@961628671dd1017f26f7f0b1ff7bb6236182cc71
+        with:
+          args: >
+            -Dproject.settings=${{ inputs.configuration }}

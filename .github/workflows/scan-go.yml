@@ -22,11 +22,6 @@ on:
         required: false
         type: string
         default: ./...
-      go-mod:
-        description: 'Go mod file'
-        required: false
-        type: string
-        default: ./go.mod
     secrets:
       github:
         required: true
@@ -63,28 +58,9 @@ jobs:
           go-package: ./...
 
   Dependency-Review:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@8a09271fed8277ab7fb02dbb5917c8d0e78323b4
-        with:
-          disable-sudo: true
-          egress-policy: block
-          allowed-endpoints: >
-            api.deps.dev:443
-            api.github.com:443
-            api.securityscorecards.dev:443
-            github.com:443
-
-      - name: 'Checkout Repository'
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
-      - name: 'Dependency Review'
-        uses: actions/dependency-review-action@ac9b193bebc6a308717bebfeaedd0204c20b693c
-        with:
-          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
-          head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
+    uses: ./.github/workflows/dependency-review.yml
 
   Semgrep:
     runs-on: ubuntu-24.04
@@ -99,50 +75,23 @@ jobs:
       - run: semgrep ci
 
   Codecov:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@8a09271fed8277ab7fb02dbb5917c8d0e78323b4
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.codecov.io:443
-            cli.codecov.io:443
-            ingest.codecov.io:443
-            api.github.com:443
-            github.com:443
-            golang.org:443
-            keybase.io:443
-            objects.githubusercontent.com:443
-            proxy.golang.org:443
-            storage.googleapis.com:443
-            sum.golang.org:443
-
-      - name: Init go
-        uses: bytemare/actions/init-go@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
-        with:
-          go-mod: ${{ inputs.go-mod }}
-
-      - name: Code Coverage
-        shell: bash
-        run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
-
-      - uses: bytemare/actions/codecov@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
-        env:
-          CODECOV_TOKEN: ${{ secrets.codecov }}
-        with:
-          coverage-report: ${{ needs.Cover.outputs.coverage-output-file }}
+    uses: ./.github/workflows/codecov.yml
+    env:
+      CODECOV_TOKEN: ${{ secrets.codecov }}
+    with:
+      coverage-command: ${{ inputs.coverage-command }}
+      coverage-report: ${{ inputs.coverage-output-file }}
+      coverage-scope: ${{ inputs.coverage-scope }}
 
   Sonar:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - uses: bytemare/actions/sonar-scan@89b0dafa953d3bebf7458d7b05a726bd2975c7e7
-        env:
-          GITHUB_TOKEN: ${{ secrets.github }}
-          SONAR_TOKEN: ${{ secrets.sonar }}
-        with:
-          configuration: ${{ inputs.sonar-configuration }}
-          coverage-output-file: ${{ inputs.coverage-output-file }}
-          go-mod: ${{ inputs.go-mod }}
+    uses: ./.github/workflows/sonarqube.yml
+    env:
+      GITHUB_TOKEN: ${{ secrets.github }}
+      SONAR_TOKEN: ${{ secrets.sonar }}
+    with:
+      configuration: ${{ inputs.sonar-configuration }}
+      coverage-command: ${{ inputs.coverage-command }}
+      coverage-report: ${{ inputs.coverage-output-file }}
+      coverage-scope: ${{ inputs.coverage-scope }}

@@ -1,0 +1,29 @@
+name: 'Dependency Review'
+on: workflow_call
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.deps.dev:443
+            api.github.com:443
+            api.securityscorecards.dev:443
+            github.com:443
+
+      - name: 'Checkout Repository'
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@ac9b193bebc6a308717bebfeaedd0204c20b693c
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
