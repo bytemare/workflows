@@ -21,6 +21,7 @@ on:
       disable_search:
         description: 'Disable search for coverage files. This is helpful when specifying what files you want to upload with the files option.'
         required: false
+        type: string
         default: 'false'
     secrets:
       codecov:
