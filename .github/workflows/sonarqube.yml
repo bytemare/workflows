@@ -5,6 +5,7 @@ on:
     inputs:
       configuration:
         description: "Path to the configuration file."
+        type: string
         required: true
       coverage-command:
         description: 'The command to use to run the tests (defaults to go test -v -race -covermode=atomic -coverpkg=./...)'
