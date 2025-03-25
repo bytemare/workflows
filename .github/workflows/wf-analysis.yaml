@@ -17,9 +17,9 @@ jobs:
   Lint:
     permissions:
       contents: read
-    uses: ./.github/workflows/golangci-lint.yml
+    uses: ./.github/workflows/golangci-lint.yaml
     with:
-      config-path: ./.github/golangci.yml
+      config-path: ./.github/golangci.yaml
       scope: ./...
 
   CodeQL:
@@ -27,7 +27,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: ./.github/workflows/codeql.yml
+    uses: ./.github/workflows/codeql.yaml
     with:
       language: go
 
@@ -36,7 +36,7 @@ jobs:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
-    uses: ./.github/workflows/scan-go.yml
+    uses: ./.github/workflows/scan-go.yaml
     with:
       sonar-configuration: .github/sonar-project.properties
       coverage-output-file: coverage.out
@@ -68,6 +68,6 @@ jobs:
       statuses: read
       models: read
 
-    uses: ./.github/workflows/scorecard.yml
+    uses: ./.github/workflows/scorecard.yaml
     secrets:
       token: ${{ secrets.SCORECARD_TOKEN }}
