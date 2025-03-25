@@ -23,9 +23,7 @@ jobs:
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
 
       - name: Run Semgrep
-        run: |
-          semgrep login
-          semgrep ci --no-suppress-errors
+        run: semgrep ci --no-suppress-errors
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
 
