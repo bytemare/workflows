@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: codecov/codecov-action@3440e5ef70c638a9f44602a80ab017feee1309fe
+      - uses: codecov/codecov-action@ea99328d1c4d5f39fda7cbffe104afd6906c50b0
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
