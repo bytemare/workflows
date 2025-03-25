@@ -76,8 +76,8 @@ jobs:
 
   Codecov:
     uses: ./.github/workflows/codecov.yml
-    env:
-      CODECOV_TOKEN: ${{ secrets.codecov }}
+    secrets:
+      codecov: ${{ secrets.codecov }}
     with:
       coverage-command: ${{ inputs.coverage-command }}
       coverage-report: ${{ inputs.coverage-output-file }}
@@ -87,9 +87,9 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/sonarqube.yml
-    env:
-      GITHUB_TOKEN: ${{ secrets.github }}
-      SONAR_TOKEN: ${{ secrets.sonar }}
+    secrets:
+      github: ${{ secrets.GITHUB_TOKEN }}
+      sonar: ${{ secrets.SONAR_TOKEN }}
     with:
       configuration: ${{ inputs.sonar-configuration }}
       coverage-command: ${{ inputs.coverage-command }}

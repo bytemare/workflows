@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: ./...
+      secrets:
+        github:
+          required: true
+        sonar:
+          required: true
 
 permissions: {}
 
@@ -58,6 +63,9 @@ jobs:
         run: ${{ inputs.coverage-command }} -coverprofile=${{ inputs.coverage-output-file }} ${{ inputs.coverage-scope }}
 
       - uses: SonarSource/sonarqube-scan-action@961628671dd1017f26f7f0b1ff7bb6236182cc71
+        env:
+          GITHUB_TOKEN: ${{ secrets.github }}
+          SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           args: >
             -Dproject.settings=${{ inputs.configuration }}
