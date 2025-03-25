@@ -54,7 +54,7 @@ jobs:
       security-events: write
     uses: ./.github/workflows/semgrep.yml
     secrets:
-      codecov: ${{ secrets.semgrep }}
+      semgrep: ${{ secrets.semgrep }}
 
   Codecov:
     uses: ./.github/workflows/codecov.yml
