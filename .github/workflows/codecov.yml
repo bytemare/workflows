@@ -30,7 +30,7 @@ on:
 permissions: {}
 
 jobs:
-  Coverage:
+  Codecov:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
