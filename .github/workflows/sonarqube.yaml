@@ -1,0 +1,59 @@
+name: SonarQube
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        description: "Path to the configuration file."
+        type: string
+        required: true
+    secrets:
+      github:
+        required: true
+      sonar:
+        required: true
+
+permissions: {}
+
+jobs:
+  SonarQube:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+              api.github.com:443
+              github.com:443
+              golang.org:443
+              objects.githubusercontent.com:443
+              proxy.golang.org:443
+              storage.googleapis.com:443
+              sum.golang.org:443
+              api.sonarcloud.io:443
+              ea6ne4j2sb.execute-api.eu-central-1.amazonaws.com:443
+              scanner.sonarcloud.io:443
+              sonarcloud.io:443
+
+      - name: Init go
+        uses: bytemare/actions/init-go@981f181f7b5b37944a59e3e1e68d18bbc4049cd3
+
+      - name: Code Coverage
+        shell: bash
+        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+
+      - uses: SonarSource/sonarqube-scan-action@961628671dd1017f26f7f0b1ff7bb6236182cc71
+        env:
+          GITHUB_TOKEN: ${{ secrets.github }}
+          SONAR_TOKEN: ${{ secrets.sonar }}
+        with:
+          args: >
+            -Dproject.settings=${{ inputs.configuration }}

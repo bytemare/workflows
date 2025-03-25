@@ -1,0 +1,39 @@
+name: Govulncheck
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  Govulncheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            proxy.golang.org:443
+            sum.golang.org:443
+            vuln.go.dev:443
+
+      - name: Govulncheck
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee
+        with:
+          go-package: ./...
+          output-file: govulncheck.sarif
+          output-format: sarif
+
+      - name: "Upload SARIF results to GitHub's code scanning dashboard"
+        uses: github/codeql-action/upload-sarif@e0ea141027937784e3c10ed1679e503fcc2245bc
+        with:
+          sarif_file: govulncheck.sarif

@@ -1,0 +1,59 @@
+name: Code Scanning
+
+on:
+  workflow_call:
+    inputs:
+      sonar-configuration:
+        required: true
+        description: "Path to the configuration file"
+        type: string
+    secrets:
+      github:
+        required: true
+      sonar:
+        required: true
+      codecov:
+        required: true
+      semgrep:
+        required: true
+
+permissions: {}
+
+jobs:
+  GoVulnCheck:
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    uses: ./.github/workflows/govulncheck.yaml
+
+  Dependency-Review:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/dependency-review.yaml
+
+  Semgrep:
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    uses: ./.github/workflows/semgrep.yaml
+    secrets:
+      semgrep: ${{ secrets.semgrep }}
+
+  Codecov:
+    uses: ./.github/workflows/codecov.yaml
+    secrets:
+      codecov: ${{ secrets.codecov }}
+
+  Sonar:
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    uses: ./.github/workflows/sonarqube.yaml
+    secrets:
+      github: ${{ secrets.github }}
+      sonar: ${{ secrets.sonar }}
+    with:
+      configuration: ${{ inputs.sonar-configuration }}
