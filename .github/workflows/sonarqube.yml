@@ -31,12 +31,14 @@ on:
 permissions: {}
 
 jobs:
-  Scan:
+  SonarQube:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94

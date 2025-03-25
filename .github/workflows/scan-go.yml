@@ -36,26 +36,11 @@ permissions: {}
 
 jobs:
   GoVulnCheck:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
-        with:
-          disable-sudo: true
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            github.com:443
-            objects.githubusercontent.com:443
-            proxy.golang.org:443
-            sum.golang.org:443
-            vuln.go.dev:443
-      - name: govulncheck
-        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee
-        with:
-          go-package: ./...
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    uses: ./.github/workflows/govulncheck.yaml
 
   Dependency-Review:
     permissions:
@@ -63,16 +48,13 @@ jobs:
     uses: ./.github/workflows/dependency-review.yml
 
   Semgrep:
-    runs-on: ubuntu-24.04
-    env:
-      SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
-    container:
-      image: semgrep/semgrep
-    if: (github.actor != 'dependabot[bot]')
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
-      - run: semgrep ci
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+    uses: ./.github/workflows/semgrep.yml
+    secrets:
+      codecov: ${{ secrets.semgrep }}
 
   Codecov:
     uses: ./.github/workflows/codecov.yml
@@ -86,6 +68,8 @@ jobs:
   Sonar:
     permissions:
       contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
     uses: ./.github/workflows/sonarqube.yml
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
