@@ -38,7 +38,6 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
-          # init-go
               api.github.com:443
               github.com:443
               golang.org:443
@@ -46,7 +45,6 @@ jobs:
               proxy.golang.org:443
               storage.googleapis.com:443
               sum.golang.org:443
-          # sonarqube
               api.sonarcloud.io:443
               ea6ne4j2sb.execute-api.eu-central-1.amazonaws.com:443
               scanner.sonarcloud.io:443
