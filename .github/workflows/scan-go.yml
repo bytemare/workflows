@@ -80,7 +80,7 @@ jobs:
       codecov: ${{ secrets.codecov }}
     with:
       coverage-command: ${{ inputs.coverage-command }}
-      coverage-report: ${{ inputs.coverage-output-file }}
+      coverage-output-file: ${{ inputs.coverage-output-file }}
       coverage-scope: ${{ inputs.coverage-scope }}
 
   Sonar:
@@ -93,5 +93,5 @@ jobs:
     with:
       configuration: ${{ inputs.sonar-configuration }}
       coverage-command: ${{ inputs.coverage-command }}
-      coverage-report: ${{ inputs.coverage-output-file }}
+      coverage-output-file: ${{ inputs.coverage-output-file }}
       coverage-scope: ${{ inputs.coverage-scope }}
