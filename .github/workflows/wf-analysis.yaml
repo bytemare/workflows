@@ -19,7 +19,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/golangci-lint.yaml
     with:
-      config-path: ./.github/golangci.yaml
+      config-path: ./.github/.golangci.yaml
       scope: ./...
 
   CodeQL:

@@ -4,7 +4,8 @@ on: workflow_call
 permissions: {}
 
 jobs:
-  dependency-review:
+  DependencyReview:
+    name: Dependency Review
     runs-on: ubuntu-latest
     permissions:
       contents: read

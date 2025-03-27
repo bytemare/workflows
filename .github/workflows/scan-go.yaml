@@ -20,7 +20,7 @@ on:
 permissions: {}
 
 jobs:
-  GoVulnCheck:
+  Govulncheck:
     permissions:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
@@ -28,6 +28,7 @@ jobs:
     uses: ./.github/workflows/govulncheck.yaml
 
   Dependency-Review:
+    name: Dependency Review
     permissions:
       contents: read
     uses: ./.github/workflows/dependency-review.yaml
@@ -46,7 +47,7 @@ jobs:
     secrets:
       codecov: ${{ secrets.codecov }}
 
-  Sonar:
+  SonarQube:
     permissions:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
