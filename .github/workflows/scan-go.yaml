@@ -46,7 +46,7 @@ jobs:
     secrets:
       codecov: ${{ secrets.codecov }}
 
-  Sonar:
+  SonarQube:
     permissions:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
