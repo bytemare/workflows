@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/govulncheck.yaml
 
   Dependency-Review:
-    name: Dependency-Review
+    name: Dependency Review
     permissions:
       contents: read
     uses: ./.github/workflows/dependency-review.yaml
