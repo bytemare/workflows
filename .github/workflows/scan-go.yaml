@@ -20,7 +20,7 @@ on:
 permissions: {}
 
 jobs:
-  GoVulnCheck:
+  Govulncheck:
     permissions:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
