@@ -5,6 +5,7 @@ permissions: {}
 
 jobs:
   DependencyReview:
+    name: Dependency Review
     runs-on: ubuntu-latest
     permissions:
       contents: read
