@@ -269,5 +269,9 @@ run:
 
 output:
   formats:
-    - format: github-actions
+    - format: colored-line-number
+      path: stdout
+  sort-results: true
+  sort-order:
+    - file
   show-stats: true
