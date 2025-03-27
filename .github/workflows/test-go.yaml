@@ -3,11 +3,6 @@ name: Test Go
 on:
   workflow_call:
     inputs:
-      command:
-        description: 'The command to use to run the tests (defaults to go test -v -vet=all ./...)'
-        required: false
-        type: string
-        default: go test -v -vet=all ./...
       version:
         description: 'The Go version to use'
         required: false
@@ -44,4 +39,4 @@ jobs:
           go-version: ${{ inputs.version }}
 
       - name: Run Tests
-        run: ${{ inputs.command }}
+        run: go test -v -vet=all ./...
