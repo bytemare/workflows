@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        uses: step-security/harden-runner@617de1d11dea286f7a53941812f4667f646e72da
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -37,13 +37,13 @@ jobs:
               ingest.codecov.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@dd05ea0e1ffbfa927a92264f3fd1f6182d2ba748
+        uses: bytemare/actions/init-go@4b77562ed832bd3d91d1d030fa74d37a4920e08f
 
       - name: Code Coverage
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: codecov/codecov-action@ea99328d1c4d5f39fda7cbffe104afd6906c50b0
+      - uses: codecov/codecov-action@f95a404f9265da16dee374e6e9dcb76d3eee88b1
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
