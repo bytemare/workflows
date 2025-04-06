@@ -35,6 +35,7 @@ jobs:
               api.codecov.io:443
               cli.codecov.io:443
               ingest.codecov.io:443
+              o26192.ingest.us.sentry.io:443
 
       - name: Init go
         uses: bytemare/actions/init-go@dd05ea0e1ffbfa927a92264f3fd1f6182d2ba748
