@@ -50,7 +50,7 @@ jobs:
             storage.googleapis.com:443
             sum.golang.org:443
 
-      - uses: bytemare/actions/init-go@dd05ea0e1ffbfa927a92264f3fd1f6182d2ba748
+      - uses: bytemare/actions/init-go@a1c78e521300c18f15ebed1b6fec088828d8e2bc
         with:
           go-mod: ${{ inputs.go-mod }}
 
