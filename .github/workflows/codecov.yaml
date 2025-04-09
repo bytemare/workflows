@@ -38,7 +38,7 @@ jobs:
               o26192.ingest.us.sentry.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@dd05ea0e1ffbfa927a92264f3fd1f6182d2ba748
+        uses: bytemare/actions/init-go@e8ce67ba776612a01c347ace0c576fb10e6fbdd8
 
       - name: Code Coverage
         shell: bash
