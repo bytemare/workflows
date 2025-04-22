@@ -36,7 +36,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0
         with:
           disable-sudo: true
           egress-policy: block
