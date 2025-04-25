@@ -21,7 +21,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@b131ca5ebfca4930fe6d4a3e82d1e386b4873c94
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0
         with:
           disable-sudo: true
           egress-policy: block
@@ -34,7 +34,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@ac9b193bebc6a308717bebfeaedd0204c20b693c
+        uses: actions/dependency-review-action@5a5d4df8ad0dd154e61910cad81fb3bfe8f692ae
         with:
           base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
