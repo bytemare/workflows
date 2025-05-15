@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: Init go
-        uses: bytemare/actions/init-go@5c9c30a93af488413a0b747fedf519c9a421794d
+        uses: bytemare/actions/init-go@e4227bf196612e2a4403bdb2bff81d7e51703f6f
         with:
           go-version: ${{ inputs.version }}
 

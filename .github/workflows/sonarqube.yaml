@@ -54,13 +54,13 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@5c9c30a93af488413a0b747fedf519c9a421794d
+        uses: bytemare/actions/init-go@e4227bf196612e2a4403bdb2bff81d7e51703f6f
 
       - name: Code Coverage
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: SonarSource/sonarqube-scan-action@2500896589ef8f7247069a56136f8dc177c27ccf
+      - uses: SonarSource/sonarqube-scan-action@bfe63be74698caf8fc29c395148003fdea0fdd9f
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
