@@ -37,13 +37,13 @@ jobs:
             vuln.go.dev:443
 
       - name: Govulncheck
-        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee
+        uses: golang/govulncheck-action@357ea4a5418cb457db33ccd168e28f68e075eba0
         with:
           go-package: ./...
           output-file: govulncheck.sarif
           output-format: sarif
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@5eb3ed6614230b1931d5c08df9e096e4ba524f21
+        uses: github/codeql-action/upload-sarif@b86edfc27a1e0d3b55127a7496a1c770a02b2f84
         with:
           sarif_file: govulncheck.sarif

@@ -38,13 +38,13 @@ jobs:
               o26192.ingest.us.sentry.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@5c9c30a93af488413a0b747fedf519c9a421794d
+        uses: bytemare/actions/init-go@e4227bf196612e2a4403bdb2bff81d7e51703f6f
 
       - name: Code Coverage
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d
+      - uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
         env:
           CODECOV_TOKEN: ${{ secrets.codecov }}
         with:
