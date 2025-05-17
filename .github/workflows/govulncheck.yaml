@@ -44,6 +44,6 @@ jobs:
           output-format: sarif
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@b86edfc27a1e0d3b55127a7496a1c770a02b2f84
+        uses: github/codeql-action/upload-sarif@57eebf61a2246ab60a0c2f5a85766db783ad3553
         with:
           sarif_file: govulncheck.sarif
