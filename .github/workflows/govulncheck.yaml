@@ -24,7 +24,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49
         with:
           disable-sudo: true
           egress-policy: block
@@ -44,6 +44,6 @@ jobs:
           output-format: sarif
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@b86edfc27a1e0d3b55127a7496a1c770a02b2f84
+        uses: github/codeql-action/upload-sarif@b69421388d5449cc5a5e1ca344d71926bda69e07
         with:
           sarif_file: govulncheck.sarif
