@@ -54,7 +54,7 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@252c322eae0e79658457909a14b8cbb3a659934e
+        uses: bytemare/actions/init-go@a7d40eb137a60a73ee5218e3d5b00283b34254cc
 
       - name: Code Coverage
         shell: bash

@@ -34,7 +34,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9
+        uses: actions/dependency-review-action@8a1ad91c0aadf9606187a4e935a48dd52e93196a
         with:
           base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
