@@ -57,8 +57,11 @@ jobs:
         uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49
         with:
           disable-sudo: true
-          egress-policy: audit
-        continue-on-error: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            release-assets.githubusercontent.com:443
 
       - name: Checkout repo
         uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
