@@ -1,0 +1,30 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: Release
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  Release:
+    uses: ./.github/workflows/slsa-provenance.yaml
+    with:
+      go-version: '1.25'
+      dry_run: false
+      create_release: true
+    permissions:
+      contents: write         # create/update release & upload assets
+      id-token: write         # OIDC for attestations/provenance
+      attestations: write     # SBOM + build attestation API
+      actions: read
