@@ -32,11 +32,9 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             github.com:443
+            go.dev:443
             golang.org:443
-            objects.githubusercontent.com:443
-            proxy.golang.org:443
-            storage.googleapis.com:443
-            sum.golang.org:443
+            release-assets.githubusercontent.com:443
 
       - name: Checkout repo
         uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
@@ -44,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Init go
-        uses: bytemare/actions/init-go@252c322eae0e79658457909a14b8cbb3a659934e
+        uses: bytemare/actions/init-go@a75f327b6be94dee9e69a2a780d5a6c317f67d31
         with:
           go-version: ${{ inputs.version }}
 

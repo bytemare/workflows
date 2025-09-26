@@ -1,0 +1,220 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: SLSA Build Level 3 Provenance and GitHub Artifact Attestations (tarball + SBOM + SLSA + GH attest)
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        type: string
+        required: false
+        default: '1.25.x'
+      create_release:
+        type: boolean
+        required: false
+        default: true
+      dry_run:
+        type: boolean
+        required: false
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package_and_sbom:
+    name: Package source + SBOM + Attestations
+    if: ${{ inputs.dry_run || github.ref_type == 'tag' }}   # gate: only tags
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write        # to create/upload the Release assets
+      id-token: write        # for OIDC (attestations)
+      attestations: write    # SBOM + build attestations
+    outputs:
+      # Full path to produced tar.gz
+      artifact_path: ${{ steps.package.outputs.artifact_path }}
+      # File name only (stable for attaching to releases / signatures)
+      artifact_filename: ${{ steps.package.outputs.artifact_filename }}
+      subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout repo
+        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
+        with:
+          fetch-depth: 0
+
+      - name: Cache Go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ inputs.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ inputs.go-version }}-
+
+      - name: Init go
+        uses: bytemare/actions/init-go@a75f327b6be94dee9e69a2a780d5a6c317f67d31
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - id: package
+        name: Package (deterministic) + hash + base64 + verify
+        run: |
+          set -euo pipefail
+          # Infer mode from ref type.
+          export LC_ALL=C LANG=C TZ=UTC
+          umask 022
+          IFS=$'\n\t'
+
+          fail() { echo "ERROR: $*" >&2; exit 1; }
+          sanitize_ident() { local in="$1" out; out="${in//[^A-Za-z0-9._-]/_}"; [ -n "$out" ] || fail "Identifier empty after sanitize ($in)"; printf '%s\n' "$out"; }
+
+          : "${GITHUB_SHA:?missing}" : "${GITHUB_REPOSITORY:?missing}" : "${GITHUB_REF_NAME:?missing}" : "${GITHUB_RUN_NUMBER:?missing}"
+          git rev-parse --verify -q "${GITHUB_SHA}^{commit}" >/dev/null || fail "Invalid commit $GITHUB_SHA"
+
+          REPO_RAW="${GITHUB_REPOSITORY#*/}"; REPO_SAFE="$(sanitize_ident "$REPO_RAW")" || exit 1
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            TAG_RAW="${GITHUB_REF_NAME}"
+          else
+            # Synthetic dry-run tagish label
+            TAG_RAW="${GITHUB_REF_NAME}-dryrun-${GITHUB_RUN_NUMBER}"
+          fi
+          TAG_SAFE="$(sanitize_ident "${TAG_RAW//\//_}")" || exit 1
+
+          OUTDIR=dist; install -d -- "$OUTDIR"
+          BASENAME="${REPO_SAFE}-${TAG_SAFE}"; TAR_PATH="${OUTDIR}/${BASENAME}.tar"; ARCHIVE_PATH="${TAR_PATH}.gz"
+          cleanup() { rm -f -- "$TAR_PATH"; }; trap cleanup EXIT
+
+          git archive --format=tar --prefix="${BASENAME}/" -o "$TAR_PATH" "$GITHUB_SHA"
+          gzip -n -9 -c "$TAR_PATH" > "$ARCHIVE_PATH"
+          rm -f -- "$TAR_PATH"
+          [ -s "$ARCHIVE_PATH" ] || fail "Archive empty: $ARCHIVE_PATH"
+
+          shasum -a 256 "$ARCHIVE_PATH" > subjects.sha256
+          cut -d ' ' -f1 subjects.sha256 | awk -v f="$(basename "$ARCHIVE_PATH")" '{print $1"  "f}' > subjects.sha256.txt
+          base64 -w0 subjects.sha256 > subjects.sha256.b64
+
+          mkdir -p _extract
+          tar -xzf "$ARCHIVE_PATH" -C _extract || fail "Tar extraction failed"
+          test -f _extract/*/go.mod || fail "go.mod not found in archive"
+
+          printf 'artifact_path=%s\n' "$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
+          printf 'artifact_filename=%s\n' "$(basename "$ARCHIVE_PATH")" >> "$GITHUB_OUTPUT"
+          printf 'subjects_b64=%s\n' "$(cat subjects.sha256.b64)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CycloneDX SBOM
+        uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97
+        with:
+          version: 1
+          args: mod -licenses -json -output sbom.cdx.json .
+
+      - name: Attest SBOM (bind SBOM to tarball digest)
+        if: ${{ !inputs.dry_run }}
+        uses: actions/attest-sbom@4e404e709737cbaa2830f5ffb93a62340d5241a7
+        with:
+          subject-checksums: subjects.sha256
+          sbom-path: sbom.cdx.json
+
+      - name: Attest build provenance (GitHub native)
+        if: ${{ !inputs.dry_run }}
+        uses: actions/attest-build-provenance@3752c92e3bd95a40782ebef53ea5f91088c20e48
+        with:
+          subject-path: ${{ steps.package.outputs.artifact_path }}
+
+      - name: Install cosign
+        if: ${{ !inputs.dry_run }}
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62
+
+      - id: sign
+        if: ${{ !inputs.dry_run }}
+        name: Keyless sign artifact (cosign)
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          set -euo pipefail
+          ART_PATH='${{ steps.package.outputs.artifact_path }}'
+          SIG_PATH="${ART_PATH}.sig"; CERT_PATH="${ART_PATH}.cert"
+          cosign sign-blob --yes \
+            --output-signature "${SIG_PATH}" \
+            --output-certificate "${CERT_PATH}" \
+            "${ART_PATH}"
+          echo "signature_file=${SIG_PATH}" >> "$GITHUB_OUTPUT"
+          echo "certificate_file=${CERT_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify cosign signature
+        if: ${{ !inputs.dry_run }}
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          set -euo pipefail
+          cosign verify-blob \
+            --certificate '${{ steps.sign.outputs.certificate_file }}' \
+            --signature   '${{ steps.sign.outputs.signature_file }}' \
+            '${{ steps.package.outputs.artifact_path }}'
+          echo 'Signature verification succeeded.'
+
+      - name: Create/Update GitHub Release
+        if: ${{ !inputs.dry_run && inputs.create_release }}
+        uses: softprops/action-gh-release@97d42c1b50f585f357413698aa1b779307aa0d52
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.package.outputs.artifact_path }}
+            sbom.cdx.json
+            subjects.sha256
+            subjects.sha256.txt
+            subjects.sha256.b64
+            ${{ steps.sign.outputs.signature_file }}
+            ${{ steps.sign.outputs.certificate_file }}
+
+      - name: Upload artifacts (PR dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        with:
+          name: dryrun-${{ steps.package.outputs.artifact_filename }}
+          path: |
+            ${{ steps.package.outputs.artifact_path }}
+            sbom.cdx.json
+            subjects.sha256
+            subjects.sha256.txt
+            subjects.sha256.b64
+
+  provenance_slsa:
+    name: SLSA Build Level 3 Provenance
+    if: ${{ !inputs.dry_run && github.ref_type == 'tag' }}
+    needs: package_and_sbom
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: ${{ needs.package_and_sbom.outputs.subjects_b64 }}
+      upload-assets: true
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
