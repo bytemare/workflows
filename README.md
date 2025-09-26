@@ -1,18 +1,18 @@
 # Workflows
 A collection of hardened reusable GitHub Workflows.
 
-| Workflow                | Purpose                                                                 |
-|-------------------------|-------------------------------------------------------------------------|
-| CodeQL | Static analysis with CodeQL for Golang.                                 |
-| GolangCI Lint | Linting with golangci-lint.                                             |
-| Govulncheck | Vulnerability scanning with govulncheck.                                |
-| Dependency-Review| Dependency review for pull requests.                                    |
-| Semgrep | Semgrep static analysis.                                                |
-| SonarQube | SonarQube static analysis.                                              |
-| Codecov | Coverage reporting with Codecov.                                        |
-| Release | Build and publish singed release artifacts (tarball, SBOM, provenance). |
-| Scorecard | OpenSSF Scorecard supply chain checks.                                  |
- | Test | Runs ```go test -v -vet=all ./...```                                    |
+| Workflow          | Purpose                                                                 |
+|-------------------|-------------------------------------------------------------------------|
+| CodeQL            | Static analysis with CodeQL for Golang.                                 |
+| GolangCI Lint     | Linting with golangci-lint.                                             |
+| Govulncheck       | Vulnerability scanning with govulncheck.                                |
+| Dependency-Review | Dependency review for pull requests.                                    |
+| Semgrep           | Semgrep static analysis.                                                |
+| SonarQube         | SonarQube static analysis.                                              |
+| Codecov           | Coverage reporting with Codecov.                                        |
+| Release           | Build and publish singed release artifacts (tarball, SBOM, provenance). |
+| Scorecard         | OpenSSF Scorecard supply chain checks.                                  |
+| Test              | Runs ```go test -v -vet=all ./...```                                    |
 
 Note that you'll probably need to set up these tools for your repository (e.g. SonarQube, Codecov, Semgrep).
 
