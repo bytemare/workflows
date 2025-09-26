@@ -36,7 +36,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
         with:
           disable-sudo: true
           egress-policy: block
@@ -54,13 +54,13 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@a75f327b6be94dee9e69a2a780d5a6c317f67d31
+        uses: bytemare/actions/init-go@0bc144d4ffb6cf954e2d7f3f4b1c3a44bbbec2fd
 
       - name: Code Coverage
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: SonarSource/sonarqube-scan-action@ef211f93a68be0c3a2cd18f4334e6815890607bc
+      - uses: SonarSource/sonarqube-scan-action@5ffbad44543237d1b339a5ed57a774432e19f3e4
         env:
           GITHUB_TOKEN: ${{ secrets.github }}
           SONAR_TOKEN: ${{ secrets.sonar }}
