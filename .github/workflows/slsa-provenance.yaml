@@ -54,7 +54,7 @@ jobs:
       subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a
         with:
           disable-sudo: true
           egress-policy: block
@@ -64,7 +64,7 @@ jobs:
             release-assets.githubusercontent.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
 
@@ -79,7 +79,7 @@ jobs:
             go-${{ runner.os }}-${{ inputs.go-version }}-
 
       - name: Init go
-        uses: bytemare/actions/init-go@a75f327b6be94dee9e69a2a780d5a6c317f67d31
+        uses: bytemare/actions/init-go@0bc144d4ffb6cf954e2d7f3f4b1c3a44bbbec2fd
         with:
           go-version: ${{ inputs.go-version }}
 
