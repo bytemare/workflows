@@ -11,8 +11,12 @@
 name: Release
 
 on:
-  pull_request:
-  workflow_dispatch:
+  push:
+    tags:
+      - '*.*.*'       # run when a semver tag is pushed
+      - 'v*'          # run when a tag starting with v (e.g. v1.2.3) is pushed
+  workflow_dispatch:  # allow manual runs
+  pull_request:       # allow running in PR for dry-runs
 
 permissions: {}
 
