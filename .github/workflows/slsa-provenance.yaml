@@ -57,9 +57,10 @@ jobs:
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
           disable-sudo: true
-          egress-policy: block
+          egress-policy: audit
           allowed-endpoints: >
             api.github.com:443
+            fulcio.sigstore.dev:443
             github.com:443
             release-assets.githubusercontent.com:443
 
