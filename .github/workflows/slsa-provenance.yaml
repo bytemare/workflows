@@ -80,7 +80,7 @@ jobs:
             go-${{ runner.os }}-${{ inputs.go-version }}-
 
       - name: Init go
-        uses: bytemare/actions/init-go@d2809b090c11f70085f07b534d57ffb65ebe376d
+        uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
         with:
           go-version: ${{ inputs.go-version }}
 
@@ -182,7 +182,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@97d42c1b50f585f357413698aa1b779307aa0d52
+        uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
