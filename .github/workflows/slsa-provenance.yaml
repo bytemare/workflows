@@ -169,14 +169,15 @@ jobs:
 
       - name: Verify cosign signature
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}
-        # Immediate verification ensures integrity before publishing assets.
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
-          # Verify using bundle (single file - convenient)
+          # Verify using bundle (single file) with expected certificate identity
           cosign verify-blob \
             --bundle '${{ steps.sign.outputs.bundle_file }}' \
+            --certificate-identity-regexp '^https://github\.com/${{ github.repository_owner }}/' \
+            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
             '${{ steps.package.outputs.artifact_path }}'
           echo 'Cosign bundle signature verification succeeded.'
 
@@ -200,6 +201,8 @@ jobs:
           set -euo pipefail
           cosign verify-blob \
             --bundle checksums.txt.bundle \
+            --certificate-identity-regexp '^https://github\.com/${{ github.repository_owner }}/' \
+            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
             checksums.txt
           echo 'checksums.txt bundle signature verification succeeded.'
 
