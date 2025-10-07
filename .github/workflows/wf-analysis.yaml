@@ -27,9 +27,9 @@ jobs:
   Lint:
     permissions:
       contents: read
-    uses: ./.github/workflows/golangci-lint.yaml
+    uses: ./.github/workflows/linting.yaml
     with:
-      config-path: ./.github/.golangci.yaml
+      golangci-config-path: ./.github/.golangci.yml
       scope: ./...
 
   CodeQL:

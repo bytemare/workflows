@@ -8,7 +8,7 @@
 # https://spdx.org/licenses/MIT.html
 #
 
-name: golangci-lint
+name: GolangCI Lint
 
 on:
   workflow_call:
@@ -33,6 +33,7 @@ permissions: {}
 
 jobs:
   GolangCI-Lint:
+    name: GolangCI Lint
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
