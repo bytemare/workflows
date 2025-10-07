@@ -24,8 +24,6 @@ on:
         required: true
       codecov:
         required: true
-      semgrep:
-        required: true
 
 permissions: {}
 
@@ -42,15 +40,6 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/dependency-review.yaml
-
-  Semgrep:
-    permissions:
-      contents: read
-      # Needed to upload the results to code-scanning dashboard.
-      security-events: write
-    uses: ./.github/workflows/semgrep.yaml
-    secrets:
-      semgrep: ${{ secrets.semgrep }}
 
   Codecov:
     uses: ./.github/workflows/codecov.yaml

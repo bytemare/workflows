@@ -89,8 +89,7 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 
 **1. Download artifacts**
 ```bash
-gh release download <tag> \
-  -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256'
+gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256'
 ```
 
 **2. Verify the tarball checksum**
@@ -109,7 +108,7 @@ cosign verify-blob \
 
 cosign verify-blob \
   --bundle checksums.txt.bundle \
-  --certificate-identity-regexp '^https://github\.com/<owner>/' \
+  --certificate-identity-regexp '^https://github\.com/bytemare/' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   checksums.txt && echo "✅ Checksums signature verified"
 ```
