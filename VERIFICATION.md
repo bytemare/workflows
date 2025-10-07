@@ -90,24 +90,33 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 **1. Download artifacts**
 ```bash
 gh release download <tag> \
-  -p '*.tar.gz' -p '*.bundle' -p 'checksums.txt' -p 'subjects.sha256'
+  -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256'
 ```
 
-**2. Verify all checksums at once**
-```bash
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
-```
-✅ All files should show `OK`
-
-**3. Verify signatures (using bundles - simplest)**
+**2. Verify the tarball checksum**
 ```bash
 ART=$(ls -1 *.tar.gz | head -1)
-cosign verify-blob --bundle "${ART}.bundle" "${ART}"
-cosign verify-blob --bundle checksums.txt.bundle checksums.txt
+shasum -a 256 "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
 ```
-✅ Should show: `Verified OK`
+
+**3. Verify signatures (replace <owner> with repository owner, e.g., bytemare)**
+```bash
+cosign verify-blob \
+  --bundle "${ART}.bundle" \
+  --certificate-identity-regexp '^https://github\.com/<owner>/' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "${ART}" && echo "✅ Tarball signature verified"
+
+cosign verify-blob \
+  --bundle checksums.txt.bundle \
+  --certificate-identity-regexp '^https://github\.com/<owner>/' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  checksums.txt && echo "✅ Checksums signature verified"
+```
 
 **Done!** Your artifacts are authentic and untampered.
+
+**Note:** This quick verification only checks the tarball. For complete verification of all metadata files, see the Complete Verification section below.
 
 ---
 

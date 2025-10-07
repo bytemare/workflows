@@ -54,30 +54,48 @@ This workflow provides **SLSA Level 3 compliance** with built-in **SLSA Level 4 
 **Option A: Using GitHub CLI (recommended)**
 ```bash
 # Download release artifacts
-gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'checksums.txt'
+gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256'
 
-# Verify checksums
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
-
-# Verify signatures (using bundle - simplest method)
+# Verify the tarball checksum
 ART=$(ls -1 *.tar.gz | head -1)
-cosign verify-blob --bundle "${ART}.bundle" "${ART}"
-cosign verify-blob --bundle checksums.txt.bundle checksums.txt
+shasum -a 256 "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
+
+# Verify signatures (replace <owner> with repository owner, e.g., bytemare)
+cosign verify-blob \
+  --bundle "${ART}.bundle" \
+  --certificate-identity-regexp '^https://github\.com/<owner>/' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "${ART}" && echo "✅ Tarball signature verified"
+
+cosign verify-blob \
+  --bundle checksums.txt.bundle \
+  --certificate-identity-regexp '^https://github\.com/<owner>/' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  checksums.txt && echo "✅ Checksums signature verified"
 ```
 
 **Option B: Manual download (without gh CLI)**
 ```bash
-# Download from browser or using curl
+# Download from browser or using curl (replace owner/repo and version)
 REPO="owner/repo"
 TAG="v1.0.0"
+OWNER="owner"
 curl -LO "https://github.com/${REPO}/releases/download/${TAG}/${REPO##*/}-${TAG}.tar.gz"
 curl -LO "https://github.com/${REPO}/releases/download/${TAG}/${REPO##*/}-${TAG}.tar.gz.bundle"
-curl -LO "https://github.com/${REPO}/releases/download/${TAG}/checksums.txt"
 curl -LO "https://github.com/${REPO}/releases/download/${TAG}/checksums.txt.bundle"
+curl -LO "https://github.com/${REPO}/releases/download/${TAG}/subjects.sha256"
 
-# Then verify as above
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
-cosign verify-blob --bundle "${REPO##*/}-${TAG}.tar.gz.bundle" "${REPO##*/}-${TAG}.tar.gz"
+# Verify tarball checksum
+shasum -a 256 "${REPO##*/}-${TAG}.tar.gz" | diff - <(head -n1 subjects.sha256) && echo "✅ Checksum verified"
+
+# Verify signature
+cosign verify-blob \
+  --bundle "${REPO##*/}-${TAG}.tar.gz.bundle" \
+  --certificate-identity-regexp "^https://github\.com/${OWNER}/" \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "${REPO##*/}-${TAG}.tar.gz" && echo "✅ Signature verified"
 ```
+
+**Note:** Replace `<owner>` with the repository owner. The checksum verification above only verifies the tarball. For complete verification of all metadata files, download them and see [VERIFICATION.md](VERIFICATION.md).
 
 **For complete verification steps, reproducibility testing, and troubleshooting, see [VERIFICATION.md](VERIFICATION.md)**
