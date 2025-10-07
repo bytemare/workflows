@@ -47,15 +47,15 @@ defaults:
 
 jobs:
   package_and_sbom:
-    # Job purpose: build reproducible source artifact + SBOM + signatures + attestations. Runs only on tag events or dry runs.
+    # Purpose: build reproducible source artifact + SBOM + signatures + attestations. Runs only on tag events or dry runs.
     name: Package source + SBOM + Attestations
     if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     permissions:
-      actions: read              # needed for attest-build-provenance
-      contents: write            # create/update release & upload assets
-      id-token: write            # OIDC tokens for signing/attestation
-      attestations: write        # allow SBOM/build attestations
+      actions: read                      # needed for attest-build-provenance
+      contents: write                  # create/update release & upload assets
+      id-token: write                  # OIDC tokens for signing/attestation
+      attestations: write            # allow SBOM/build attestations
       security-events: write     # allow SARIF upload for code scanning
     outputs:
       artifact_path: ${{ steps.package.outputs.artifact_path }}
@@ -64,7 +64,6 @@ jobs:
       artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
     steps:
       - name: Harden Runner
-        # step-security hardens outbound network calls & blocks unexpected egress (supply-chain risk reduction)
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
           disable-sudo: true
@@ -96,7 +95,6 @@ jobs:
             go-${{ runner.os }}-${{ inputs.go-version }}-
 
       - name: Init Go toolchain
-        # Using a dedicated action centralizes tool install/pinning.
         uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
         with:
           go-version: ${{ inputs.go-version }}
@@ -108,8 +106,7 @@ jobs:
         with:
           extended_metadata: ${{ inputs.extended_metadata }}
 
-      - name: Generate CycloneDX SBOM
-        # Captures dependency graph at source time. Subject bound via digest in SBOM attestation.
+      - name: Generate CycloneDX SBOM (for Go modules)
         uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97
         with:
           version: 1
@@ -206,7 +203,6 @@ jobs:
             checksums.txt
           echo 'checksums.txt bundle signature verification succeeded.'
 
-
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
         # Publishes reproducible artifact + metadata. Consumers can verify digest & signatures offline.
@@ -233,6 +229,7 @@ jobs:
             build.env
             scripts/package-source.sh
             verification.json
+
       - name: Upload artifacts (PR dry run)
         if: ${{ inputs.dry_run }}
         # For pull requests: surface artifacts for inspection without publishing a release.
@@ -251,7 +248,7 @@ jobs:
               verification.json
 
   rebuild_verify:
-    # Purpose: independently re-run packaging to assert determinism (SLSA Level 4 readiness signal).
+    # Purpose: independently re-run packaging to assert determinism (SLSA Level 4).
     name: Rebuild & Verify Determinism
     if: ${{ github.ref_type == 'tag' && !inputs.dry_run }}
     needs: package_and_sbom
@@ -288,7 +285,7 @@ jobs:
           echo 'Rebuild determinism verified.'
 
   provenance_slsa:
-    # Purpose: Generate SLSA generic provenance attestation referencing the artifact digest (attack resistance: non-falsifiable OIDC).
+    # Purpose: Generate SLSA generic provenance attestation referencing the artifact digest.
     name: SLSA Build Level 3 Provenance
     if: ${{ !inputs.dry_run && github.ref_type == 'tag' }}
     needs: [package_and_sbom, rebuild_verify]
