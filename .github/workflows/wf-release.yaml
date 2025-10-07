@@ -14,7 +14,7 @@ on:
   push:
     tags:
       - '*.*.*'       # run when a semver tag is pushed
-      - 'v*'          # run when a tag starting with v (e.g. v1.2.3) is pushed
+      - 'v*.*.*'     # run when a semver tag starting with v (e.g. v1.2.3) is pushed
   workflow_dispatch:  # allow manual runs
   pull_request:       # allow running in PR for dry-runs
 
@@ -25,10 +25,13 @@ jobs:
     uses: ./.github/workflows/slsa-provenance.yaml
     with:
       go-version: '1.25'
-      dry_run: false
-      create_release: true
+      dry_run: ${{ github.event_name == 'pull_request' }}
+      create_release: ${{ github.event_name != 'pull_request' }}
+      sign_blobs: true
+      extended_metadata: false
     permissions:
-      contents: write         # create/update release & upload assets
-      id-token: write         # OIDC for attestations/provenance
-      attestations: write     # SBOM + build attestation API
-      actions: read
+      contents: write               # create/update release & upload assets
+      id-token: write               # OIDC for attestations/provenance
+      attestations: write         # SBOM + build attestation API
+      actions: read                 # needed for attest-build-provenance
+      security-events: write  # allow SARIF upload (if needed in future)

@@ -8,21 +8,21 @@
 # https://spdx.org/licenses/MIT.html
 #
 
-name: Test Go
+name: Do Not Submit
 
 on:
   workflow_call:
-    inputs:
-      version:
-        description: 'The Go version to use'
-        required: false
-        type: string
 
 permissions: {}
 
 jobs:
-  Test:
+  do-not-submit:
+    name: Do Not Submit
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
@@ -32,19 +32,12 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             github.com:443
-            go.dev:443
-            golang.org:443
             release-assets.githubusercontent.com:443
 
-      - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: Check out code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 #v2.4.0
         with:
-          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Init go
-        uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
-        with:
-          go-version: ${{ inputs.version }}
-
-      - name: Run Tests
-        run: go test -v -vet=all ./...
+      - name: Do Not Submit
+        uses: chainguard-dev/actions/donotsubmit@580a87aaa9cfb0a4d2d3f38f9a679d436f5ec147 # v1.5.2

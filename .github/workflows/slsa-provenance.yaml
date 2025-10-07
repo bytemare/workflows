@@ -25,6 +25,15 @@ on:
         type: boolean
         required: false
         default: false
+      sign_blobs:
+        type: boolean
+        required: false
+        default: true
+      extended_metadata:
+        description: 'Generate extended metadata (full per-file manifest + full commit metadata)'
+        type: boolean
+        required: false
+        default: false
 
 permissions: {}
 
@@ -38,22 +47,24 @@ defaults:
 
 jobs:
   package_and_sbom:
+    # Job purpose: build reproducible source artifact + SBOM + signatures + attestations. Runs only on tag events or dry runs.
     name: Package source + SBOM + Attestations
-    if: ${{ inputs.dry_run || github.ref_type == 'tag' }}   # gate: only tags
+    if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: write        # to create/upload the Release assets
-      id-token: write        # for OIDC (attestations)
-      attestations: write    # SBOM + build attestations
+      actions: read              # needed for attest-build-provenance
+      contents: write            # create/update release & upload assets
+      id-token: write            # OIDC tokens for signing/attestation
+      attestations: write        # allow SBOM/build attestations
+      security-events: write     # allow SARIF upload for code scanning
     outputs:
-      # Full path to produced tar.gz
       artifact_path: ${{ steps.package.outputs.artifact_path }}
-      # File name only (stable for attaching to releases / signatures)
       artifact_filename: ${{ steps.package.outputs.artifact_filename }}
       subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
+      artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
     steps:
       - name: Harden Runner
+        # step-security hardens outbound network calls & blocks unexpected egress (supply-chain risk reduction)
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
           disable-sudo: true
@@ -61,15 +72,20 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             fulcio.sigstore.dev:443
+            rekor.sigstore.dev:443
+            tuf-repo-cdn.sigstore.dev:443
+            ctfe.sigstore.dev:443
             github.com:443
             release-assets.githubusercontent.com:443
 
       - name: Checkout repo
+        # Full history not needed for archive determinism, but tags/commit validation require fetch-depth 0.
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
 
       - name: Cache Go modules
+        # Speeds up SBOM generation if dependencies are resolved. Not critical for reproducibility.
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
@@ -79,57 +95,21 @@ jobs:
           restore-keys: |
             go-${{ runner.os }}-${{ inputs.go-version }}-
 
-      - name: Init go
+      - name: Init Go toolchain
+        # Using a dedicated action centralizes tool install/pinning.
         uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
         with:
           go-version: ${{ inputs.go-version }}
 
       - id: package
-        name: Package (deterministic) + hash + base64 + verify
-        run: |
-          set -euo pipefail
-          # Infer mode from ref type.
-          export LC_ALL=C LANG=C TZ=UTC
-          umask 022
-          IFS=$'\n\t'
-
-          fail() { echo "ERROR: $*" >&2; exit 1; }
-          sanitize_ident() { local in="$1" out; out="${in//[^A-Za-z0-9._-]/_}"; [ -n "$out" ] || fail "Identifier empty after sanitize ($in)"; printf '%s\n' "$out"; }
-
-          : "${GITHUB_SHA:?missing}" : "${GITHUB_REPOSITORY:?missing}" : "${GITHUB_REF_NAME:?missing}" : "${GITHUB_RUN_NUMBER:?missing}"
-          git rev-parse --verify -q "${GITHUB_SHA}^{commit}" >/dev/null || fail "Invalid commit $GITHUB_SHA"
-
-          REPO_RAW="${GITHUB_REPOSITORY#*/}"; REPO_SAFE="$(sanitize_ident "$REPO_RAW")" || exit 1
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            TAG_RAW="${GITHUB_REF_NAME}"
-          else
-            # Synthetic dry-run tagish label
-            TAG_RAW="${GITHUB_REF_NAME}-dryrun-${GITHUB_RUN_NUMBER}"
-          fi
-          TAG_SAFE="$(sanitize_ident "${TAG_RAW//\//_}")" || exit 1
-
-          OUTDIR=dist; install -d -- "$OUTDIR"
-          BASENAME="${REPO_SAFE}-${TAG_SAFE}"; TAR_PATH="${OUTDIR}/${BASENAME}.tar"; ARCHIVE_PATH="${TAR_PATH}.gz"
-          cleanup() { rm -f -- "$TAR_PATH"; }; trap cleanup EXIT
-
-          git archive --format=tar --prefix="${BASENAME}/" -o "$TAR_PATH" "$GITHUB_SHA"
-          gzip -n -9 -c "$TAR_PATH" > "$ARCHIVE_PATH"
-          rm -f -- "$TAR_PATH"
-          [ -s "$ARCHIVE_PATH" ] || fail "Archive empty: $ARCHIVE_PATH"
-
-          shasum -a 256 "$ARCHIVE_PATH" > subjects.sha256
-          cut -d ' ' -f1 subjects.sha256 | awk -v f="$(basename "$ARCHIVE_PATH")" '{print $1"  "f}' > subjects.sha256.txt
-          base64 -w0 subjects.sha256 > subjects.sha256.b64
-
-          mkdir -p _extract
-          tar -xzf "$ARCHIVE_PATH" -C _extract || fail "Tar extraction failed"
-          test -f _extract/*/go.mod || fail "go.mod not found in archive"
-
-          printf 'artifact_path=%s\n' "$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
-          printf 'artifact_filename=%s\n' "$(basename "$ARCHIVE_PATH")" >> "$GITHUB_OUTPUT"
-          printf 'subjects_b64=%s\n' "$(cat subjects.sha256.b64)" >> "$GITHUB_OUTPUT"
+        name: Package reproducible source (composite action)
+        # Encapsulated packaging logic: deterministic tar.gz + metadata + optional extended manifest set.
+        uses: ./.github/actions/package
+        with:
+          extended_metadata: ${{ inputs.extended_metadata }}
 
       - name: Generate CycloneDX SBOM
+        # Captures dependency graph at source time. Subject bound via digest in SBOM attestation.
         uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97
         with:
           version: 1
@@ -137,6 +117,7 @@ jobs:
 
       - name: Attest SBOM (bind SBOM to tarball digest)
         if: ${{ !inputs.dry_run }}
+        # Produces an SBOM attestation referencing the digest in subjects.sha256 (integrity + authenticity).
         uses: actions/attest-sbom@4e404e709737cbaa2830f5ffb93a62340d5241a7
         with:
           subject-checksums: subjects.sha256
@@ -144,73 +125,173 @@ jobs:
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
+        # Native provenance attestation attaches build recipe metadata (OIDC-signed) to the artifact.
         uses: actions/attest-build-provenance@3752c92e3bd95a40782ebef53ea5f91088c20e48
         with:
           subject-path: ${{ steps.package.outputs.artifact_path }}
 
-      - name: Install cosign
-        if: ${{ !inputs.dry_run }}
+      - name: Install cosign (keyless)
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        # Cosign used for direct blob signing of the tarball (signature + cert) — public transparency logs via Fulcio/Rekor.
         uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62
 
       - id: sign
-        if: ${{ !inputs.dry_run }}
-        name: Keyless sign artifact (cosign)
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        name: Cosign sign source artifact
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
           ART_PATH='${{ steps.package.outputs.artifact_path }}'
-          SIG_PATH="${ART_PATH}.sig"; CERT_PATH="${ART_PATH}.cert"
+          SIG_PATH="${ART_PATH}.sig"
+          CERT_PATH="${ART_PATH}.cert"
+          BUNDLE_PATH="${ART_PATH}.bundle"
+          
+          # Sign with both individual files AND bundle
           cosign sign-blob --yes \
             --output-signature "${SIG_PATH}" \
             --output-certificate "${CERT_PATH}" \
+            --bundle "${BUNDLE_PATH}" \
             "${ART_PATH}"
+          
           echo "signature_file=${SIG_PATH}" >> "$GITHUB_OUTPUT"
           echo "certificate_file=${CERT_PATH}" >> "$GITHUB_OUTPUT"
+          echo "bundle_file=${BUNDLE_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Cosign sign SBOM
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          set -euo pipefail
+          cosign sign-blob --yes \
+            --output-signature sbom.cdx.json.sig \
+            --output-certificate sbom.cdx.json.cert \
+            --bundle sbom.cdx.json.bundle \
+            sbom.cdx.json
 
       - name: Verify cosign signature
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        # Immediate verification ensures integrity before publishing assets.
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          set -euo pipefail
+          # Verify using bundle (single file - convenient)
+          cosign verify-blob \
+            --bundle '${{ steps.sign.outputs.bundle_file }}' \
+            '${{ steps.package.outputs.artifact_path }}'
+          echo 'Cosign bundle signature verification succeeded.'
+
+      - name: Cosign sign checksums manifest
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          set -euo pipefail
+          cosign sign-blob --yes \
+            --output-signature checksums.txt.sig \
+            --output-certificate checksums.txt.cert \
+            --bundle checksums.txt.bundle \
+            checksums.txt
+
+      - name: Verify checksums signature
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
           cosign verify-blob \
-            --certificate '${{ steps.sign.outputs.certificate_file }}' \
-            --signature   '${{ steps.sign.outputs.signature_file }}' \
-            '${{ steps.package.outputs.artifact_path }}'
-          echo 'Signature verification succeeded.'
+            --bundle checksums.txt.bundle \
+            checksums.txt
+          echo 'checksums.txt bundle signature verification succeeded.'
+
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
+        # Publishes reproducible artifact + metadata. Consumers can verify digest & signatures offline.
         uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             ${{ steps.package.outputs.artifact_path }}
-            sbom.cdx.json
-            subjects.sha256
-            subjects.sha256.txt
-            subjects.sha256.b64
             ${{ steps.sign.outputs.signature_file }}
             ${{ steps.sign.outputs.certificate_file }}
-
+            ${{ steps.sign.outputs.bundle_file }}
+            sbom.cdx.json
+            sbom.cdx.json.sig
+            sbom.cdx.json.cert
+            sbom.cdx.json.bundle
+            checksums.txt
+            checksums.txt.sig
+            checksums.txt.cert
+            checksums.txt.bundle
+            subjects.sha256
+            manifest.files.sha256
+            commit.metadata
+            build.env
+            scripts/package-source.sh
+            verification.json
       - name: Upload artifacts (PR dry run)
         if: ${{ inputs.dry_run }}
+        # For pull requests: surface artifacts for inspection without publishing a release.
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
-          name: dryrun-${{ steps.package.outputs.artifact_filename }}
-          path: |
-            ${{ steps.package.outputs.artifact_path }}
-            sbom.cdx.json
-            subjects.sha256
-            subjects.sha256.txt
-            subjects.sha256.b64
+            name: dryrun-${{ steps.package.outputs.artifact_filename }}
+            path: |
+              ${{ steps.package.outputs.artifact_path }}
+              sbom.cdx.json
+              subjects.sha256
+              checksums.txt
+              manifest.files.sha256
+              commit.metadata
+              build.env
+              scripts/package-source.sh
+              verification.json
+
+  rebuild_verify:
+    # Purpose: independently re-run packaging to assert determinism (SLSA Level 4 readiness signal).
+    name: Rebuild & Verify Determinism
+    if: ${{ github.ref_type == 'tag' && !inputs.dry_run }}
+    needs: package_and_sbom
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo (fresh workspace)
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0
+      - id: repackage
+        name: Re-run deterministic packaging (composite)
+        uses: ./.github/actions/package
+        env:
+          # Explicitly set required naming vars to mirror original job context.
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REF_TYPE: tag
+          GITHUB_RUN_NUMBER: 0
+      - name: Compare digests
+        # Fails fast if non-deterministic differences emerge.
+        run: |
+          set -euo pipefail
+          orig='${{ needs.package_and_sbom.outputs.artifact_sha256 }}'
+          new='${{ steps.repackage.outputs.artifact_sha256 }}'
+          echo "Original digest: $orig"
+          echo "Rebuilt  digest: $new"
+          if [ "$orig" != "$new" ]; then
+            echo 'Digest mismatch! Rebuild not deterministic.' >&2
+            exit 1
+          fi
+          echo 'Rebuild determinism verified.'
 
   provenance_slsa:
+    # Purpose: Generate SLSA generic provenance attestation referencing the artifact digest (attack resistance: non-falsifiable OIDC).
     name: SLSA Build Level 3 Provenance
     if: ${{ !inputs.dry_run && github.ref_type == 'tag' }}
-    needs: package_and_sbom
+    needs: [package_and_sbom, rebuild_verify]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.package_and_sbom.outputs.subjects_b64 }}

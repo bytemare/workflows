@@ -1,0 +1,33 @@
+name: 'Package Reproducible Source'
+description: 'Creates deterministic source tarball with SLSA provenance metadata'
+
+inputs:
+  extended_metadata:
+    description: 'Generate extended metadata (git tree + Go env)'
+    required: false
+    default: 'false'
+
+outputs:
+  artifact_path:
+    description: 'Full path to the generated tarball'
+    value: ${{ steps.package.outputs.artifact_path }}
+  artifact_filename:
+    description: 'Filename of the generated tarball'
+    value: ${{ steps.package.outputs.artifact_filename }}
+  artifact_sha256:
+    description: 'SHA-256 digest of the tarball'
+    value: ${{ steps.package.outputs.artifact_sha256 }}
+  subjects_b64:
+    description: 'Base64-encoded subjects.sha256 (for SLSA generator)'
+    value: ${{ steps.package.outputs.subjects_b64 }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: package
+      shell: bash
+      env:
+        EXTENDED_METADATA: ${{ inputs.extended_metadata }}
+      run: |
+        set -euo pipefail
+        bash scripts/package-source.sh
