@@ -11,6 +11,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
+  - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
 - [Quality Workflows](#quality-workflows)
   - [Do not submit](#do-not-submit)
@@ -19,7 +20,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [Codecov](#codecov)
 - [Build & Release Workflows](#build--release-workflows)
   - [Tests](#tests)
-  - [Release (SLSA Level 3+)](#release-slsa-level-3)
+  - [SLSA Level 3 / SLSA Level 4](#release-slsa-level-3-and-slsa-level-4-reproducible-builds)
 
 ---
 
@@ -86,6 +87,28 @@ jobs:
     uses: bytemare/workflows/.github/workflows/dependency-review.yaml@[pinned commit SHA]
     permissions:
       contents: read
+```
+
+---
+
+### [Semgrep](https://semgrep.dev/docs/semgrep-ci/sample-ci-configs#sample-github-actions-configuration-file)
+
+Static code analysis tool that finds bugs, detects vulnerabilities, and enforces code standards using customizable rules.
+
+**Note:** Requires Semgrep setup and `SEMGREP_APP_TOKEN` repository secret.
+
+**Configuration:**
+
+```yaml
+jobs:
+  Semgrep:
+  permissions:
+    contents: read
+    # Needed to upload the results to code-scanning dashboard.
+    security-events: write
+  uses: bytemare/workflows/.github/workflows/semgrep.yaml@[pinned commit SHA]
+  secrets:
+    semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
 ```
 
 ---
