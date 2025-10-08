@@ -154,7 +154,7 @@ jobs:
 
 ### [Do not submit](https://github.com/chainguard-dev/actions/tree/main/donotsubmit)
 
-Reminds you to not submit source that has the string "DO NOT SUBMIT" in it.
+Reminds you to not submit source that has the string "do not submit" (but in all uppercase letters) in it.
 
 **Configuration:**
 
@@ -233,7 +233,7 @@ jobs:
 
 ---
 
-### Release (SLSA Level 3+)
+### Release (SLSA Level 3 and SLSA Level 4 reproducible builds)
 
 Build and publish signed, reproducible release artifacts with SLSA Level 3 provenance and SLSA Level 4 readiness.
 
@@ -275,21 +275,20 @@ jobs:
       security-events: write   # Upload SARIF (optional)
 ```
 
-Quick verification:
+Quick verification using the helper script:
 ```bash
-# Download and verify (replace <owner> with repository owner, e.g., bytemare)
-gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256'
+# Download the verification script
+curl -sSL https://raw.githubusercontent.com/bytemare/workflows/main/verify-release.sh -o verify-release.sh
+chmod +x verify-release.sh
 
-# Verify checksum
-ART=$(ls -1 *.tar.gz | head -1)
-shasum -a 256 "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
+# Run quick verification (checksums + signatures)
+./verify-release.sh --repo <owner>/<repo> --tag <tag>
 
-# Verify signature
-cosign verify-blob \
-  --bundle "${ART}.bundle" \
-  --certificate-identity-regexp '^https://github\.com/<owner>/' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  "${ART}"
+# Run full verification (all artifacts)
+./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode full
+
+# Run containerized reproducibility check
+./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode reproduce
 ```
 
 See [VERIFICATION.md](VERIFICATION.md) for complete documentation and verification instructions.
