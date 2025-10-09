@@ -100,11 +100,41 @@ jobs:
           go-version: ${{ inputs.go-version }}
 
       - id: package
-        name: Package reproducible source (composite action)
-        # Encapsulated packaging logic: deterministic tar.gz + metadata + optional extended manifest set.
-        uses: ./.github/actions/package
+        name: Package reproducible source (hermetic)
+        uses: docker://ubuntu:22.04
         with:
-          extended_metadata: ${{ inputs.extended_metadata }}
+          entrypoint: /usr/bin/env
+          args: >
+            bash -c "
+              set -euo pipefail
+              echo '--- Installing Dependencies (inside container) ---'
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq >/dev/null
+              apt-get install -y -qq git ca-certificates gzip wget coreutils >/dev/null
+              
+              echo '--- Installing Go ---'
+              wget -q -O go.tar.gz https://go.dev/dl/go${{ inputs.go-version }}.linux-amd64.tar.gz
+              tar -C /usr/local -xzf go.tar.gz
+              export PATH=/usr/local/go/bin:$PATH
+
+              echo '--- Packaging Source ---'
+              cd $GITHUB_WORKSPACE
+              export EXTENDED_METADATA=${{ inputs.extended_metadata }}
+              # Source OS info for runner identification
+              if [ -f /etc/os-release ]; then source /etc/os-release; fi
+              bash scripts/package-source.sh
+              
+              echo '--- Collecting Outputs ---'
+              artifact_path=$(grep '^artifact_path=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
+              artifact_filename=$(grep '^artifact_filename=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
+              artifact_sha256=$(grep '^artifact_sha256=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
+              subjects_b64=$(grep '^subjects_b64=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
+
+              echo \"artifact_path=$artifact_path\" >> $GITHUB_OUTPUT
+              echo \"artifact_filename=$artifact_filename\" >> $GITHUB_OUTPUT
+              echo \"artifact_sha256=$artifact_sha256\" >> $GITHUB_OUTPUT
+              echo \"subjects_b64=$subjects_b64\" >> $GITHUB_OUTPUT
+            "
 
       - name: Generate CycloneDX SBOM (for Go modules)
         uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97

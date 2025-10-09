@@ -27,6 +27,15 @@ on:
 permissions: {}
 
 jobs:
+  GoFMT:
+    name: Check formatting
+    run: |
+      if [[ -n "$(gofmt -l .)" ]]; then
+        echo "The following files are not formatted correctly:"
+        gofmt -l .
+        exit 1
+      fi
+
   DoNotSubmit:
     name: Do Not Submit
     permissions:

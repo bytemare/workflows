@@ -82,7 +82,7 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 
 ### Automated Verification (Recommended)
 
-The easiest way to verify a release is using the automated verification helper script:
+The easiest way to verify a release is using the automated verification script:
 
 ```bash
 # Download the script
@@ -423,7 +423,8 @@ printf '%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
 
 The build process ensures reproducibility via:
 
-1. ✅ **Clean tree enforcement** - Aborts if uncommitted changes exist
+1. ✅ **Hermetic builds** - The entire packaging process runs in a container with explicit dependencies.
+2. ✅ **Clean tree enforcement** - Aborts if uncommitted changes exist
 2. ✅ **Stable naming** - Sanitized repo/ref names in archive prefix
 3. ✅ **Archive determinism** - `git archive` + `gzip -n` (zero mtime)
 4. ✅ **Locale normalization** - `LC_ALL=C`, `TZ=UTC`, `umask 022`

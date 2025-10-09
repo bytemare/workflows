@@ -30,6 +30,12 @@ on:
 permissions: {}
 
 jobs:
+  LicenseCheck:
+    name: License Check
+    permissions:
+      contents: read
+    uses: ./.github/workflows/license-check.yaml
+
   Govulncheck:
     permissions:
       contents: read

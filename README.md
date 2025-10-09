@@ -13,6 +13,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [Dependency Review](#dependency-review)
   - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
+  - [License Check](#license-check)
 - [Quality Workflows](#quality-workflows)
   - [Do not submit](#do-not-submit)
   - [GolangCI Lint](#golangci-lint)
@@ -151,6 +152,22 @@ jobs:
 
 ---
 
+### [License Check](https://github.com/google/golicense)
+
+Scans Go dependencies for compliance with an allowed license policy.
+
+**Configuration:**
+
+```yaml
+jobs:
+  license-check:
+    uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+```
+
+---
+
 ## Quality Workflows
 
 ### [GolangCI Lint](https://github.com/golangci/golangci-lint-action)
@@ -256,12 +273,11 @@ jobs:
 
 ---
 
-### Release (SLSA Level 3 and SLSA Level 4 reproducible builds)
+### Release (SLSA Level 4)
 
-Build and publish signed, reproducible release artifacts with SLSA Level 3 provenance and SLSA Level 4 readiness.
+Build and publish signed, reproducible release artifacts with SLSA Level 4 provenance.
 
-- 🔒 **SLSA Level 3 Compliance** - Non-falsifiable provenance with cryptographic attestations
-- 🔄 **SLSA Level 4 Readiness** - Reproducible builds with dual verification checks (internal + CI rebuild)
+- 🔒 **SLSA Level 4 Compliance** - Hermetic, reproducible builds with non-falsifiable provenance.
 - 📦 **SBOM** - CycloneDX Software Bill of Materials
 - ✍️ **Keyless Signing** - Cosign signatures with Rekor transparency logs
 - 🗂️ **Complete Metadata** - Commit metadata, environment snapshots, verification reports
