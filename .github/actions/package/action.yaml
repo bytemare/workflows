@@ -34,4 +34,5 @@ runs:
         EXTENDED_METADATA: ${{ inputs.extended_metadata }}
       run: |
         set -euo pipefail
+        chmod +x scripts/package-source.sh
         bash scripts/package-source.sh

@@ -31,13 +31,10 @@ jobs:
         uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
 
       - name: Install golicense
-        run: go install github.com/google/go-licenses@3e084b0caf710f7bfead967567539214f598c0a2
+        run: go install github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
 
       - name: Run golicense
         run: |
-          golicense -v \
-            -allowed="MIT" \
-            -allowed="Apache-2.0" \
-            -allowed="BSD-2-Clause" \
-            -allowed="BSD-3-Clause" \
+          go-licenses check \
+            --allowed_licenses="MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause" \
             ./...
