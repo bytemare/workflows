@@ -4,8 +4,11 @@
 #
 # Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
 #
-# Release Verification Script
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
 #
+
 # This script automates the verification of SLSA Level 3 compliant releases,
 # including checksum verification, signature verification, and a full, containerized
 # reproducibility check.
@@ -30,7 +33,6 @@ set -euo pipefail
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
 readonly YELLOW='\033[1;33m'
-readonly CYAN='\033[0;36m'
 readonly NC='\033[0m'
 
 # Exit codes
