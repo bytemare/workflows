@@ -130,8 +130,8 @@ gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256' -p 'c
 
 **2. Verify the tarball checksum**
 ```bash
-ART=$(ls -1 *.tar.gz | head -1)
-shasum -a 256 "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
+ART=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
+shasum -a 256 -- "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
 ```
 
 **3. Verify signatures**
@@ -157,7 +157,7 @@ cosign verify-blob \
 
 **Done!** Your artifacts are authentic and untampered.
 
-**Note:** This quick verification only checks the tarball. For complete verification of all metadata files, see the Complete Verification section below or use the automated script with `--mode complete`.
+**Note:** This quick verification only checks the tarball. For complete verification of all metadata files, see the Complete Verification section below or use the automated script with `--mode full`.
 
 ---
 
@@ -175,15 +175,15 @@ wc -l subjects.sha256  # Should output: 2
 ### 2. Verify Primary Archive Digest
 
 ```bash
-ART=$(ls -1 *.tar.gz | head -1)
-sha256sum "${ART}" | diff -u - <(head -n1 subjects.sha256) \
+ART=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
+sha256sum -- "${ART}" | diff -u - <(head -n1 subjects.sha256) \
   || echo "❌ Archive digest mismatch" >&2
 ```
 
 ### 3. Verify Checksums Manifest Digest
 
 ```bash
-sha256sum checksums.txt | diff -u - <(tail -n1 subjects.sha256) \
+sha256sum -- checksums.txt | diff -u - <(tail -n1 subjects.sha256) \
   || echo "❌ checksums.txt digest mismatch" >&2
 ```
 
@@ -196,7 +196,7 @@ gh release download <tag> -p 'manifest.files.sha256'
 
 Then verify each file in the tarball:
 ```bash
-ART=$(ls -1 *.tar.gz | head -1)
+ART=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
 BASENAME="${ART%.tar.gz}"
 
 # Save the current directory where manifest.files.sha256 is located
@@ -206,7 +206,7 @@ mkdir -p /tmp/verify && tar -xzf "${ART}" -C /tmp/verify
 cd /tmp/verify/${BASENAME}
 
 while read -r hash file; do
-  computed=$(sha256sum "$file" | awk '{print $1}')
+  computed=$(sha256sum -- "$file" | awk '{print $1}')
   [ "$hash" = "$computed" ] || { echo "❌ Mismatch: $file"; exit 1; }
 done < "${MANIFEST_DIR}/manifest.files.sha256"
 
@@ -251,7 +251,7 @@ When using Sigstore bundles (`.bundle`), the certificate is securely packaged al
 
 Download the tarball if not already present, then verify:
 ```bash
-ART=$(ls -1 *.tar.gz | head -1)
+ART=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
 OWNER="bytemare"  # Replace with actual repository owner
 REPO="workflows"  # Replace with actual repository name
 
@@ -268,7 +268,7 @@ Download the provenance file, which is a Sigstore bundle in JSON format.
 
 ```bash
 gh release download <tag> -p '*.intoto.jsonl'
-PROV=$(ls -1 *.intoto.jsonl 2>/dev/null | head -1)
+PROV=$(find . -maxdepth 1 -name "*.intoto.jsonl" -type f -print -quit 2>/dev/null)
 ```
 
 **A) Quick Check (Digest)**

@@ -75,7 +75,7 @@ if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
 else
   TAG_SAFE="$(sanitize "${GITHUB_REF_NAME//\//_}")-dryrun-${GITHUB_RUN_NUMBER}"
 fi
-BASENAME="${REPO_SAFE}-${TAG_SAFE}"
+BASENAME=$(echo "${REPO_SAFE}-${TAG_SAFE}" | tr -dc '[:print:]')
 OUTDIR=dist
 mkdir -p "$OUTDIR"
 ARCHIVE_PATH="${OUTDIR}/${BASENAME}.tar.gz"
