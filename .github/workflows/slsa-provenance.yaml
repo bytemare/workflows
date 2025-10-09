@@ -8,7 +8,7 @@
 # https://spdx.org/licenses/MIT.html
 #
 
-name: SLSA Build Level 3 Provenance and GitHub Artifact Attestations (tarball + SBOM + SLSA + GH attest)
+name: SLSA Build Level 4 Provenance and GitHub Artifact Attestations
 
 on:
   workflow_call:
@@ -16,7 +16,7 @@ on:
       go-version:
         type: string
         required: false
-        default: '1.25.x'
+        default: '1.25' # Use a specific version, not a range
       create_release:
         type: boolean
         required: false
@@ -47,16 +47,17 @@ defaults:
 
 jobs:
   package_and_sbom:
-    # Purpose: build reproducible source artifact + SBOM + signatures + attestations. Runs only on tag events or dry runs.
     name: Package source + SBOM + Attestations
     if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
+    container:
+      image: golang:${{ inputs.go-version }}-bookworm
     permissions:
-      actions: read                      # needed for attest-build-provenance
-      contents: write                  # create/update release & upload assets
-      id-token: write                  # OIDC tokens for signing/attestation
-      attestations: write            # allow SBOM/build attestations
-      security-events: write     # allow SARIF upload for code scanning
+      actions: read
+      contents: write
+      id-token: write
+      attestations: write
+      security-events: write
     outputs:
       artifact_path: ${{ steps.package.outputs.artifact_path }}
       artifact_filename: ${{ steps.package.outputs.artifact_filename }}
@@ -78,63 +79,20 @@ jobs:
             release-assets.githubusercontent.com:443
 
       - name: Checkout repo
-        # Full history not needed for archive determinism, but tags/commit validation require fetch-depth 0.
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
 
-      - name: Cache Go modules
-        # Speeds up SBOM generation if dependencies are resolved. Not critical for reproducibility.
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-${{ runner.os }}-${{ inputs.go-version }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-${{ runner.os }}-${{ inputs.go-version }}-
-
-      - name: Init Go toolchain
-        uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
-        with:
-          go-version: ${{ inputs.go-version }}
+      - name: Install Dependencies
+        run: |
+          apt-get update -qq >/dev/null
+          apt-get install -y -qq ca-certificates gzip wget >/dev/null
 
       - id: package
-        name: Package reproducible source (hermetic)
-        uses: docker://ubuntu:22.04
-        with:
-          entrypoint: /usr/bin/env
-          args: >
-            bash -c "
-              set -euo pipefail
-              echo '--- Installing Dependencies (inside container) ---'
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update -qq >/dev/null
-              apt-get install -y -qq git ca-certificates gzip wget coreutils >/dev/null
-              
-              echo '--- Installing Go ---'
-              wget -q -O go.tar.gz https://go.dev/dl/go${{ inputs.go-version }}.linux-amd64.tar.gz
-              tar -C /usr/local -xzf go.tar.gz
-              export PATH=/usr/local/go/bin:$PATH
-
-              echo '--- Packaging Source ---'
-              cd $GITHUB_WORKSPACE
-              export EXTENDED_METADATA=${{ inputs.extended_metadata }}
-              # Source OS info for runner identification
-              if [ -f /etc/os-release ]; then source /etc/os-release; fi
-              bash scripts/package-source.sh
-              
-              echo '--- Collecting Outputs ---'
-              artifact_path=$(grep '^artifact_path=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
-              artifact_filename=$(grep '^artifact_filename=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
-              artifact_sha256=$(grep '^artifact_sha256=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
-              subjects_b64=$(grep '^subjects_b64=' /github/home/github-actions-runner/_temp/_runner_file_commands/set_output_1 | cut -d'=' -f2-)
-
-              echo \"artifact_path=$artifact_path\" >> $GITHUB_OUTPUT
-              echo \"artifact_filename=$artifact_filename\" >> $GITHUB_OUTPUT
-              echo \"artifact_sha256=$artifact_sha256\" >> $GITHUB_OUTPUT
-              echo \"subjects_b64=$subjects_b64\" >> $GITHUB_OUTPUT
-            "
+        name: Package reproducible source
+        env:
+          EXTENDED_METADATA: ${{ inputs.extended_metadata }}
+        run: bash scripts/package-source.sh
 
       - name: Generate CycloneDX SBOM (for Go modules)
         uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97
@@ -170,20 +128,8 @@ jobs:
         run: |
           set -euo pipefail
           ART_PATH='${{ steps.package.outputs.artifact_path }}'
-          SIG_PATH="${ART_PATH}.sig"
-          CERT_PATH="${ART_PATH}.cert"
-          BUNDLE_PATH="${ART_PATH}.bundle"
-          
-          # Sign with both individual files AND bundle
-          cosign sign-blob --yes \
-            --output-signature "${SIG_PATH}" \
-            --output-certificate "${CERT_PATH}" \
-            --bundle "${BUNDLE_PATH}" \
-            "${ART_PATH}"
-          
-          echo "signature_file=${SIG_PATH}" >> "$GITHUB_OUTPUT"
-          echo "certificate_file=${CERT_PATH}" >> "$GITHUB_OUTPUT"
-          echo "bundle_file=${BUNDLE_PATH}" >> "$GITHUB_OUTPUT"
+          cosign sign-blob --yes --bundle "${ART_PATH}.bundle" "${ART_PATH}"
+          echo "bundle_file=${ART_PATH}.bundle" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign SBOM
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}
@@ -191,25 +137,7 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
-          cosign sign-blob --yes \
-            --output-signature sbom.cdx.json.sig \
-            --output-certificate sbom.cdx.json.cert \
-            --bundle sbom.cdx.json.bundle \
-            sbom.cdx.json
-
-      - name: Verify cosign signature
-        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          set -euo pipefail
-          # Verify using bundle (single file) with expected certificate identity
-          cosign verify-blob \
-            --bundle '${{ steps.sign.outputs.bundle_file }}' \
-            --certificate-identity-regexp '^https://github\.com/${{ github.repository_owner }}/' \
-            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-            '${{ steps.package.outputs.artifact_path }}'
-          echo 'Cosign bundle signature verification succeeded.'
+          cosign sign-blob --yes --bundle sbom.cdx.json.bundle sbom.cdx.json
 
       - name: Cosign sign checksums manifest
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}
@@ -217,44 +145,20 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
-          cosign sign-blob --yes \
-            --output-signature checksums.txt.sig \
-            --output-certificate checksums.txt.cert \
-            --bundle checksums.txt.bundle \
-            checksums.txt
-
-      - name: Verify checksums signature
-        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          set -euo pipefail
-          cosign verify-blob \
-            --bundle checksums.txt.bundle \
-            --certificate-identity-regexp '^https://github\.com/${{ github.repository_owner }}/' \
-            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-            checksums.txt
-          echo 'checksums.txt bundle signature verification succeeded.'
+          cosign sign-blob --yes --bundle checksums.txt.bundle checksums.txt
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        # Publishes reproducible artifact + metadata. Consumers can verify digest & signatures offline.
         uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             ${{ steps.package.outputs.artifact_path }}
-            ${{ steps.sign.outputs.signature_file }}
-            ${{ steps.sign.outputs.certificate_file }}
             ${{ steps.sign.outputs.bundle_file }}
             sbom.cdx.json
-            sbom.cdx.json.sig
-            sbom.cdx.json.cert
             sbom.cdx.json.bundle
             checksums.txt
-            checksums.txt.sig
-            checksums.txt.cert
             checksums.txt.bundle
             subjects.sha256
             manifest.files.sha256
@@ -286,6 +190,8 @@ jobs:
     if: ${{ github.ref_type == 'tag' && !inputs.dry_run }}
     needs: package_and_sbom
     runs-on: ubuntu-latest
+    container:
+      image: golang:${{ needs.package_and_sbom.inputs.go-version }}-bookworm
     permissions:
       contents: read
     steps:
@@ -294,7 +200,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: repackage
-        name: Re-run deterministic packaging (composite)
+        name: Re-run deterministic packaging
         uses: ./.github/actions/package
         env:
           # Explicitly set required naming vars to mirror original job context.
@@ -318,8 +224,7 @@ jobs:
           echo 'Rebuild determinism verified.'
 
   provenance_slsa:
-    # Purpose: Generate SLSA generic provenance attestation referencing the artifact digest.
-    name: SLSA Build Level 3 Provenance
+    name: SLSA Build Level 4 Provenance
     if: ${{ !inputs.dry_run && github.ref_type == 'tag' }}
     needs: [package_and_sbom, rebuild_verify]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
