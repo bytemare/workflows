@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: MIT
 #
 # Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
 
 # Deterministic source packaging script.
 # Required env (set automatically by GitHub Actions, or manually for local reproduction):
@@ -70,7 +75,7 @@ if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
 else
   TAG_SAFE="$(sanitize "${GITHUB_REF_NAME//\//_}")-dryrun-${GITHUB_RUN_NUMBER}"
 fi
-BASENAME="${REPO_SAFE}-${TAG_SAFE}"
+BASENAME=$(echo "${REPO_SAFE}-${TAG_SAFE}" | tr -dc '[:print:]')
 OUTDIR=dist
 mkdir -p "$OUTDIR"
 ARCHIVE_PATH="${OUTDIR}/${BASENAME}.tar.gz"
@@ -82,8 +87,10 @@ echo '::group::Create deterministic archive'
 log "Creating deterministic archive: $ARCHIVE_PATH"
 git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
 [ -s "$ARCHIVE_PATH" ] || fail "Archive empty"
-# Structural guard.
-tar -tzf "$ARCHIVE_PATH" | grep -qE "^${BASENAME}/go\.mod$" || fail "go.mod not found in archive"
+# Structural guard (list just the target path to avoid broken-pipe edge cases).
+if ! tar -tzf "$ARCHIVE_PATH" "${BASENAME}/go.mod" >/dev/null 2>&1; then
+  fail "go.mod not found in archive"
+fi
 # Primary digest plus subjects (initially only archive, more subjects may be appended later).
 artifact_sha256="$(sha256_of "$ARCHIVE_PATH")"
 printf '%s  %s\n' "$artifact_sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256

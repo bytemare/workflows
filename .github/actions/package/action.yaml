@@ -24,10 +24,20 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Mark git directory as safe
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
     - id: package
       shell: bash
       env:
         EXTENDED_METADATA: ${{ inputs.extended_metadata }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_REF_TYPE: ${{ github.ref_type }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
       run: |
         set -euo pipefail
+        chmod +x scripts/package-source.sh
         bash scripts/package-source.sh

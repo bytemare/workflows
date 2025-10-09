@@ -3,11 +3,15 @@
 # SPDX-License-Identifier: MIT
 #
 # Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
-
-# Release Verification Script
 #
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
 # This script automates the verification of SLSA Level 3 compliant releases,
-# including checksum verification, signature verification, and SBOM inspection.
+# including checksum verification, signature verification, and a full, containerized
+# reproducibility check.
 #
 # Usage:
 #   ./verify-release.sh --repo OWNER/REPO --tag TAG [--mode MODE]
@@ -15,11 +19,12 @@
 # Arguments:
 #   --repo OWNER/REPO    Repository in format owner/repo (e.g., bytemare/workflows)
 #   --tag TAG            Release tag to verify (e.g., 0.0.4)
-#   --mode MODE          Verification mode: quick or full (default: quick)
+#   --mode MODE          Verification mode: quick, full, or reproduce (default: quick)
 #
 # Modes:
-#   quick - Basic checksum and signature verification.
-#   full  - Complete verification of all release artifacts (checksums, signatures, SBOM, provenance).
+#   quick     - Basic checksum and signature verification.
+#   full      - Complete verification of all release artifacts (checksums, signatures, SBOM, provenance).
+#   reproduce - Full, containerized reproducibility check.
 #
 
 set -euo pipefail
@@ -28,7 +33,6 @@ set -euo pipefail
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
 readonly YELLOW='\033[1;33m'
-readonly CYAN='\033[0;36m'
 readonly NC='\033[0m'
 
 # Exit codes
@@ -85,6 +89,7 @@ Optional Arguments:
 Examples:
   $0 --repo bytemare/workflows --tag 0.0.4
   $0 --repo bytemare/workflows --tag 0.0.4 --mode full
+  $0 --repo bytemare/workflows --tag 0.0.4 --mode reproduce
 
 EOF
 }
@@ -169,7 +174,7 @@ check_tools() {
     fi
 }
 
-# Download release artifacts
+# Download release artifacts for quick/full modes
 download_artifacts() {
     local patterns=(
         "*.tar.gz"
@@ -180,7 +185,6 @@ download_artifacts() {
 
     if [[ "$MODE" == "full" ]]; then
         patterns+=(
-            "*.cert"
             "*.intoto.jsonl"
             "sbom.cdx.json"
             "verification.json"
@@ -199,7 +203,8 @@ download_artifacts() {
         return 1
     fi
 
-    local tarball=$(ls -1 *.tar.gz 2>/dev/null | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit 2>/dev/null)
     if [[ -z "$tarball" ]]; then
         verify_fail "Source tarball missing"
         return 1
@@ -209,10 +214,11 @@ download_artifacts() {
     return 0
 }
 
-# Verify SLSA subjects structure
+# --- Verification functions for quick/full modes ---
 verify_subjects() {
     verify_step "Verifying SLSA subjects structure"
-    local subject_count=$(wc -l < subjects.sha256 | tr -d ' ')
+    local subject_count
+    subject_count=$(wc -l < subjects.sha256 | tr -d ' ')
     if [[ "$subject_count" -eq 2 ]]; then
         verify_ok
     else
@@ -221,17 +227,18 @@ verify_subjects() {
     fi
 }
 
-# Verify tarball checksum
 verify_tarball_checksum() {
     verify_step "Verifying tarball checksum"
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     local computed_hash
     if command -v sha256sum &> /dev/null; then
-        computed_hash=$(sha256sum "$tarball" | awk '{print $1}')
+        computed_hash=$(sha256sum -- "$tarball" | awk '{print $1}')
     else
-        computed_hash=$(shasum -a 256 "$tarball" | awk '{print $1}')
+        computed_hash=$(shasum -a 256 -- "$tarball" | awk '{print $1}')
     fi
-    local expected_hash=$(head -n1 subjects.sha256 | awk '{print $1}')
+    local expected_hash
+    expected_hash=$(head -n1 subjects.sha256 | awk '{print $1}')
     if [[ "$computed_hash" == "$expected_hash" ]]; then
         verify_ok
     else
@@ -240,16 +247,16 @@ verify_tarball_checksum() {
     fi
 }
 
-# Verify checksums manifest
 verify_checksums_manifest() {
     verify_step "Verifying checksums manifest"
     local computed_hash
     if command -v sha256sum &> /dev/null; then
-        computed_hash=$(sha256sum checksums.txt | awk '{print $1}')
+        computed_hash=$(sha256sum -- checksums.txt | awk '{print $1}')
     else
-        computed_hash=$(shasum -a 256 checksums.txt | awk '{print $1}')
+        computed_hash=$(shasum -a 256 -- checksums.txt | awk '{print $1}')
     fi
-    local expected_hash=$(tail -n1 subjects.sha256 | awk '{print $1}')
+    local expected_hash
+    expected_hash=$(tail -n1 subjects.sha256 | awk '{print $1}')
     if [[ "$computed_hash" == "$expected_hash" ]]; then
         verify_ok
     else
@@ -258,9 +265,9 @@ verify_checksums_manifest() {
     fi
 }
 
-# Verify signatures with cosign
 verify_signatures() {
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     verify_step "Verifying tarball signature"
     if cosign verify-blob --bundle "${tarball}.bundle" --certificate-identity-regexp "^https://github\.com/${OWNER}/" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" "$tarball" &> /dev/null; then
         verify_ok
@@ -278,10 +285,10 @@ verify_signatures() {
     fi
 }
 
-# Verify GitHub attestations
 verify_attestations() {
     verify_step "Verifying GitHub attestations"
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     if gh attestation verify --repo "$REPO" "$tarball" &> /dev/null; then
         verify_ok
     else
@@ -290,10 +297,10 @@ verify_attestations() {
     fi
 }
 
-# Verify SLSA provenance file
 verify_provenance_file() {
     verify_step "Verifying SLSA provenance file"
-    local provenance=$(ls -1 *.intoto.jsonl 2>/dev/null | head -1)
+    local provenance
+    provenance=$(find . -maxdepth 1 -name "*.intoto.jsonl" -type f -print -quit 2>/dev/null)
     if [[ -z "$provenance" ]]; then
         verify_fail "Provenance file not found"
         return 1
@@ -306,7 +313,6 @@ verify_provenance_file() {
     fi
 }
 
-# Inspect SBOM
 inspect_sbom() {
     verify_step "Inspecting SBOM"
     if [[ ! -f sbom.cdx.json ]]; then
@@ -321,10 +327,8 @@ inspect_sbom() {
     fi
 }
 
-# Main verification logic
 run_verification() {
     local exit_code=$EXIT_SUCCESS
-
     verify_subjects || exit_code=$EXIT_VERIFICATION_FAILED
     verify_tarball_checksum || exit_code=$EXIT_VERIFICATION_FAILED
     verify_checksums_manifest || exit_code=$EXIT_VERIFICATION_FAILED
@@ -335,13 +339,13 @@ run_verification() {
         verify_provenance_file || exit_code=$EXIT_VERIFICATION_FAILED
         inspect_sbom || exit_code=$EXIT_VERIFICATION_FAILED
     fi
-
     return $exit_code
 }
 
 # --- Reproducibility Check function for reproduce mode ---
 run_repro_check() {
-    local CONTAINER_SCRIPT=$(cat <<'EOS'
+    local CONTAINER_SCRIPT
+    CONTAINER_SCRIPT=$(cat <<'EOS'
 #!/usr/bin/env bash
 #
 # --- This entire script runs inside a temporary Docker container ---
@@ -359,8 +363,9 @@ readonly RED='\033[0;31m'
 readonly YELLOW='\033[1;33m'
 readonly NC='\033[0m'
 
-step() { echo -e "\n${YELLOW}--- $1 ---${NC}"; }
-info() { printf "%-50s" "$1..."; }
+step() { echo -e "\n${YELLOW}--- $1 ---
+${NC}"; }
+info() { printf "% -50s" "$1..."; }
 ok() { echo -e " ${GREEN}✓${NC}"; }
 fail() {
     echo -e " ${RED}✗${NC}"
@@ -413,7 +418,6 @@ export GITHUB_REF_NAME="$TAG"
 export GITHUB_REF_TYPE="tag"
 export GITHUB_RUN_NUMBER="0"
 
-# Inlining the core packaging logic for robustness
 set -euo pipefail
 export LC_ALL=C LANG=C TZ=UTC
 umask 022

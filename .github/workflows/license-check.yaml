@@ -1,0 +1,40 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: License Check
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check-licenses:
+    name: Check Dependency Licenses
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Init go
+        uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
+
+      - name: Install golicense
+        run: go install github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
+
+      - name: Run golicense
+        run: |
+          go-licenses check \
+            --allowed_licenses="MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause" \
+            ./...

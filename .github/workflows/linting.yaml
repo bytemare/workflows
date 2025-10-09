@@ -27,6 +27,23 @@ on:
 permissions: {}
 
 jobs:
+  GoFMT:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Init go
+        uses: bytemare/actions/init-go@7e3adb460bd0855c8ad41f82cbee3317f6017678
+
+      - name: Check formatting
+        run: |
+          if [[ -n "$(gofmt -l .)" ]]; then
+            echo "The following files are not formatted correctly:"
+            gofmt -l .
+            exit 1
+          fi
+
   DoNotSubmit:
     name: Do Not Submit
     permissions:
