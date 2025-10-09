@@ -24,6 +24,10 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Mark git directory as safe
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
     - id: package
       shell: bash
       env:
