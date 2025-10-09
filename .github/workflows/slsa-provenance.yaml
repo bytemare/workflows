@@ -50,6 +50,7 @@ jobs:
     name: Package source + SBOM + Attestations
     if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
+    # Fully containerize to ensure hermetic, consistent environment.
     container:
       image: golang:${{ inputs.go-version }}-bookworm
     permissions:
@@ -87,6 +88,9 @@ jobs:
         run: |
           apt-get update -qq >/dev/null
           apt-get install -y -qq ca-certificates gzip wget >/dev/null
+
+      - name: Mark git directory as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - id: package
         name: Package reproducible source
