@@ -80,6 +80,42 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 
 **For end users who want to verify authenticity quickly.**
 
+### Automated Verification (Recommended)
+
+The easiest way to verify a release is using the automated verification helper script:
+
+```bash
+# Download the script
+curl -sSL https://raw.githubusercontent.com/bytemare/workflows/main/verify-release.sh -o verify-release.sh
+chmod +x verify-release.sh
+
+# Run quick verification (checksums + signatures)
+./verify-release.sh --repo bytemare/workflows --tag 0.0.4
+
+# Run full verification (all artifacts)
+./verify-release.sh --repo bytemare/workflows --tag 0.0.4 --mode full
+
+# Run containerized reproducibility check
+./verify-release.sh --repo bytemare/workflows --tag 0.0.4 --mode reproduce
+```
+
+**Verification Modes:**
+- **quick** (default) - Basic checksum and signature verification (fast, recommended for most users).
+- **full** - Complete verification of all release artifacts including SBOM and provenance.
+- **reproduce** - A full, containerized reproducibility check. This is the most thorough verification, performed in a clean Docker environment.
+
+The script automatically:
+- Checks for required tools (gh, jq, cosign, openssl, sha256sum/shasum, git for full mode)
+- Downloads all necessary artifacts
+- Verifies checksums and signatures
+- Validates SLSA provenance and SBOM (in full mode)
+- Tests reproducibility (in full mode)
+- Provides concise one-line output with clear success/failure indicators
+
+### Manual Verification
+
+If you prefer to verify manually or understand the process:
+
 ### Prerequisites
 - `shasum` or `sha256sum`
 - `cosign` (≥2.x)
@@ -89,25 +125,39 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 
 **1. Download artifacts**
 ```bash
-gh release download <tag> \
-  -p '*.tar.gz' -p '*.bundle' -p 'checksums.txt' -p 'subjects.sha256'
+gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'subjects.sha256' -p 'checksums.txt'
 ```
 
-**2. Verify all checksums at once**
-```bash
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
-```
-✅ All files should show `OK`
-
-**3. Verify signatures (using bundles - simplest)**
+**2. Verify the tarball checksum**
 ```bash
 ART=$(ls -1 *.tar.gz | head -1)
-cosign verify-blob --bundle "${ART}.bundle" "${ART}"
-cosign verify-blob --bundle checksums.txt.bundle checksums.txt
+shasum -a 256 "${ART}" | diff - <(head -n1 subjects.sha256) && echo "✅ Tarball checksum verified"
 ```
-✅ Should show: `Verified OK`
+
+**3. Verify signatures**
+
+```bash
+# Set your repository details
+OWNER="bytemare"  # Replace with actual repository owner
+
+# Verify tarball signature
+cosign verify-blob \
+  --bundle "${ART}.bundle" \
+  --certificate-identity-regexp "^https://github\.com/${OWNER}/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  "${ART}" && echo "✅ Tarball signature verified"
+
+# Verify checksums signature
+cosign verify-blob \
+  --bundle checksums.txt.bundle \
+  --certificate-identity-regexp "^https://github\.com/${OWNER}/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  checksums.txt && echo "✅ Checksums signature verified"
+```
 
 **Done!** Your artifacts are authentic and untampered.
+
+**Note:** This quick verification only checks the tarball. For complete verification of all metadata files, see the Complete Verification section below or use the automated script with `--mode complete`.
 
 ---
 
@@ -125,7 +175,8 @@ wc -l subjects.sha256  # Should output: 2
 ### 2. Verify Primary Archive Digest
 
 ```bash
-sha256sum <repo>-<tag>.tar.gz | diff -u - <(head -n1 subjects.sha256) \
+ART=$(ls -1 *.tar.gz | head -1)
+sha256sum "${ART}" | diff -u - <(head -n1 subjects.sha256) \
   || echo "❌ Archive digest mismatch" >&2
 ```
 
@@ -138,61 +189,119 @@ sha256sum checksums.txt | diff -u - <(tail -n1 subjects.sha256) \
 
 ### 4. Verify Per-File Content (Deep Check)
 
+First, download the manifest file:
 ```bash
-BASENAME=<repo>-<tag>
-mkdir -p /tmp/verify && tar -xzf "${BASENAME}.tar.gz" -C /tmp/verify
-cd /tmp/verify/$BASENAME
+gh release download <tag> -p 'manifest.files.sha256'
+```
+
+Then verify each file in the tarball:
+```bash
+ART=$(ls -1 *.tar.gz | head -1)
+BASENAME="${ART%.tar.gz}"
+
+# Save the current directory where manifest.files.sha256 is located
+MANIFEST_DIR=$(pwd)
+
+mkdir -p /tmp/verify && tar -xzf "${ART}" -C /tmp/verify
+cd /tmp/verify/${BASENAME}
 
 while read -r hash file; do
   computed=$(sha256sum "$file" | awk '{print $1}')
   [ "$hash" = "$computed" ] || { echo "❌ Mismatch: $file"; exit 1; }
-done < /path/to/manifest.files.sha256
+done < "${MANIFEST_DIR}/manifest.files.sha256"
 
 echo "✅ Per-file content verified"
+cd "${MANIFEST_DIR}"
 ```
 
 ### 5. Verify Signatures (Alternative Methods)
 
 **Option A: Bundle files (recommended)**
 ```bash
-cosign verify-blob --bundle <file>.bundle <file>
+OWNER="bytemare"  # Replace with actual repository owner
+
+cosign verify-blob \
+  --bundle <file>.bundle \
+  --certificate-identity-regexp "^https://github\.com/${OWNER}/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  <file>
 ```
 
 **Option B: Separate signature + certificate**
 ```bash
-cosign verify-blob --certificate <file>.cert --signature <file>.sig <file>
+OWNER="bytemare"  # Replace with actual repository owner
+
+cosign verify-blob \
+  --certificate <file>.cert \
+  --signature <file>.sig \
+  --certificate-identity-regexp "^https://github\.com/${OWNER}/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  <file>
 ```
 
-### 6. Inspect Certificate Claims
+### 6. Inspect Certificate Claims (Implicit in Signature Verification)
 
-```bash
-openssl x509 -in "${ART}.cert" -noout -text | grep -E 'Subject:|SAN:|Issuer'
-```
-Expect:
-- **Issuer:** `https://token.actions.githubusercontent.com`
-- **SAN:** Repository path (e.g., `https://github.com/owner/repo/...`)
+When using Sigstore bundles (`.bundle`), the certificate is securely packaged alongside the signature. The `cosign verify-blob` command automatically validates the entire certificate chain against the public Sigstore transparency log (Rekor).
+
+**Therefore, a separate certificate inspection step is not required.** The successful verification of the signature in the previous steps is sufficient proof of the certificate's validity and its connection to the build.
+
+**Note on `.cert` files:** You may notice `.cert` files attached to releases. Depending on the `cosign` version and flags used during signing, these files may be empty, contain a single certificate, or even be a bundle themselves. Attempting to manually parse them can be misleading. The authoritative source for verification is always the `.bundle` file.
 
 ### 7. Verify GitHub Attestations
 
+Download the tarball if not already present, then verify:
 ```bash
+ART=$(ls -1 *.tar.gz | head -1)
+OWNER="bytemare"  # Replace with actual repository owner
+REPO="workflows"  # Replace with actual repository name
+
 gh attestation verify \
-  --repo <owner>/<repo> \
-  --subject-path "${ART}" \
-  --predicate-type slsa.dev/provenance/v1
+  --repo ${OWNER}/${REPO} \
+  "${ART}"
 ```
+
+**Note:** This verifies both SLSA provenance and SBOM attestations attached via GitHub's attestation API.
 
 ### 8. Verify SLSA Provenance File
 
+Download the provenance file, which is a Sigstore bundle in JSON format.
+
 ```bash
+gh release download <tag> -p '*.intoto.jsonl'
 PROV=$(ls -1 *.intoto.jsonl 2>/dev/null | head -1)
-[ -f "$PROV" ] && \
-  grep -q "$(cut -d' ' -f1 subjects.sha256)" "$PROV" && \
-  echo "✅ Provenance references artifact digest" || \
-  echo "❌ Provenance mismatch"
 ```
+
+**A) Quick Check (Digest)**
+
+Verify the provenance bundle references the correct artifact digests from `subjects.sha256`.
+
+```bash
+if grep -q "$(head -n1 subjects.sha256 | awk '{print $1}')" "$PROV"; then
+    echo "✅ Provenance references primary artifact digest"
+else
+    echo "❌ Provenance mismatch on primary artifact"
+fi
+```
+
+**B) Deep Inspection (Attestation Content)**
+
+The provenance attestation is a base64-encoded payload inside the bundle. To inspect its contents (like the `subject` or `builder` fields), you can decode it:
+
+```bash
+# This command extracts and pretty-prints the decoded attestation
+jq -r '.dsseEnvelope.payload' "$PROV" | base64 -d | jq '.'
+```
+
+This allows an auditor to manually confirm the build type, builder ID, and other critical details.
 
 ### 9. Inspect SBOM
 
+First, download the SBOM file:
+```bash
+gh release download <tag> -p 'sbom.cdx.json'
+```
+
+Then inspect it:
 ```bash
 # Count dependencies
 jq '.components | length' sbom.cdx.json
@@ -203,6 +312,12 @@ jq -r '.components[] | "\(.name)@\(.version)"' sbom.cdx.json | head -20
 
 ### 10. Check Reproducibility Report
 
+First, download the verification report:
+```bash
+gh release download <tag> -p 'verification.json'
+```
+
+Then inspect it:
 ```bash
 jq '.reproducibility' verification.json
 ```
@@ -253,11 +368,16 @@ Extended artifacts (`manifest.git-tree`, `go.env.json`) will appear with digests
 
 Compare your locally built digest with the published one:
 ```bash
+# Set your repository details
+OWNER="bytemare"  # Replace with actual repository owner
+REPO="workflows"  # Replace with actual repository name
+TAG="0.0.4"       # Replace with the tag you're verifying
+
 # Your local digest
 local_digest=$(sha256sum dist/*.tar.gz | awk '{print $1}')
 
 # Published digest
-published_digest=$(curl -sL https://github.com/OWNER/REPO/releases/download/$TAG/subjects.sha256 | head -n1 | awk '{print $1}')
+published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/download/${TAG}/subjects.sha256 | head -n1 | awk '{print $1}')
 
 [ "$local_digest" = "$published_digest" ] && \
   echo "✅ REPRODUCIBLE BUILD CONFIRMED" || \
@@ -296,6 +416,8 @@ printf '%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
 | **Missing extended artifacts**   | Extended mode not enabled                   | Re-run with `EXTENDED_METADATA=true`                                        |
 | **Signature verification fails** | Wrong file pairing, network issues          | Use bundle files for simplicity or check Rekor availability                   |
 | **Cosign "unknown authority"**   | Missing Sigstore root                       | Update cosign and run `cosign initialize`                                      |
+| **Certificate inspection fails** | Manually parsing `.cert` file with bundles  | Trust `cosign verify-blob --bundle`. This handles certificate validation implicitly. |
+| **Invalid provenance structure** | Provenance is a Sigstore bundle, not plain JSON | Use `jq` and `base64` to decode the `.dsseEnvelope.payload` for manual inspection. |
 
 ### Determinism Guarantees
 

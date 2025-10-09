@@ -1,83 +1,328 @@
 # Workflows
-A collection of hardened reusable GitHub Workflows.
 
-| Workflow          | Purpose                                                                 | Import path                                                        |
-|-------------------|-------------------------------------------------------------------------|--------------------------------------------------------------------|
-| CodeQL            | Static analysis with CodeQL for Golang.                                 | `bytemare/workflows/.github/workflows/codeql.yaml@main`            |
-| GolangCI Lint     | Linting with golangci-lint.                                             | `bytemare/workflows/.github/workflows/golangci-lint.yaml@main`     |
-| Govulncheck       | Vulnerability scanning with govulncheck.                                | `bytemare/workflows/.github/workflows/govulncheck.yaml@main`       |
-| Dependency-Review | Dependency review for pull requests.                                    | `bytemare/workflows/.github/workflows/dependency-review.yaml@main` |
-| Semgrep           | Semgrep static analysis.                                                | `bytemare/workflows/.github/workflows/semgrep.yaml@main`           |
-| SonarQube         | SonarQube static analysis.                                              | `bytemare/workflows/.github/workflows/sonarqube.yaml@main`         |
-| Codecov           | Coverage reporting with Codecov.                                        | `bytemare/workflows/.github/workflows/codecov.yaml@main`           |
-| Release           | Build and publish signed release artifacts (tarball, SBOM, provenance). | `bytemare/workflows/.github/workflows/slsa-provenance.yaml@main`   |
-| Scorecard         | OpenSSF Scorecard supply chain checks.                                  | `bytemare/workflows/.github/workflows/scorecard.yaml@main`         |
-| Test              | Runs ```go test -v -vet=all ./...```                                    | `bytemare/workflows/.github/workflows/wf-tests.yaml@main`          |
+A collection of hardened, reusable GitHub Workflows for Go projects with high assurance supply chain security.
+They don't reinvent the wheel but combine tools and best practices into easy-to-use, modular workflows.
+You're welcome to use them, though they primarily target my own projects and I will adapt them accordingly.
 
-Note that you'll probably need to set up these tools for your repository (e.g. SonarQube, Codecov, Semgrep).
+All workflows enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
-## Supply Chain Security for high-assurance software distribution
+- [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
+- [Security Workflows](#security-workflows)
+  - [CodeQL](#codeql)
+  - [Govulncheck](#govulncheck)
+  - [Dependency Review](#dependency-review)
+  - [Semgrep](#semgrep)
+  - [OpenSSF Scorecard](#openssf-scorecard)
+- [Quality Workflows](#quality-workflows)
+  - [Do not submit](#do-not-submit)
+  - [GolangCI Lint](#golangci-lint)
+  - [SonarQube](#sonarqube)
+  - [Codecov](#codecov)
+- [Build & Release Workflows](#build--release-workflows)
+  - [Tests](#tests)
+  - [SLSA Level 3 / SLSA Level 4](#release-slsa-level-3-and-slsa-level-4-reproducible-builds)
 
-This workflow provides **SLSA Level 3 compliance** with built-in **SLSA Level 4 readiness**, featuring reproducible builds, cryptographic provenance, and multiple verification layers.
+---
 
-### Key Features
+## Ready-to-use bundled workflows (recommended)
 
-**SLSA Level 3 Compliance:**
-- 📝 Non-falsifiable provenance via SLSA generic generator
-- 🔐 Isolated build environment (GitHub-hosted runners)
-- ✍️ Keyless signing via Sigstore (Cosign + Rekor transparency logs)
-- 🔒 Tamper-proof attestations with OIDC identity binding
+The three `wf-*.yaml` files in `.github/workflows/` are complete drop-in workflows using all mechanisms in this repository with minimal configuration:
 
-**SLSA Level 4 Readiness:**
-- 🔄 **Reproducible builds** - Same commit → identical digest (independently verifiable)
-- 🔍 **Dual reproducibility checks** - Internal self-check + independent CI rebuild
-- 📊 **Machine-readable verification** - `verification.json` for automated policy enforcement
-- 🗂️ **Two-tier subject model** - Archive + checksums.txt for chained integrity verification
+- **`wf-tests.yaml`** - Automated testing on pull requests and main branch
+- **`wf-analysis.yaml`** - Security and quality analysis (e.g. linting, CodeQL, OpenSSF Scorecard)
+- **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
 
-**Additional Supply Chain Hardening:**
-- 📦 **SBOM** (Software Bill of Materials) with dependency tracking
-- 🔗 **Complete audit trail** - From commit metadata to final artifact
-- 📋 **Extended metadata mode** - Optional git tree + environment snapshots for forensics
-- 🛡️ **Bundle-based detached signatures** - Single-file verification convenience
+Copy these files to your `.github/workflows/` directory and customize as needed.
 
-**What You Gain:**
-1. **Reproducibility guarantees** - Distribution packagers (e.g. Debian, Nix, Homebrew) can independently verify
-2. **Two-tier integrity model** - SLSA subjects (archive + checksums.txt) → metadata files
-3. **Verification automation** - JSON reports for CI/CD policy gates/enforcement
-4. **Extended forensics** - Optional git tree + environment snapshots for incident response
-5. **Bundle convenience** - Single `.bundle` file contains signature + certificate + Rekor proof
+---
 
-### Quick Verification
+## Security Workflows
 
-**Requirements:** `shasum` (or `sha256sum`), `cosign` (≥2.x)
+### [CodeQL](https://github.com/github/codeql-action)
 
-**Option A: Using GitHub CLI (recommended)**
-```bash
-# Download release artifacts
-gh release download <tag> -p '*.tar.gz' -p '*.bundle' -p 'checksums.txt'
+Advanced semantic code analysis to find security vulnerabilities in Go code.
 
-# Verify checksums
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
+**Configuration:**
 
-# Verify signatures (using bundle - simplest method)
-ART=$(ls -1 *.tar.gz | head -1)
-cosign verify-blob --bundle "${ART}.bundle" "${ART}"
-cosign verify-blob --bundle checksums.txt.bundle checksums.txt
+```yaml
+jobs:
+    uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned sha]
+    with:
+      language: go
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 ```
 
-**Option B: Manual download (without gh CLI)**
-```bash
-# Download from browser or using curl
-REPO="owner/repo"
-TAG="v1.0.0"
-curl -LO "https://github.com/${REPO}/releases/download/${TAG}/${REPO##*/}-${TAG}.tar.gz"
-curl -LO "https://github.com/${REPO}/releases/download/${TAG}/${REPO##*/}-${TAG}.tar.gz.bundle"
-curl -LO "https://github.com/${REPO}/releases/download/${TAG}/checksums.txt"
-curl -LO "https://github.com/${REPO}/releases/download/${TAG}/checksums.txt.bundle"
+---
 
-# Then verify as above
-grep -E '^[0-9a-f]{64}  ' checksums.txt | shasum -a 256 -c -
-cosign verify-blob --bundle "${REPO##*/}-${TAG}.tar.gz.bundle" "${REPO##*/}-${TAG}.tar.gz"
+### [Govulncheck](https://github.com/golang/govulncheck-action)
+
+Scan Go dependencies for known vulnerabilities using the official Go vulnerability database.
+
+**Configuration:**
+
+```yaml
+jobs:
+  govulncheck:
+    uses: bytemare/workflows/.github/workflows/govulncheck.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
 ```
 
-**For complete verification steps, reproducibility testing, and troubleshooting, see [VERIFICATION.md](VERIFICATION.md)**
+---
+
+### [Dependency Review](https://github.com/actions/dependency-review-action)
+
+Prevent introduction of vulnerable or malicious dependencies in pull requests.
+
+**Configuration:**
+
+```yaml
+jobs:
+  dependency-review:
+    uses: bytemare/workflows/.github/workflows/dependency-review.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+```
+
+---
+
+### [Semgrep](https://semgrep.dev/docs/semgrep-ci/sample-ci-configs#sample-github-actions-configuration-file)
+
+Static code analysis tool that finds bugs, detects vulnerabilities, and enforces code standards using customizable rules.
+
+**Note:** Requires Semgrep setup and `SEMGREP_APP_TOKEN` repository secret.
+
+**Configuration:**
+
+```yaml
+jobs:
+  Semgrep:
+  permissions:
+    contents: read
+    # Needed to upload the results to code-scanning dashboard.
+    security-events: write
+  uses: bytemare/workflows/.github/workflows/semgrep.yaml@[pinned commit SHA]
+  secrets:
+    semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+```
+
+---
+
+### [OpenSSF Scorecard](https://github.com/ossf/scorecard-action)
+
+Automated security health metrics for your repository.
+
+**Note:** Requires OpenSSF Best Practices setup and `SCORECARD_TOKEN` repository secret.
+
+**Configuration:**
+
+```yaml
+jobs:
+  scorecard:
+    uses: bytemare/workflows/.github/workflows/scorecard.yaml@[pinned commit SHA]
+    secrets:
+      token: ${{ secrets.SCORECARD_TOKEN }}
+    permissions:
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+      # Needed for GitHub OIDC token if publish_results is true.
+      id-token: write
+      # Needed for nested workflow
+      actions: read
+      # To detect SAST tools
+      checks: read
+      attestations: read
+      contents: read
+      deployments: read
+      issues: read
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
+      models: read
+```
+
+---
+
+## Quality Workflows
+
+### [GolangCI Lint](https://github.com/golangci/golangci-lint-action)
+
+Comprehensive Go code linting with 50+ linters in parallel.
+
+**Note:** It's recommended to provide an adapted `.golangci.yml` configuration file to customize the linting rules.
+
+**Configuration:**
+
+```yaml
+jobs:
+  golangci-lint:
+    name: GolangCI Lint
+    uses: bytemare/workflows/.github/workflows/golangci-lint.yaml@[pinned commit SHA]
+    with:
+      config-path: ".github/.golangci.yml"
+      scope: "./..."
+    permissions:
+      contents: read
+```
+
+---
+
+### [Do not submit](https://github.com/chainguard-dev/actions/tree/main/donotsubmit)
+
+Reminds you to not submit source that has the string "do not submit" (but in all uppercase letters) in it.
+
+**Configuration:**
+
+```yaml
+jobs:
+  DoNotSubmit:
+    name: Do Not Submit
+    uses: bytemare/workflows/.github/workflows/do-not-submit.yaml@[pinned commit SHA]
+```
+
+---
+
+### [SonarQube](https://github.com/sonarsource/sonarqube-scan-action)
+
+Continuous code quality and security inspection with detailed metrics.
+
+**Notes:**
+- Requires SonarQube setup and `SONAR_TOKEN` repository secret.
+- It's recommended to provide an adapted `sonar-project.properties` configuration file.
+
+**Configuration:**
+
+```yaml
+jobs:
+  sonarqube:
+    uses: bytemare/workflows/.github/workflows/sonarqube.yaml@[pinned commit SHA]
+    with:
+      configuration: ${{ inputs.sonar-configuration }}
+    secrets:
+      github: ${{ secrets.GITHUB_TOKEN }}
+      sonar: ${{ secrets.SONAR_TOKEN }}
+    permissions:
+      contents: read
+      security-events: write
+```
+
+---
+
+### [Codecov](https://github.com/codecov/codecov-action)
+
+Test coverage reporting and tracking with trend analysis.
+
+**Note:** Requires Codecov setup and `CODECOV_TOKEN` repository secret.
+
+**Configuration:**
+
+```yaml
+jobs:
+  codecov:
+    uses: bytemare/workflows/.github/workflows/codecov.yaml@[pinned commit SHA]
+    secrets:
+      codecov: ${{ secrets.CODECOV_TOKEN }}
+```
+
+---
+
+## Build & Release Workflows
+
+### Tests
+
+Run your Go test suite with ```go test -v -vet=all ./...```.
+
+**Configuration:**
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ '1.25', '1.24', '1.23' ] # Test against multiple Go versions
+      uses: bytemare/workflows/.github/workflows/wf-tests.yaml@[pinned commit SHA]
+      with:
+        version: ${{ matrix.go }}
+```
+
+---
+
+### Release (SLSA Level 3 and SLSA Level 4 reproducible builds)
+
+Build and publish signed, reproducible release artifacts with SLSA Level 3 provenance and SLSA Level 4 readiness.
+
+- 🔒 **SLSA Level 3 Compliance** - Non-falsifiable provenance with cryptographic attestations
+- 🔄 **SLSA Level 4 Readiness** - Reproducible builds with dual verification checks (internal + CI rebuild)
+- 📦 **SBOM** - CycloneDX Software Bill of Materials
+- ✍️ **Keyless Signing** - Cosign signatures with Rekor transparency logs
+- 🗂️ **Complete Metadata** - Commit metadata, environment snapshots, verification reports
+- ⚓️ **Native GitHub Attestations** - With the SBOM and build provenance
+
+**Configuration:**
+
+```yaml
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'      # Semantic versioning tags
+      - 'v*.*.*'     # Tags starting with 'v'
+  workflow_dispatch:  # Manual trigger
+  pull_request:       # Dry-run on PRs
+
+permissions: {}
+
+jobs:
+  release:
+    uses: bytemare/workflows/.github/workflows/slsa-provenance.yaml@[pinned commit SHA]
+    with:
+      dry_run: ${{ github.event_name == 'pull_request' }}
+      create_release: ${{ github.event_name != 'pull_request' }}
+      sign_blobs: true
+      extended_metadata: false  # Set to true for forensics mode
+    permissions:
+      contents: write           # Create releases
+      id-token: write          # OIDC for signing
+      attestations: write      # GitHub attestations
+      actions: read            # Read workflow data
+      security-events: write   # Upload SARIF (optional)
+```
+
+Quick verification using the helper script:
+```bash
+# Download the verification script
+curl -sSL https://raw.githubusercontent.com/bytemare/workflows/main/verify-release.sh -o verify-release.sh
+chmod +x verify-release.sh
+
+# Run quick verification (checksums + signatures)
+./verify-release.sh --repo <owner>/<repo> --tag <tag>
+
+# Run full verification (all artifacts)
+./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode full
+
+# Run containerized reproducibility check
+./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode reproduce
+```
+
+See [VERIFICATION.md](VERIFICATION.md) for complete documentation and verification instructions.
+
+---
+
+## Notes
+
+- **Go Version:** All workflows default to the latest Go version, but can sometimes be customized via the `go-version` input
+- **Permissions:** All workflows use minimal permissions as per least-privilege principle
+- **Secrets:** SonarQube, Codecov, and OpenSSF Scorecard require repository secrets to be configured
+- **Customization:** Most workflows support additional inputs - check the workflow file for details
+
+For questions or issues, see the [issue tracker](https://github.com/bytemare/workflows/issues).

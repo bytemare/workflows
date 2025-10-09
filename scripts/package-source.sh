@@ -1,20 +1,10 @@
 #!/usr/bin/env bash
-# Deterministic source packaging script (slim version).
 #
-# Purpose:
-#   Create a reproducible (byte-for-byte) source archive of the repository at the
-#   specified commit and emit verifiable metadata needed for SLSA provenance,
-#   downstream rebuild validation, and supply‑chain integrity for SLSA Level 4 ready compliance.
+# SPDX-License-Identifier: MIT
 #
-# Why this matters:
-#   - Reproducibility: Same commit produces identical tarball digest on any machine.
-#   - Auditability: Per-file content manifest plus commit metadata allow external
-#     parties to confirm archive fidelity without trusting GitHub.
-#   - Provenance: subjects.sha256 (and its base64 form) feeds the SLSA generator
-#     and signature workflows so attestations bind exactly this artifact.
-#   - Minimalism: Non-essential artifacts (git tree manifest, go env snapshot,
-#     duplicate checksum variants) were removed to reduce noise and maintenance.
-#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+
+# Deterministic source packaging script.
 # Required env (set automatically by GitHub Actions, or manually for local reproduction):
 #   GITHUB_SHA         Commit SHA to package.
 #   GITHUB_REPOSITORY  owner/repo string.
@@ -38,7 +28,7 @@
 #
 # Design decisions (trade-offs):
 #   - gzip -n -9: maximum compression and zeroed metadata (deterministic), slight CPU cost acceptable (single archive).
-#   - Dual determinism checks: internal self-check here plus external rebuild job in CI (belt-and-suspenders) for SLSA L4 readiness evidence.
+#   - Dual determinism checks: internal self-check here plus external rebuild job in CI for SLSA L4 readiness evidence.
 #   - Per-file SHA-256 manifest retained (most useful for external verification) while other metadata (git tree, go env) gated by EXTENDED_METADATA for lean defaults.
 #   - Keeping script hash in both packaging-script.sha256 and build.env provides redundancy for integrity.
 #
@@ -49,8 +39,7 @@
 #   - SOURCE_DATE_EPOCH derived from commit timestamp (future-proof if build
 #     steps are added that honor it).
 #
-# NOTE: If adding build steps later (e.g., compiled binaries), propagate the same
-# SOURCE_DATE_EPOCH and use -trimpath or reproducible flags for the language toolchain.
+# NOTE: If adding build steps later (e.g., compiled binaries), propagate the same SOURCE_DATE_EPOCH and use -trimpath or reproducible flags for the language toolchain.
 
 set -euo pipefail
 export LC_ALL=C LANG=C TZ=UTC
@@ -146,12 +135,17 @@ echo '::group::Script & environment snapshot'
 SCRIPT_PATH="$(realpath "$0")"; SCRIPT_DIGEST=$(sha256_of "$SCRIPT_PATH")
 # Capture gzip version
 GZIP_VER=$(gzip --version 2>&1 | head -n1 || echo 'unknown')
+# Source OS info for runner identification
+if [ -f /etc/os-release ]; then source /etc/os-release; fi
 # Environment summary (no separate .sha256 file)
 {
   printf 'GIT_VERSION=%s\n' "$(git --version)"
   printf 'GO_VERSION=%s\n' "$(go version 2>/dev/null || echo 'unknown')"
   printf 'GZIP_VERSION=%s\n' "$GZIP_VER"
   printf 'UNAME=%s\n' "$(uname -a)"
+  printf 'RUNNER_OS_ID=%s\n' "${ID:-unknown}"
+  printf 'RUNNER_OS_VERSION=%s\n' "${VERSION_ID:-unknown}"
+  printf 'BUILD_PACKAGES=%s\n' "git,ca-certificates,gzip,wget,coreutils,perl-base"
   printf 'SOURCE_DATE_EPOCH=%s\n' "${SOURCE_DATE_EPOCH}"
   printf 'PACKAGING_SCRIPT_SHA256=%s\n' "$SCRIPT_DIGEST"
 } > build.env
