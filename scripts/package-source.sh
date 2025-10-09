@@ -87,8 +87,10 @@ echo '::group::Create deterministic archive'
 log "Creating deterministic archive: $ARCHIVE_PATH"
 git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
 [ -s "$ARCHIVE_PATH" ] || fail "Archive empty"
-# Structural guard.
-tar -tzf "$ARCHIVE_PATH" | grep -qE "^${BASENAME}/go\.mod$" || fail "go.mod not found in archive"
+# Structural guard (list just the target path to avoid broken-pipe edge cases).
+if ! tar -tzf "$ARCHIVE_PATH" "${BASENAME}/go.mod" >/dev/null 2>&1; then
+  fail "go.mod not found in archive"
+fi
 # Primary digest plus subjects (initially only archive, more subjects may be appended later).
 artifact_sha256="$(sha256_of "$ARCHIVE_PATH")"
 printf '%s  %s\n' "$artifact_sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
