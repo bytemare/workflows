@@ -214,13 +214,6 @@ jobs:
         uses: ./.github/actions/package
         with:
           extended_metadata: ${{ inputs.extended_metadata }}
-        env:
-          # Explicitly set required naming vars to mirror original job context.
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_REF_TYPE: tag
-          GITHUB_RUN_NUMBER: 0
 
       - name: Compare digests
         # Fails fast if non-deterministic differences emerge.
