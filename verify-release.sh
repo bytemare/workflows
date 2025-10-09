@@ -185,7 +185,6 @@ download_artifacts() {
 
     if [[ "$MODE" == "full" ]]; then
         patterns+=(
-            "*.cert"
             "*.intoto.jsonl"
             "sbom.cdx.json"
             "verification.json"
@@ -204,7 +203,8 @@ download_artifacts() {
         return 1
     fi
 
-    local tarball=$(ls -1 *.tar.gz 2>/dev/null | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit 2>/dev/null)
     if [[ -z "$tarball" ]]; then
         verify_fail "Source tarball missing"
         return 1
@@ -217,7 +217,8 @@ download_artifacts() {
 # --- Verification functions for quick/full modes ---
 verify_subjects() {
     verify_step "Verifying SLSA subjects structure"
-    local subject_count=$(wc -l < subjects.sha256 | tr -d ' ')
+    local subject_count
+    subject_count=$(wc -l < subjects.sha256 | tr -d ' ')
     if [[ "$subject_count" -eq 2 ]]; then
         verify_ok
     else
@@ -228,14 +229,16 @@ verify_subjects() {
 
 verify_tarball_checksum() {
     verify_step "Verifying tarball checksum"
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     local computed_hash
     if command -v sha256sum &> /dev/null; then
-        computed_hash=$(sha256sum "$tarball" | awk '{print $1}')
+        computed_hash=$(sha256sum -- "$tarball" | awk '{print $1}')
     else
-        computed_hash=$(shasum -a 256 "$tarball" | awk '{print $1}')
+        computed_hash=$(shasum -a 256 -- "$tarball" | awk '{print $1}')
     fi
-    local expected_hash=$(head -n1 subjects.sha256 | awk '{print $1}')
+    local expected_hash
+    expected_hash=$(head -n1 subjects.sha256 | awk '{print $1}')
     if [[ "$computed_hash" == "$expected_hash" ]]; then
         verify_ok
     else
@@ -248,11 +251,12 @@ verify_checksums_manifest() {
     verify_step "Verifying checksums manifest"
     local computed_hash
     if command -v sha256sum &> /dev/null; then
-        computed_hash=$(sha256sum checksums.txt | awk '{print $1}')
+        computed_hash=$(sha256sum -- checksums.txt | awk '{print $1}')
     else
-        computed_hash=$(shasum -a 256 checksums.txt | awk '{print $1}')
+        computed_hash=$(shasum -a 256 -- checksums.txt | awk '{print $1}')
     fi
-    local expected_hash=$(tail -n1 subjects.sha256 | awk '{print $1}')
+    local expected_hash
+    expected_hash=$(tail -n1 subjects.sha256 | awk '{print $1}')
     if [[ "$computed_hash" == "$expected_hash" ]]; then
         verify_ok
     else
@@ -262,7 +266,8 @@ verify_checksums_manifest() {
 }
 
 verify_signatures() {
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     verify_step "Verifying tarball signature"
     if cosign verify-blob --bundle "${tarball}.bundle" --certificate-identity-regexp "^https://github\.com/${OWNER}/" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" "$tarball" &> /dev/null; then
         verify_ok
@@ -282,7 +287,8 @@ verify_signatures() {
 
 verify_attestations() {
     verify_step "Verifying GitHub attestations"
-    local tarball=$(ls -1 *.tar.gz | head -1)
+    local tarball
+    tarball=$(find . -maxdepth 1 -name "*.tar.gz" -type f -print -quit)
     if gh attestation verify --repo "$REPO" "$tarball" &> /dev/null; then
         verify_ok
     else
@@ -293,7 +299,8 @@ verify_attestations() {
 
 verify_provenance_file() {
     verify_step "Verifying SLSA provenance file"
-    local provenance=$(ls -1 *.intoto.jsonl 2>/dev/null | head -1)
+    local provenance
+    provenance=$(find . -maxdepth 1 -name "*.intoto.jsonl" -type f -print -quit 2>/dev/null)
     if [[ -z "$provenance" ]]; then
         verify_fail "Provenance file not found"
         return 1
@@ -337,7 +344,8 @@ run_verification() {
 
 # --- Reproducibility Check function for reproduce mode ---
 run_repro_check() {
-    local CONTAINER_SCRIPT=$(cat <<'EOS'
+    local CONTAINER_SCRIPT
+    CONTAINER_SCRIPT=$(cat <<'EOS'
 #!/usr/bin/env bash
 #
 # --- This entire script runs inside a temporary Docker container ---
