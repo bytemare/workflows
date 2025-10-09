@@ -82,6 +82,9 @@ echo '::group::Create deterministic archive'
 log "Creating deterministic archive: $ARCHIVE_PATH"
 git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
 [ -s "$ARCHIVE_PATH" ] || fail "Archive empty"
+# Debug: list contents of the generated archive.
+echo "[debug] Archive contents:" >&2
+tar -tzf "$ARCHIVE_PATH" >&2
 # Structural guard.
 tar -tzf "$ARCHIVE_PATH" | grep -qE "^${BASENAME}/go\.mod$" || fail "go.mod not found in archive"
 # Primary digest plus subjects (initially only archive, more subjects may be appended later).
