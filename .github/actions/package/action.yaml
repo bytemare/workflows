@@ -32,6 +32,4 @@ runs:
       shell: bash
       env:
         EXTENDED_METADATA: ${{ inputs.extended_metadata }}
-      run: |
-        set -euo pipefail
-        bash scripts/package-source.sh
+      run: bash scripts/package-source.sh
