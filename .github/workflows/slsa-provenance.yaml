@@ -195,7 +195,7 @@ jobs:
     needs: package_and_sbom
     runs-on: ubuntu-latest
     container:
-      image: golang:${{ needs.package_and_sbom.inputs.go-version }}-bookworm
+      image: golang:${{ inputs.go-version }}-bookworm
     permissions:
       contents: read
     steps:
@@ -203,9 +203,17 @@ jobs:
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
+
+      - name: Install Dependencies
+        run: |
+          apt-get update -qq >/dev/null
+          apt-get install -y -qq ca-certificates gzip wget >/dev/null
+
       - id: repackage
         name: Re-run deterministic packaging
         uses: ./.github/actions/package
+        with:
+          extended_metadata: ${{ inputs.extended_metadata }}
         env:
           # Explicitly set required naming vars to mirror original job context.
           GITHUB_SHA: ${{ github.sha }}
@@ -213,6 +221,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           GITHUB_REF_TYPE: tag
           GITHUB_RUN_NUMBER: 0
+
       - name: Compare digests
         # Fails fast if non-deterministic differences emerge.
         run: |
