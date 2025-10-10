@@ -155,6 +155,7 @@ if [ -f /etc/os-release ]; then source /etc/os-release; fi
   printf 'BUILD_PACKAGES=%s\n' "git,ca-certificates,gzip,wget,coreutils,perl-base"
   printf 'SOURCE_DATE_EPOCH=%s\n' "${SOURCE_DATE_EPOCH}"
   printf 'PACKAGING_SCRIPT_SHA256=%s\n' "$SCRIPT_DIGEST"
+  # Surface the container digest so external verifiers can reuse the exact builder.
   printf 'SLSA_BUILDER_IMAGE=%s\n' "${SLSA_BUILDER_IMAGE:-unknown}"
 } > build.env
 echo "EXTENDED_METADATA=${EXTENDED_METADATA:-false}" >> build.env

@@ -29,7 +29,8 @@
 
 set -euo pipefail
 
-# Default reproducible container image used for rebuild verification (pinned digest).
+# Default container image used for rebuild verification (matches CI builder digest).
+# The reproduce mode prefers the value recorded in build.env but falls back to this.
 readonly REPRO_IMAGE_DEFAULT="golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9"
 
 # Color codes for output
@@ -354,6 +355,8 @@ run_repro_check() {
     subjects_tmp=$(mktemp)
     build_env_tmp=$(mktemp)
 
+    # Pull the published subjects + build.env so we can reuse the exact builder image
+    # and artifact digest captured during packaging.
     gh release download "$TAG" --repo "$REPO" -p "subjects.sha256" --output "$subjects_tmp" >/dev/null
     gh release download "$TAG" --repo "$REPO" -p "build.env" --output "$build_env_tmp" >/dev/null || true
 
@@ -368,6 +371,7 @@ run_repro_check() {
         echo -e "${RED}subjects.sha256 missing primary artifact details${NC}" >&2
         return 1
     fi
+    # Prefer the builder image recorded by the packaging job (falls back to default).
     if [[ -n "$builder_from_env" && "$builder_from_env" != "unknown" ]]; then
         builder_image="$builder_from_env"
     fi
