@@ -40,5 +40,4 @@ runs:
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
       run: |
         set -euo pipefail
-        chmod +x scripts/package-source.sh
         bash scripts/package-source.sh
