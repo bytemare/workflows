@@ -32,6 +32,7 @@ runs:
       shell: bash
       env:
         EXTENDED_METADATA: ${{ inputs.extended_metadata }}
+        SLSA_BUILDER_IMAGE: ${{ env.SLSA_BUILDER_IMAGE }}
         GITHUB_SHA: ${{ github.sha }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -39,5 +40,4 @@ runs:
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
       run: |
         set -euo pipefail
-        chmod +x scripts/package-source.sh
         bash scripts/package-source.sh

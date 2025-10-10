@@ -11,7 +11,7 @@
 
 # This script automates the verification of SLSA Level 3 compliant releases,
 # including checksum verification, signature verification, and a full, containerized
-# reproducibility check.
+# reproducibility check using a digest-pinned Go toolchain (SLSA Level 4 evidence).
 #
 # Usage:
 #   ./verify-release.sh --repo OWNER/REPO --tag TAG [--mode MODE]
@@ -28,6 +28,10 @@
 #
 
 set -euo pipefail
+
+# Default container image used for rebuild verification (matches CI builder digest).
+# The reproduce mode prefers the value recorded in build.env but falls back to this.
+readonly REPRO_IMAGE_DEFAULT="golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9"
 
 # Color codes for output
 readonly GREEN='\033[0;32m'
@@ -155,7 +159,7 @@ check_tools() {
     local required_tools=("gh" "jq" "openssl" "cosign")
 
     if [[ "$MODE" == "reproduce" ]]; then
-        required_tools=("docker")
+        required_tools=("docker" "gh")
     fi
 
     if ! command -v sha256sum &> /dev/null && ! command -v shasum &> /dev/null; then
@@ -344,70 +348,90 @@ run_verification() {
 
 # --- Reproducibility Check function for reproduce mode ---
 run_repro_check() {
-    local CONTAINER_SCRIPT
-    CONTAINER_SCRIPT=$(cat <<'EOS'
+    echo "--- Launching reproducibility check for $REPO @ $TAG in Docker... ---"
+
+    local builder_image="$REPRO_IMAGE_DEFAULT"
+    local subjects_tmp build_env_tmp
+    subjects_tmp=$(mktemp)
+    build_env_tmp=$(mktemp)
+
+    # Pull the published subjects + build.env so we can reuse the exact builder image
+    # and artifact digest captured during packaging.
+    gh release download "$TAG" --repo "$REPO" -p "subjects.sha256" --output "$subjects_tmp" >/dev/null
+    gh release download "$TAG" --repo "$REPO" -p "build.env" --output "$build_env_tmp" >/dev/null || true
+
+    local artifact_filename expected_digest builder_from_env
+    artifact_filename=$(awk 'NR==1 {print $2}' "$subjects_tmp")
+    expected_digest=$(awk 'NR==1 {print $1}' "$subjects_tmp")
+    builder_from_env=$(awk -F= '/^SLSA_BUILDER_IMAGE=/ {print $2}' "$build_env_tmp" | tail -n1)
+
+    rm -f "$subjects_tmp" "$build_env_tmp"
+
+    if [[ -z "$artifact_filename" || -z "$expected_digest" ]]; then
+        echo -e "${RED}subjects.sha256 missing primary artifact details${NC}" >&2
+        return 1
+    fi
+    # Prefer the builder image recorded by the packaging job (falls back to default).
+    if [[ -n "$builder_from_env" && "$builder_from_env" != "unknown" ]]; then
+        builder_image="$builder_from_env"
+    fi
+
+    if ! docker run --rm -i "$builder_image" /bin/bash -se <<'EOS' "$REPO" "$TAG" "$artifact_filename" "$expected_digest"; then
 #!/usr/bin/env bash
-#
-# --- This entire script runs inside a temporary Docker container ---
-#
 set -euo pipefail
 
-# --- Container Script: Variables ---
-REPO="${1:-}"
-TAG="${2:-}"
-REPO_NAME="${3:-}"
+REPO="$1"
+TAG="$2"
+ARTIFACT_NAME="$3"
+EXPECTED_DIGEST="$4"
 
-# --- Container Script: Formatting ---
-readonly GREEN='\033[0;32m'
-readonly RED='\033[0;31m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m'
-
-step() { echo -e "\n${YELLOW}--- $1 ---
-${NC}"; }
+step() { printf "
+--- %s ---
+" "$1"; }
 info() { printf "% -50s" "$1..."; }
-ok() { echo -e " ${GREEN}✓${NC}"; }
+ok() { echo " OK"; }
 fail() {
-    echo -e " ${RED}✗${NC}"
-    if [[ -n "${1:-}" ]]; then echo -e "  ${RED}Error: ${1}${NC}" >&2; fi
+    echo " FAIL"
+    if [[ -n "${1:-}" ]]; then echo "  Error: ${1}" >&2; fi
     exit 1
 }
 
-# --- Container Script: Main Logic ---
-step "Installing Dependencies (inside container)"
-info "Updating apt and installing packages"
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq >/dev/null
-apt-get install -y -qq git ca-certificates gzip wget coreutils perl-base >/dev/null
-ok
-
-info "Installing Go toolchain (1.25.x)"
-wget -q -O go.tar.gz https://go.dev/dl/go1.25.0.linux-amd64.tar.gz
-tar -C /usr/local -xzf go.tar.gz
-export PATH=/usr/local/go/bin:$PATH
-rm go.tar.gz
-ok
-
-step "Fetching Original Artifact"
-WORK_DIR="/tmp/verify-repro"
+step "Fetching published artifact"
+WORK_DIR="/tmp/slsa-repro"
+rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
-ARTIFACT_NAME="${REPO_NAME}-${TAG}.tar.gz"
-ARTIFACT_URL="https://github.com/$REPO/releases/download/$TAG/$ARTIFACT_NAME"
-info "Downloading $ARTIFACT_NAME"
-wget -q "$ARTIFACT_URL" || fail "Could not download original artifact from $ARTIFACT_URL"
+SUBJECTS_URL="https://github.com/${REPO}/releases/download/${TAG}/subjects.sha256"
+info "Downloading subjects.sha256"
+curl -sSLo subjects.sha256 "$SUBJECTS_URL" || fail "Unable to fetch subjects.sha256"
+sha_from_subjects=$(awk 'NR==1 {print $1}' subjects.sha256)
+artifact_from_subjects=$(awk 'NR==1 {print $2}' subjects.sha256)
+if [[ "$artifact_from_subjects" != "$ARTIFACT_NAME" ]]; then
+    fail "subjects.sha256 lists '$artifact_from_subjects', expected '$ARTIFACT_NAME'"
+fi
+if [[ "$sha_from_subjects" != "$EXPECTED_DIGEST" ]]; then
+    fail "subjects.sha256 digest mismatch"
+fi
 ok
 
-info "Calculating original digest"
-original_digest=$(sha256sum "$ARTIFACT_NAME" | awk '{print $1}')
-echo -n "$original_digest"
+info "Downloading ${ARTIFACT_NAME}"
+mkdir -p "$(dirname "$ARTIFACT_NAME")"
+curl -sSLo "$ARTIFACT_NAME" "https://github.com/${REPO}/releases/download/${TAG}/${ARTIFACT_NAME}" || fail "Unable to download artifact"
 ok
 
-step "Rebuilding Artifact"
-info "Cloning repository"
+info "Validating downloaded digest"
+download_digest=$(sha256sum "$ARTIFACT_NAME" | awk '{print $1}')
+if [[ "$download_digest" != "$EXPECTED_DIGEST" ]]; then
+    fail "Downloaded tarball digest mismatch"
+fi
+ok
+
+step "Rebuilding artifact"
 temp_repo="/tmp/repro-repo"
-git clone --branch "$TAG" "https://github.com/$REPO.git" "$temp_repo" >/dev/null 2>&1 || fail "Failed to clone repository for tag $TAG"
+rm -rf "$temp_repo"
+info "Cloning repository"
+git clone --depth 1 --branch "$TAG" "https://github.com/${REPO}.git" "$temp_repo" >/dev/null 2>&1 || fail "Failed to clone repository for tag $TAG"
 cd "$temp_repo"
 ok
 
@@ -416,47 +440,42 @@ export GITHUB_SHA=$(git rev-parse HEAD)
 export GITHUB_REPOSITORY="$REPO"
 export GITHUB_REF_NAME="$TAG"
 export GITHUB_REF_TYPE="tag"
-export GITHUB_RUN_NUMBER="0"
-
-set -euo pipefail
+export GITHUB_RUN_NUMBER=0
+export EXTENDED_METADATA=false
 export LC_ALL=C LANG=C TZ=UTC
 umask 022
-SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
-export SOURCE_DATE_EPOCH
-sanitize() { local in="$1" out; out="${in//[^A-Za-z0-9._-]/_}"; [ -n "$out" ] || fail "Sanitized empty: $in"; printf '%s\n' "$out"; }
-REPO_SAFE="$(sanitize "${GITHUB_REPOSITORY#*/}")"
-TAG_SAFE="$(sanitize "${GITHUB_REF_NAME//\//_}")"
-BASENAME="${REPO_SAFE}-${TAG_SAFE}"
-OUTDIR=dist
-mkdir -p "$OUTDIR"
-ARCHIVE_PATH="${OUTDIR}/${BASENAME}.tar.gz"
-git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
+
+set +e
+bash scripts/package-source.sh >/tmp/packaging.log 2>&1
+status=$?
+set -e
+if [[ $status -ne 0 ]]; then
+    fail "Packaging script failed:
+$(cat /tmp/packaging.log)"
+fi
 ok
 
 info "Calculating rebuilt digest"
-rebuilt_digest=$(sha256sum "$ARCHIVE_PATH" | awk '{print $1}')
-echo -n "$rebuilt_digest"
+rebuilt_path=$(find dist -maxdepth 1 -name '*.tar.gz' -print -quit)
+if [[ -z "$rebuilt_path" ]]; then
+    fail "Rebuilt tarball not found"
+fi
+rebuilt_digest=$(sha256sum "$rebuilt_path" | awk '{print $1}')
+if [[ "$rebuilt_digest" != "$EXPECTED_DIGEST" ]]; then
+    fail "Rebuilt digest mismatch (expected $EXPECTED_DIGEST, got $rebuilt_digest)"
+fi
 ok
 
-step "Comparing Digests"
-info "Checking for match"
-if [[ "$original_digest" == "$rebuilt_digest" ]]; then
-    ok
-    echo -e "\n${GREEN}✓ SUCCESS: Artifact is reproducible.${NC}"
-else
-    fail "Digests do not match!"
-    echo -e "  Original: $original_digest" >&2
-    echo -e "  Rebuilt:  $rebuilt_digest" >&2
-fi
+echo "
+SUCCESS: Artifact is reproducible."
 EOS
-    )
+        echo -e "${RED}Docker reproducibility check failed${NC}" >&2
+        return 1
+    fi
 
-    echo "--- Launching reproducibility check for $REPO @ $TAG in Docker... ---"
-    docker run --rm -i "ubuntu:22.04" /bin/bash -c "$CONTAINER_SCRIPT" -- "$REPO" "$TAG" "$REPO_NAME"
     echo "--- Reproducibility check complete. ---"
     return 0
 }
-
 
 # Main function
 main() {

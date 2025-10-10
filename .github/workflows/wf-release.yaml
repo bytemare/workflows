@@ -24,7 +24,6 @@ jobs:
   Release:
     uses: ./.github/workflows/slsa-provenance.yaml
     with:
-      go-version: '1.25'
       dry_run: ${{ github.event_name == 'pull_request' }}
       create_release: ${{ github.event_name != 'pull_request' }}
       sign_blobs: true

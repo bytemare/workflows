@@ -155,6 +155,8 @@ if [ -f /etc/os-release ]; then source /etc/os-release; fi
   printf 'BUILD_PACKAGES=%s\n' "git,ca-certificates,gzip,wget,coreutils,perl-base"
   printf 'SOURCE_DATE_EPOCH=%s\n' "${SOURCE_DATE_EPOCH}"
   printf 'PACKAGING_SCRIPT_SHA256=%s\n' "$SCRIPT_DIGEST"
+  # Surface the container digest so external verifiers can reuse the exact builder.
+  printf 'SLSA_BUILDER_IMAGE=%s\n' "${SLSA_BUILDER_IMAGE:-unknown}"
 } > build.env
 echo "EXTENDED_METADATA=${EXTENDED_METADATA:-false}" >> build.env
 echo '::endgroup::'
@@ -223,7 +225,7 @@ fi
 
 # Summary line (parse-friendly)
 subjects_count=$(wc -l < subjects.sha256 | tr -d ' ')
-echo "PACKAGING SUMMARY: artifact=$(basename \""$ARCHIVE_PATH"\") sha256=$artifact_sha256 extended_metadata=${EXTENDED_METADATA:-false} files=$file_manifest_entries commit=$commit_sha subjects=$subjects_count"
+echo "PACKAGING SUMMARY: artifact=$(basename "$ARCHIVE_PATH") sha256=$artifact_sha256 extended_metadata=${EXTENDED_METADATA:-false} files=$file_manifest_entries commit=$commit_sha subjects=$subjects_count"
 
 # Surface outputs for GitHub Actions workflow consumption.
 if [ -n "${GITHUB_OUTPUT:-}" ]; then

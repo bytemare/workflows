@@ -95,21 +95,21 @@ chmod +x verify-release.sh
 # Run full verification (all artifacts)
 ./verify-release.sh --repo bytemare/workflows --tag 0.0.4 --mode full
 
-# Run containerized reproducibility check
+# Run containerized reproducibility check (uses golang:1.25-bookworm@sha256:42d8e9de...)
 ./verify-release.sh --repo bytemare/workflows --tag 0.0.4 --mode reproduce
 ```
 
 **Verification Modes:**
 - **quick** (default) - Basic checksum and signature verification (fast, recommended for most users).
 - **full** - Complete verification of all release artifacts including SBOM and provenance.
-- **reproduce** - A full, containerized reproducibility check. This is the most thorough verification, performed in a clean Docker environment.
+- **reproduce** - Hermetic rebuild using the `SLSA_BUILDER_IMAGE` recorded in `build.env` (defaults to `golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9`), yielding independent SLSA Level 4 evidence.
 
 The script automatically:
 - Checks for required tools (gh, jq, cosign, openssl, sha256sum/shasum, git for full mode)
 - Downloads all necessary artifacts
 - Verifies checksums and signatures
 - Validates SLSA provenance and SBOM (in full mode)
-- Tests reproducibility (in full mode)
+- Tests reproducibility (in reproduce mode)
 - Provides concise one-line output with clear success/failure indicators
 
 ### Manual Verification
@@ -119,7 +119,9 @@ If you prefer to verify manually or understand the process:
 ### Prerequisites
 - `shasum` or `sha256sum`
 - `cosign` (≥2.x)
-- Optional: `gh` CLI, `jq`
+- `gh` CLI, `jq`
+- `docker` (only required for `--mode reproduce`)
+- `build.env` includes `SLSA_BUILDER_IMAGE=<digest>` to reconstruct the exact builder image (the verification script reads this automatically).
 
 ### Steps
 
@@ -408,32 +410,36 @@ printf '%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
 
 ### Common Issues & Solutions
 
-| Issue                            | Likely Cause                                | Solution                                                                    |
-|----------------------------------|---------------------------------------------|-----------------------------------------------------------------------------|
-| **Internal self-check fails**    | Nondeterministic FS, tool version drift     | Re-run and inspect `build.env` to confirm git/gzip versions match                |
-| **Rebuild digest mismatch**      | Hidden state dependency, incorrect env vars | Ensure clean clone, verify `GITHUB_*` vars, and compare `manifest.files.sha256` |
-| **Per-file content mismatch**    | Line ending corruption, LFS filters         | Check for CRLF conversion and disable Git LFS filters if needed                          |
-| **Missing extended artifacts**   | Extended mode not enabled                   | Re-run with `EXTENDED_METADATA=true`                                        |
-| **Signature verification fails** | Wrong file pairing, network issues          | Use bundle files for simplicity or check Rekor availability                   |
-| **Cosign "unknown authority"**   | Missing Sigstore root                       | Update cosign and run `cosign initialize`                                      |
-| **Certificate inspection fails** | Manually parsing `.cert` file with bundles  | Trust `cosign verify-blob --bundle`. This handles certificate validation implicitly. |
-| **Invalid provenance structure** | Provenance is a Sigstore bundle, not plain JSON | Use `jq` and `base64` to decode the `.dsseEnvelope.payload` for manual inspection. |
+| Issue                            | Likely Cause                                    | Solution                                                                             |
+|----------------------------------|-------------------------------------------------|--------------------------------------------------------------------------------------|
+| **Internal self-check fails**    | Nondeterministic FS, tool version drift         | Re-run and inspect `build.env` to confirm git/gzip versions match                    |
+| **Rebuild digest mismatch**      | Hidden state dependency, incorrect env vars     | Ensure clean clone, verify `GITHUB_*` vars, and compare `manifest.files.sha256`      |
+| **Per-file content mismatch**    | Line ending corruption, LFS filters             | Check for CRLF conversion and disable Git LFS filters if needed                      |
+| **Missing extended artifacts**   | Extended mode not enabled                       | Re-run with `EXTENDED_METADATA=true`                                                 |
+| **Signature verification fails** | Wrong file pairing, network issues              | Use bundle files for simplicity or check Rekor availability                          |
+| **Cosign "unknown authority"**   | Missing Sigstore root                           | Update cosign and run `cosign initialize`                                            |
+| **Certificate inspection fails** | Manually parsing `.cert` file with bundles      | Trust `cosign verify-blob --bundle`. This handles certificate validation implicitly. |
+| **Invalid provenance structure** | Provenance is a Sigstore bundle, not plain JSON | Use `jq` and `base64` to decode the `.dsseEnvelope.payload` for manual inspection.   |
 
 ### Determinism Guarantees
 
 The build process ensures reproducibility via:
 
-1. ✅ **Hermetic builds** - The entire packaging process runs in a container with explicit dependencies.
+1. ✅ **Hermetic builds** - The packaging job runs via a pinned digest, so inputs are locked to a known toolchain.
 2. ✅ **Clean tree enforcement** - Aborts if uncommitted changes exist
-2. ✅ **Stable naming** - Sanitized repo/ref names in archive prefix
-3. ✅ **Archive determinism** - `git archive` + `gzip -n` (zero mtime)
-4. ✅ **Locale normalization** - `LC_ALL=C`, `TZ=UTC`, `umask 022`
-5. ✅ **Dual reproducibility checks**:
+3. ✅ **Stable naming** - Sanitized repo/ref names in archive prefix
+4. ✅ **Archive determinism** - `git archive` + `gzip -n` (zero mtime)
+5. ✅ **Locale normalization** - `LC_ALL=C`, `TZ=UTC`, `umask 022`
+6. ✅ **Dual reproducibility checks**:
    - Internal: Script rebuilds & compares (fast fail)
    - External: CI rebuild job (independent workspace)
-6. ✅ **Content manifest** - Per-file SHA-256 for deep verification
-7. ✅ **Script integrity** - Hash stored in `build.env`
-8. ✅ **Bundle convenience** - Single-file signature verification
+7. ✅ **Content manifest** - Per-file SHA-256 for deep verification
+8. ✅ **Script integrity** - Hash stored in `build.env`
+9. ✅ **Bundle convenience** - Single-file signature verification
+
+The release workflow separates artifact creation (`package_source`) from
+networked actions (`sbom_and_release`), ensuring the build step itself stays
+hermetic while attestations/signatures run with a tightly scoped allowlist.
 
 ### Getting Help
 

@@ -13,10 +13,6 @@ name: SLSA Build Level 4 Provenance and GitHub Artifact Attestations
 on:
   workflow_call:
     inputs:
-      go-version:
-        type: string
-        required: false
-        default: '1.25' # Use a specific version, not a range
       create_release:
         type: boolean
         required: false
@@ -46,57 +42,134 @@ defaults:
     shell: bash
 
 jobs:
-  package_and_sbom:
-    name: Package source + SBOM + Attestations
+  package_source:
+    # Hermetic packaging job: runs offline in the pinned Go toolchain container.
+    name: Package hermetic source
     if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     # Fully containerize to ensure hermetic, consistent environment.
     container:
-      image: golang:${{ inputs.go-version }}-bookworm
+      image: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
     permissions:
       actions: read
-      contents: write
-      id-token: write
-      attestations: write
-      security-events: write
+      contents: read
     outputs:
-      artifact_path: ${{ steps.package.outputs.artifact_path }}
       artifact_filename: ${{ steps.package.outputs.artifact_filename }}
-      subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
       artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
+      subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
+      artifact_path: ${{ steps.package.outputs.artifact_path }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
           disable-sudo: true
-          egress-policy: audit
+          egress-policy: block
           allowed-endpoints: >
             api.github.com:443
-            fulcio.sigstore.dev:443
-            rekor.sigstore.dev:443
-            tuf-repo-cdn.sigstore.dev:443
-            ctfe.sigstore.dev:443
             github.com:443
-            release-assets.githubusercontent.com:443
+            objects.githubusercontent.com:443
+            pkg-containers.githubusercontent.com:443
+            pipelines.actions.githubusercontent.com:443
+            artifactcache.actions.githubusercontent.com:443
 
       - name: Checkout repo
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
 
-      - name: Install Dependencies
-        run: |
-          apt-get update -qq >/dev/null
-          apt-get install -y -qq ca-certificates gzip wget >/dev/null
-
-      - name: Mark git directory as safe
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
       - id: package
         name: Package reproducible source
+        uses: ./.github/actions/package
+        with:
+          extended_metadata: ${{ inputs.extended_metadata }}
         env:
-          EXTENDED_METADATA: ${{ inputs.extended_metadata }}
-        run: bash scripts/package-source.sh
+          # Persist the builder digest so build.env captures it for downstream verification.
+          SLSA_BUILDER_IMAGE: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
+
+      - name: Upload packaging bundle
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        with:
+          name: package-${{ steps.package.outputs.artifact_filename }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ steps.package.outputs.artifact_path }}
+            subjects.sha256
+            checksums.txt
+            manifest.files.sha256
+            commit.metadata
+            build.env
+            verification.json
+
+  sbom_and_release:
+    # Networked follow-up job: consumes packaging artifacts, generates SBOM/attestations.
+    name: SBOM + Attest + Publish
+    needs: package_source
+    if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+      attestations: write
+      security-events: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pkg-containers.githubusercontent.com:443
+            uploads.github.com:443
+            release-assets.githubusercontent.com:443
+            artifactcache.actions.githubusercontent.com:443
+            pipelines.actions.githubusercontent.com:443
+            fulcio.sigstore.dev:443
+            rekor.sigstore.dev:443
+            tuf-repo-cdn.sigstore.dev:443
+            ctfe.sigstore.dev:443
+            oauth2.sigstore.dev:443
+            proxy.golang.org:443
+            sum.golang.org:443
+            storage.googleapis.com:443
+
+      - name: Checkout repo
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0
+
+      - name: Download packaging bundle
+        uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
+        with:
+          name: package-${{ needs.package_source.outputs.artifact_filename }}
+          path: package
+
+      - name: Prepare artifact paths
+        id: paths
+        run: |
+          TAR="package/${{ needs.package_source.outputs.artifact_path }}"
+          echo "artifact_path=${TAR}" >> "$GITHUB_OUTPUT"
+          echo "subjects_path=package/subjects.sha256" >> "$GITHUB_OUTPUT"
+          echo "checksums_path=package/checksums.txt" >> "$GITHUB_OUTPUT"
+          echo "manifest_path=package/manifest.files.sha256" >> "$GITHUB_OUTPUT"
+          echo "metadata_path=package/verification.json" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign (pinned)
+        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
+        env:
+          COSIGN_VERSION: v2.4.0
+          COSIGN_SHA256: cd7636b3586a3bdac2d9c8f3b421ed119edcb20499107887fd929211110e8418
+        run: |
+          set -euo pipefail
+          curl -sSLo cosign "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  cosign" | sha256sum -c -
+          install -m 0755 cosign /usr/local/bin/cosign
 
       - name: Generate CycloneDX SBOM (for Go modules)
         uses: CycloneDX/gh-gomod-generate-sbom@171199f37bbd0f611db19484319e87d2ee441f97
@@ -106,23 +179,16 @@ jobs:
 
       - name: Attest SBOM (bind SBOM to tarball digest)
         if: ${{ !inputs.dry_run }}
-        # Produces an SBOM attestation referencing the digest in subjects.sha256 (integrity + authenticity).
-        uses: actions/attest-sbom@4e404e709737cbaa2830f5ffb93a62340d5241a7
+        uses: actions/attest-sbom@580d4aff2154158e1f746a6ad674799329ccfad1
         with:
-          subject-checksums: subjects.sha256
+          subject-checksums: ${{ steps.paths.outputs.subjects_path }}
           sbom-path: sbom.cdx.json
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
-        # Native provenance attestation attaches build recipe metadata (OIDC-signed) to the artifact.
-        uses: actions/attest-build-provenance@3752c92e3bd95a40782ebef53ea5f91088c20e48
+        uses: actions/attest-build-provenance@bed76f6f806fc6af1c3d142325ca64330160764d
         with:
-          subject-path: ${{ steps.package.outputs.artifact_path }}
-
-      - name: Install cosign (keyless)
-        if: ${{ !inputs.dry_run && inputs.sign_blobs }}
-        # Cosign used for direct blob signing of the tarball (signature + cert) — public transparency logs via Fulcio/Rekor.
-        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62
+          subject-path: ${{ steps.paths.outputs.artifact_path }}
 
       - id: sign
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}
@@ -131,7 +197,7 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
-          ART_PATH='${{ steps.package.outputs.artifact_path }}'
+          ART_PATH='${{ steps.paths.outputs.artifact_path }}'
           cosign sign-blob --yes --bundle "${ART_PATH}.bundle" "${ART_PATH}"
           echo "bundle_file=${ART_PATH}.bundle" >> "$GITHUB_OUTPUT"
 
@@ -149,77 +215,87 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           set -euo pipefail
-          cosign sign-blob --yes --bundle checksums.txt.bundle checksums.txt
+          cosign sign-blob --yes --bundle package/checksums.txt.bundle package/checksums.txt
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7
+        uses: softprops/action-gh-release@f38efdea4c5ffe13e9424b0aa2833bee28f1e34c
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            ${{ steps.package.outputs.artifact_path }}
+            ${{ steps.paths.outputs.artifact_path }}
             ${{ steps.sign.outputs.bundle_file }}
             sbom.cdx.json
             sbom.cdx.json.bundle
-            checksums.txt
-            checksums.txt.bundle
-            subjects.sha256
-            manifest.files.sha256
-            commit.metadata
-            build.env
+            package/checksums.txt
+            package/checksums.txt.bundle
+            package/subjects.sha256
+            package/manifest.files.sha256
+            package/commit.metadata
+            package/build.env
             scripts/package-source.sh
-            verification.json
+            package/verification.json
 
       - name: Upload artifacts (PR dry run)
         if: ${{ inputs.dry_run }}
-        # For pull requests: surface artifacts for inspection without publishing a release.
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
-            name: dryrun-${{ steps.package.outputs.artifact_filename }}
-            path: |
-              ${{ steps.package.outputs.artifact_path }}
-              sbom.cdx.json
-              subjects.sha256
-              checksums.txt
-              manifest.files.sha256
-              commit.metadata
-              build.env
-              scripts/package-source.sh
-              verification.json
+          name: dryrun-${{ needs.package_source.outputs.artifact_filename }}
+          if-no-files-found: warn
+          path: |
+            ${{ steps.paths.outputs.artifact_path }}
+            sbom.cdx.json
+            package/subjects.sha256
+            package/checksums.txt
+            package/manifest.files.sha256
+            package/commit.metadata
+            package/build.env
+            scripts/package-source.sh
+            package/verification.json
 
   rebuild_verify:
     # Purpose: independently re-run packaging to assert determinism (SLSA Level 4).
     name: Rebuild & Verify Determinism
     if: ${{ github.ref_type == 'tag' && !inputs.dry_run }}
-    needs: package_and_sbom
+    needs: package_source
     runs-on: ubuntu-latest
     container:
-      image: golang:${{ inputs.go-version }}-bookworm
+      # Mirror the hermetic builder so the rebuild check uses identical bits.
+      image: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
     permissions:
       contents: read
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pipelines.actions.githubusercontent.com:443
+
       - name: Checkout repo (fresh workspace)
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
-
-      - name: Install Dependencies
-        run: |
-          apt-get update -qq >/dev/null
-          apt-get install -y -qq ca-certificates gzip wget >/dev/null
 
       - id: repackage
         name: Re-run deterministic packaging
         uses: ./.github/actions/package
         with:
           extended_metadata: ${{ inputs.extended_metadata }}
+        env:
+          # The rebuild must mirror the original builder image to satisfy L4 reproducibility.
+          SLSA_BUILDER_IMAGE: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
 
       - name: Compare digests
         # Fails fast if non-deterministic differences emerge.
         run: |
           set -euo pipefail
-          orig='${{ needs.package_and_sbom.outputs.artifact_sha256 }}'
+          orig='${{ needs.package_source.outputs.artifact_sha256 }}'
           new='${{ steps.repackage.outputs.artifact_sha256 }}'
           echo "Original digest: $orig"
           echo "Rebuilt  digest: $new"
@@ -232,10 +308,10 @@ jobs:
   provenance_slsa:
     name: SLSA Build Level 4 Provenance
     if: ${{ !inputs.dry_run && github.ref_type == 'tag' }}
-    needs: [package_and_sbom, rebuild_verify]
+    needs: [package_source, rebuild_verify]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
-      base64-subjects: ${{ needs.package_and_sbom.outputs.subjects_b64 }}
+      base64-subjects: ${{ needs.package_source.outputs.subjects_b64 }}
       upload-assets: true
     permissions:
       actions: read
