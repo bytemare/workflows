@@ -35,9 +35,9 @@ jobs:
             release-assets.githubusercontent.com:443
 
       - name: Check out code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 #v2.4.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           persist-credentials: false
 
       - name: Do Not Submit
-        uses: chainguard-dev/actions/donotsubmit@580a87aaa9cfb0a4d2d3f38f9a679d436f5ec147 # v1.5.2
+        uses: chainguard-dev/actions/donotsubmit@580a87aaa9cfb0a4d2d3f38f9a679d436f5ec147

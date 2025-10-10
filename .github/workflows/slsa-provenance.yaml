@@ -145,7 +145,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download packaging bundle
-        uses: actions/download-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
+        uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
         with:
           name: package-${{ needs.package_source.outputs.artifact_filename }}
           path: package
@@ -179,14 +179,14 @@ jobs:
 
       - name: Attest SBOM (bind SBOM to tarball digest)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-sbom@4e404e709737cbaa2830f5ffb93a62340d5241a7
+        uses: actions/attest-sbom@580d4aff2154158e1f746a6ad674799329ccfad1
         with:
           subject-checksums: ${{ steps.paths.outputs.subjects_path }}
           sbom-path: sbom.cdx.json
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@3752c92e3bd95a40782ebef53ea5f91088c20e48
+        uses: actions/attest-build-provenance@bed76f6f806fc6af1c3d142325ca64330160764d
         with:
           subject-path: ${{ steps.paths.outputs.artifact_path }}
 
@@ -219,7 +219,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7
+        uses: softprops/action-gh-release@f38efdea4c5ffe13e9424b0aa2833bee28f1e34c
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
