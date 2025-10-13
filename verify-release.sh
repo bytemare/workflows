@@ -355,6 +355,9 @@ run_repro_check() {
     subjects_tmp=$(mktemp)
     build_env_tmp=$(mktemp)
 
+    # mktemp creates the files. Here, we remove them so gh can write without --clobber.
+    rm -f "$subjects_tmp" "$build_env_tmp"
+
     # Pull the published subjects + build.env so we can reuse the exact builder image
     # and artifact digest captured during packaging.
     gh release download "$TAG" --repo "$REPO" -p "subjects.sha256" --output "$subjects_tmp" >/dev/null

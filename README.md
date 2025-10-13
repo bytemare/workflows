@@ -21,7 +21,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [Codecov](#codecov)
 - [Build & Release Workflows](#build--release-workflows)
   - [Tests](#tests)
-  - [SLSA Level 3 / SLSA Level 4](#release-slsa-level-3-and-slsa-level-4-reproducible-builds)
+  - [SLSA Level 3 / SLSA Level 4](#release-slsa-level-3--4)
 
 ---
 
@@ -273,12 +273,11 @@ jobs:
 
 ---
 
-### Release (SLSA Level 4)
+### Release (SLSA Level 3 & 4)
 
 Build and publish signed, reproducible release artifacts with SLSA Level 4 provenance.
 
 - 🔒 **SLSA Level 4 Compliance** - Hermetic, reproducible builds with non-falsifiable provenance.
-- 🛠️ **Pinned Toolchain Digests** - Packaging runs in `golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9`; signing pins cosign v2.4.0 by SHA256.
 - 📦 **SBOM** - CycloneDX Software Bill of Materials
 - ✍️ **Keyless Signing** - Cosign signatures with Rekor transparency logs
 - 🗂️ **Complete Metadata** - Commit metadata, environment snapshots, verification reports
