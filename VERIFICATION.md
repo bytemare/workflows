@@ -13,6 +13,7 @@
 - [Complete Verification (SLSA Level 3 + Level 4)](#complete-verification-slsa-level-3--level-4)
 - [Reproducing Builds Locally (SLSA Level 4 verification)](#reproducing-builds-locally-slsa-level-4-verification)
 - [Troubleshooting](#troubleshooting)
+- [SLSA Compliance](#slsa-compliance)
 
 ---
 
@@ -212,7 +213,7 @@ mkdir -p /tmp/verify && tar -xzf "${ART}" -C /tmp/verify
 cd /tmp/verify/${BASENAME}
 
 while read -r hash file; do
-  computed=$(sha256sum -- "$file" | awk '{print $1}')
+  computed=$(sha256sum -- "$file" | awk \'{print $1}\'')
   [ "$hash" = "$computed" ] || { echo "❌ Mismatch: $file"; exit 1; }
 done < "${MANIFEST_DIR}/manifest.files.sha256"
 
@@ -282,7 +283,7 @@ PROV=$(find . -maxdepth 1 -name "*.intoto.jsonl" -type f -print -quit 2>/dev/nul
 Verify the provenance bundle references the correct artifact digests from `subjects.sha256`.
 
 ```bash
-if grep -q "$(head -n1 subjects.sha256 | awk '{print $1}')" "$PROV"; then
+if grep -q "$(head -n1 subjects.sha256 | awk \'{print $1}\')" "$PROV"; then
     echo "✅ Provenance references primary artifact digest"
 else
     echo "❌ Provenance mismatch on primary artifact"
@@ -380,10 +381,10 @@ REPO="workflows"  # Replace with actual repository name
 TAG="0.0.4"       # Replace with the tag you're verifying
 
 # Your local digest
-local_digest=$(sha256sum dist/*.tar.gz | awk '{print $1}')
+local_digest=$(sha256sum dist/*.tar.gz | awk \'{print $1}\')
 
 # Published digest
-published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/download/${TAG}/subjects.sha256 | head -n1 | awk '{print $1}')
+published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/download/${TAG}/subjects.sha256 | head -n1 | awk \'{print $1}\')
 
 [ "$local_digest" = "$published_digest" ] && \
   echo "✅ REPRODUCIBLE BUILD CONFIRMED" || \
@@ -394,7 +395,7 @@ published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/downloa
 
 For understanding the core process:
 ```bash
-BASENAME="$(echo "${GITHUB_REPOSITORY#*/}" | sed 's/[^A-Za-z0-9._-]/_/g')-$(echo "$GITHUB_REF_NAME" | sed 's/[^A-Za-z0-9._-]/_/g')"
+BASENAME="$(echo "${GITHUB_REPOSITORY#*/}" | sed \'s/[^A-Za-z0-9._-]/_/g\' )-"$(echo "$GITHUB_REF_NAME" | sed \'s/[^A-Za-z0-9._-]/_/g\')"
 mkdir -p dist
 ARCHIVE_PATH="dist/${BASENAME}.tar.gz"
 
@@ -402,8 +403,9 @@ ARCHIVE_PATH="dist/${BASENAME}.tar.gz"
 git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
 
 # Generate subject digest
-sha256=$( (command -v sha256sum && sha256sum "$ARCHIVE_PATH" || shasum -a 256 "$ARCHIVE_PATH") | awk '{print $1}')
-printf '%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
+sha256=$( (command -v sha256sum && sha256sum "$ARCHIVE_PATH" || shasum -a 256 "$ARCHIVE_PATH") | awk \'{print $1}\')
+printf 
+'%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
 
 # Script later appends checksums.txt digest and base64-encodes for SLSA (ephemeral)
 ```
