@@ -1,22 +1,25 @@
 # Release Verification & Reproducibility Guide
 
 > **Quick Start:** Jump to [Quick Verification](#quick-verification) for basic checks.  
-> **Auditors/Packagers:** See [Complete Verification](#complete-verification) and [Reproducing Builds](#reproducing-builds-locally).
+> **Auditors/Packagers:** See [Complete Verification](#complete-verification-slsa-level-3--level-4) and [Reproducing Builds Locally](#reproducing-builds-locally-slsa-level-4-verification).
 
-## Table of Contents
-- [Why Verify Releases?](#why-verify-releases)
-- [What We Provide](#what-we-provide)
-- [Build Modes](#build-modes-lean-vs-extended)
+- [Provided resources](#provided-resources)
+  - [Build Modes](#artifacts-depending-on-build-modes)
+    - [Core Artifacts](#core-artifacts-always-present)
+    - [Extended Artifacts](#extended-artifacts-optional)
 - [Quick Verification](#quick-verification)
-- [Complete Verification](#complete-verification)
-- [Reproducing Builds Locally](#reproducing-builds-locally)
+  - [Automated Verification (Recommended)](#automated-verification-recommended)
+  - [Manual Verification](#manual-verification)
+- [Complete Verification (SLSA Level 3 + Level 4)](#complete-verification-slsa-level-3--level-4)
+- [Reproducing Builds Locally (SLSA Level 4 verification)](#reproducing-builds-locally-slsa-level-4-verification)
 - [Troubleshooting](#troubleshooting)
+- [SLSA Compliance](#slsa-compliance)
 
 ---
 
-## Why Verify Releases?
-
-Modern software supply chains face risks from accidental nondeterminism to targeted tampering. This verification process ensures:
+This release verification process is designed to provide SLSA Level 3 and Level 4 compliance through strong cryptographic
+assurances about the authenticity, integrity, and provenance of the software artifacts, to reduce the risks from accidental
+nondeterminism to targeted tampering. This verification process ensures:
 
 | Stakeholder                   | Benefit                                                       |
 |-------------------------------|---------------------------------------------------------------|
@@ -34,9 +37,20 @@ Modern software supply chains face risks from accidental nondeterminism to targe
 
 ---
 
-## What We Provide
+## Provided resources
 
-### Core Artifacts (Always Present)
+A set of artifacts are produced per release, and a verification script to help you attest (see [Quick Verification](#quick-verification)).
+
+---
+
+## Artifacts depending on build modes
+
+| Mode               | Enable Via                | Artifacts           | Use Case                                      |
+|--------------------|---------------------------|---------------------|-----------------------------------------------|
+| **Lean** (default) | Default setting           | Core artifacts only | Fast builds, sufficient for most verification |
+| **Extended**       | `extended_metadata: true` | + git tree + Go env | Deep forensics, regulatory compliance         |
+
+#### Core Artifacts (Always Present)
 
 | File                                    | Purpose                                                 | SLSA Level and requirement                      |
 |-----------------------------------------|---------------------------------------------------------|-------------------------------------------------|
@@ -54,7 +68,7 @@ Modern software supply chains face risks from accidental nondeterminism to targe
 | `verification.json`                     | Machine-readable reproducibility summary                | L4 (automated policy enforcement)               |
 | `scripts/package-source.sh`             | Canonical packaging recipe                              | L4 (reproducible build script)                  |
 
-### Extended Artifacts (Optional)
+#### Extended Artifacts (Optional)
 
 Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` locally.
 
@@ -64,15 +78,6 @@ Enable with `extended_metadata: true` in workflow or `EXTENDED_METADATA=true` lo
 | `go.env.json`       | Go toolchain environment (sorted JSON)      |
 
 **Note:** Separate `.sha256` sidecar files removed for simplicity. Integrity verified via `checksums.txt` and `subjects.sha256`.
-
----
-
-## Build Modes (Lean vs Extended)
-
-| Mode               | Enable Via                | Artifacts           | Use Case                                      |
-|--------------------|---------------------------|---------------------|-----------------------------------------------|
-| **Lean** (default) | Default setting           | Core artifacts only | Fast builds, sufficient for most verification |
-| **Extended**       | `extended_metadata: true` | + git tree + Go env | Deep forensics, regulatory compliance         |
 
 ---
 
@@ -163,7 +168,7 @@ cosign verify-blob \
 
 ---
 
-## Complete Verification
+## Complete Verification (SLSA Level 3 + Level 4)
 
 **For security auditors and compliance requirements.**
 
@@ -208,7 +213,7 @@ mkdir -p /tmp/verify && tar -xzf "${ART}" -C /tmp/verify
 cd /tmp/verify/${BASENAME}
 
 while read -r hash file; do
-  computed=$(sha256sum -- "$file" | awk '{print $1}')
+  computed=$(sha256sum -- "$file" | awk \'{print $1}\'')
   [ "$hash" = "$computed" ] || { echo "❌ Mismatch: $file"; exit 1; }
 done < "${MANIFEST_DIR}/manifest.files.sha256"
 
@@ -278,7 +283,7 @@ PROV=$(find . -maxdepth 1 -name "*.intoto.jsonl" -type f -print -quit 2>/dev/nul
 Verify the provenance bundle references the correct artifact digests from `subjects.sha256`.
 
 ```bash
-if grep -q "$(head -n1 subjects.sha256 | awk '{print $1}')" "$PROV"; then
+if grep -q "$(head -n1 subjects.sha256 | awk \'{print $1}\')" "$PROV"; then
     echo "✅ Provenance references primary artifact digest"
 else
     echo "❌ Provenance mismatch on primary artifact"
@@ -334,7 +339,7 @@ Should show:
 
 ---
 
-## Reproducing Builds Locally
+## Reproducing Builds Locally (SLSA Level 4 verification)
 
 **For distribution packagers and SLSA Level 4 verification.**
 
@@ -376,10 +381,10 @@ REPO="workflows"  # Replace with actual repository name
 TAG="0.0.4"       # Replace with the tag you're verifying
 
 # Your local digest
-local_digest=$(sha256sum dist/*.tar.gz | awk '{print $1}')
+local_digest=$(sha256sum dist/*.tar.gz | awk \'{print $1}\')
 
 # Published digest
-published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/download/${TAG}/subjects.sha256 | head -n1 | awk '{print $1}')
+published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/download/${TAG}/subjects.sha256 | head -n1 | awk \'{print $1}\')
 
 [ "$local_digest" = "$published_digest" ] && \
   echo "✅ REPRODUCIBLE BUILD CONFIRMED" || \
@@ -390,7 +395,7 @@ published_digest=$(curl -sL https://github.com/${OWNER}/${REPO}/releases/downloa
 
 For understanding the core process:
 ```bash
-BASENAME="$(echo "${GITHUB_REPOSITORY#*/}" | sed 's/[^A-Za-z0-9._-]/_/g')-$(echo "$GITHUB_REF_NAME" | sed 's/[^A-Za-z0-9._-]/_/g')"
+BASENAME="$(echo "${GITHUB_REPOSITORY#*/}" | sed \'s/[^A-Za-z0-9._-]/_/g\' )-"$(echo "$GITHUB_REF_NAME" | sed \'s/[^A-Za-z0-9._-]/_/g\')"
 mkdir -p dist
 ARCHIVE_PATH="dist/${BASENAME}.tar.gz"
 
@@ -398,8 +403,9 @@ ARCHIVE_PATH="dist/${BASENAME}.tar.gz"
 git archive --format=tar --prefix="${BASENAME}/" "$GITHUB_SHA" | gzip -n -9 > "$ARCHIVE_PATH"
 
 # Generate subject digest
-sha256=$( (command -v sha256sum && sha256sum "$ARCHIVE_PATH" || shasum -a 256 "$ARCHIVE_PATH") | awk '{print $1}')
-printf '%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
+sha256=$( (command -v sha256sum && sha256sum "$ARCHIVE_PATH" || shasum -a 256 "$ARCHIVE_PATH") | awk \'{print $1}\')
+printf 
+'%s  %s\n' "$sha256" "$(basename "$ARCHIVE_PATH")" > subjects.sha256
 
 # Script later appends checksums.txt digest and base64-encodes for SLSA (ephemeral)
 ```
@@ -441,20 +447,14 @@ The release workflow separates artifact creation (`package_source`) from
 networked actions (`sbom_and_release`), ensuring the build step itself stays
 hermetic while attestations/signatures run with a tightly scoped allowlist.
 
-### Getting Help
-
-- **Build issues:** Check `build.env` and `verification.json`
-- **Signature issues:** Verify Rekor is accessible: `curl -I https://rekor.sigstore.dev`
-- **SLSA questions:** See [SLSA spec](https://slsa.dev/spec/v1.0/levels)
-
 ---
 
 ## Additional Resources
 
-- **Sigstore Documentation:** https://docs.sigstore.dev/
-- **SLSA Framework:** https://slsa.dev/
-- **Cosign CLI:** https://docs.sigstore.dev/cosign/overview/
-- **CycloneDX SBOM:** https://cyclonedx.org/
+- **SLSA Framework:** https://slsa.dev
+- **CycloneDX SBOM:** https://cyclonedx.org
+- **Sigstore Documentation:** https://docs.sigstore.dev
+- **Cosign CLI:** https://docs.sigstore.dev/cosign/overview
 
 ---
 

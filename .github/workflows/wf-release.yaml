@@ -22,7 +22,7 @@ permissions: {}
 
 jobs:
   Release:
-    uses: ./.github/workflows/slsa-provenance.yaml
+    uses: ./.github/workflows/slsa.yaml
     with:
       dry_run: ${{ github.event_name == 'pull_request' }}
       create_release: ${{ github.event_name != 'pull_request' }}

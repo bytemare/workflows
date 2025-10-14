@@ -58,10 +58,14 @@ REPO_NAME=""
 verify_step() {
     local message="$1"
     printf "% -60s" "$message..."
+
+    return 0
 }
 
 verify_ok() {
     echo -e " ${GREEN}✓${NC}"
+
+    return 0
 }
 
 verify_fail() {
@@ -70,6 +74,8 @@ verify_fail() {
     if [[ -n "$error" ]]; then
         echo -e "  ${RED}Error: $error${NC}" >&2
     fi
+
+    return 0
 }
 
 # Usage information
@@ -96,12 +102,15 @@ Examples:
   $0 --repo bytemare/workflows --tag 0.0.4 --mode reproduce
 
 EOF
+
+    return 0
 }
 
 # Parse command line arguments
 parse_args() {
     while [[ $# -gt 0 ]]; do
-        case $1 in
+        local arg=$1
+        case $arg in
             --repo)
                 REPO="$2"
                 shift 2
@@ -119,7 +128,7 @@ parse_args() {
                 exit $EXIT_SUCCESS
                 ;; 
             *)
-                echo -e "${RED}Error: Unknown argument: $1${NC}" >&2
+                echo -e "${RED}Error: Unknown argument: $arg${NC}" >&2
                 usage
                 exit $EXIT_MISSING_ARG
                 ;; 
@@ -151,6 +160,8 @@ parse_args() {
         echo -e "${RED}Error: Invalid repository format. Use OWNER/REPO${NC}" >&2
         exit $EXIT_MISSING_ARG
     fi
+
+    return 0
 }
 
 # Check for required tools
@@ -176,6 +187,8 @@ check_tools() {
         echo -e "${RED}Error: Missing required tools: ${missing_tools[*]}${NC}" >&2
         exit $EXIT_MISSING_TOOL
     fi
+
+    return 0
 }
 
 # Download release artifacts for quick/full modes
@@ -215,6 +228,7 @@ download_artifacts() {
     fi
 
     verify_ok
+
     return 0
 }
 
@@ -229,6 +243,8 @@ verify_subjects() {
         verify_fail "Expected 2 subjects, found $subject_count"
         return 1
     fi
+
+    return 0
 }
 
 verify_tarball_checksum() {
@@ -249,6 +265,8 @@ verify_tarball_checksum() {
         verify_fail "Tarball checksum mismatch"
         return 1
     fi
+
+    return 0
 }
 
 verify_checksums_manifest() {
@@ -267,6 +285,8 @@ verify_checksums_manifest() {
         verify_fail "Checksum mismatch"
         return 1
     fi
+
+    return 0
 }
 
 verify_signatures() {
@@ -287,6 +307,8 @@ verify_signatures() {
         verify_fail "Cosign checksums.txt verification failed"
         return 1
     fi
+
+    return 0
 }
 
 verify_attestations() {
@@ -299,6 +321,8 @@ verify_attestations() {
         verify_fail "Attestation verification failed"
         return 1
     fi
+
+    return 0
 }
 
 verify_provenance_file() {
@@ -315,6 +339,8 @@ verify_provenance_file() {
         verify_fail "Invalid provenance (could not find subject)"
         return 1
     fi
+
+    return 0
 }
 
 inspect_sbom() {
@@ -329,6 +355,8 @@ inspect_sbom() {
         verify_fail "Invalid SBOM format"
         return 1
     fi
+
+    return 0
 }
 
 run_verification() {
@@ -343,6 +371,7 @@ run_verification() {
         verify_provenance_file || exit_code=$EXIT_VERIFICATION_FAILED
         inspect_sbom || exit_code=$EXIT_VERIFICATION_FAILED
     fi
+
     return $exit_code
 }
 
@@ -354,6 +383,9 @@ run_repro_check() {
     local subjects_tmp build_env_tmp
     subjects_tmp=$(mktemp)
     build_env_tmp=$(mktemp)
+
+    # mktemp creates the files. Here, we remove them so gh can write without --clobber.
+    rm -f "$subjects_tmp" "$build_env_tmp"
 
     # Pull the published subjects + build.env so we can reuse the exact builder image
     # and artifact digest captured during packaging.
@@ -474,6 +506,7 @@ EOS
     fi
 
     echo "--- Reproducibility check complete. ---"
+
     return 0
 }
 
