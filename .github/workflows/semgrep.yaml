@@ -38,7 +38,7 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@065c6cfb7809de8db2167a953b5b622491cda914
+        uses: github/codeql-action/upload-sarif@17783bfb99b07f70fae080b654aed0c514057477
         with:
           sarif_file: semgrep.sarif
         if: always()
