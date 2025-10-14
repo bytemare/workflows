@@ -300,7 +300,7 @@ permissions: {}
 
 jobs:
   release:
-    uses: bytemare/workflows/.github/workflows/slsa-provenance.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/slsa.yaml@[pinned commit SHA]
     with:
       dry_run: ${{ github.event_name == 'pull_request' }}
       create_release: ${{ github.event_name != 'pull_request' }}
@@ -334,7 +334,7 @@ See [VERIFICATION.md](VERIFICATION.md) for complete documentation and verificati
 
 ## Notes
 
-- **Pinned Dependencies:** Update the container digest (`golang:1.25-bookworm@sha256:...`) and cosign checksum in `.github/workflows/slsa-provenance.yaml` if you need to change toolchains. The packaging metadata (`build.env`) records this value under `SLSA_BUILDER_IMAGE` so verification tooling can reuse it.
+- **Pinned Dependencies:** Update the container digest (`golang:1.25-bookworm@sha256:...`) and cosign checksum in `.github/workflows/slsa.yaml` if you need to change toolchains. The packaging metadata (`build.env`) records this value under `SLSA_BUILDER_IMAGE` so verification tooling can reuse it.
 - **Permissions:** All workflows use minimal permissions as per least-privilege principle
 - **Secrets:** SonarQube, Codecov, and OpenSSF Scorecard require repository secrets to be configured
 - **Customization:** Most workflows support additional inputs - check the workflow file for details
