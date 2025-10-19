@@ -25,58 +25,48 @@ permissions: {}
 
 jobs:
   Lint:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/linting.yaml
+    uses: ./.github/workflows/lint.yaml
     with:
-      golangci-config-path: ./.github/.golangci.yml
-      scope: ./...
+      # gofmt
+      gofmt: true
+      # Super-Linter
+      super-linter: true
+      super-linter-enabled-linters: BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
+      super-linter-go-config: .github/.golangci.yml
 
-  CodeQL:
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    uses: ./.github/workflows/codeql.yaml
+  Governance:
+    uses: ./.github/workflows/governance.yaml
     with:
-      language: go
-
-  CodeScans:
-    permissions:
-      contents: read
-      # Needed to upload the results to code-scanning dashboard.
-      security-events: write
-    uses: ./.github/workflows/scan-go.yaml
-    with:
-      sonar-configuration: .github/sonar-project.properties
+      # Dependency Review
+      dependency-review: true
+      # License Check
+      license-check: true
+      # Do Not Submit
+      do-not-submit: true
+      # OpenSSF Scorecard
+      scorecard: true
+      # Codecov upload
+      codecov: true
     secrets:
-      github: ${{ secrets.GITHUB_TOKEN }}
-      sonar: ${{ secrets.SONAR_TOKEN }}
-      codecov: ${{ secrets.CODECOV_TOKEN }}
-      semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+      # OpenSSF Scorecard token
+      scorecard-token: ${{ secrets.SCORECARD_TOKEN }}
+      # Codecov token
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
-  Scorecard:
-    permissions:
-      # Needed to upload the results to code-scanning dashboard.
-      security-events: write
-      # Needed for GitHub OIDC token if publish_results is true.
-      id-token: write
-      # Needed for nested workflow
-      actions: read
-      # To detect SAST tools
-      checks: read
-      attestations: read
-      contents: read
-      deployments: read
-      issues: read
-      discussions: read
-      packages: read
-      pages: read
-      pull-requests: read
-      repository-projects: read
-      statuses: read
-      models: read
-
-    uses: ./.github/workflows/scorecard.yaml
-    secrets:
-      token: ${{ secrets.SCORECARD_TOKEN }}
+  SAST:
+    uses: ./.github/workflows/sast.yaml
+    with:
+      # Semgrep
+      semgrep: true
+      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      # CodeQL
+      codeql: true
+      codeql-language: go
+      # SonarQube
+      sonarqube: true
+      sonarqube-configuration: .github/sonar-project.properties
+      sonarqube-token: ${{ secrets.SONAR_TOKEN }}
+      # Govulncheck
+      govulncheck: true
+      # Gitleaks
+      gitleaks: true

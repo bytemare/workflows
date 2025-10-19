@@ -1,0 +1,110 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: SAST Suite
+
+on:
+  workflow_call:
+    inputs:
+      semgrep:
+        description: 'Run Semgrep'
+        required: false
+        type: boolean
+        default: false
+      semgrep-token:
+        description: 'Token passed to Semgrep when enabled'
+        required: false
+        type: string
+      codeql:
+        description: 'Run CodeQL analysis'
+        required: false
+        type: boolean
+        default: false
+      codeql-language:
+        description: 'Languages to analyse with CodeQL'
+        required: false
+        type: string
+        default: go
+      sonarqube:
+        description: 'Run SonarQube scan'
+        required: false
+        type: boolean
+        default: false
+      sonarqube-configuration:
+        description: 'Path to the SonarQube configuration file'
+        required: false
+        type: string
+        default: .github/sonar-project.properties
+      sonarqube-token:
+        description: 'SonarQube token when SonarQube scan is enabled'
+        required: false
+        type: string
+      sonarqube-github-token:
+        description: 'Optional PAT to pass to SonarQube scan (defaults to GITHUB_TOKEN)'
+        required: false
+        type: string
+      govulncheck:
+        description: 'Run Govulncheck'
+        required: false
+        type: boolean
+        default: false
+      gitleaks:
+        description: 'Run gitleaks secret scanning'
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  Semgrep:
+    if: ${{ inputs.semgrep }}
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/semgrep.yaml
+    secrets:
+      semgrep: ${{ inputs['semgrep-token'] }}
+
+  CodeQL:
+    if: ${{ inputs.codeql }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/codeql.yaml
+    with:
+      language: ${{ inputs['codeql-language'] }}
+
+  SonarQube:
+    if: ${{ inputs.sonarqube }}
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/sonarqube.yaml
+    with:
+      configuration: ${{ inputs['sonarqube-configuration'] }}
+    secrets:
+      sonar: ${{ inputs['sonarqube-token'] }}
+      github: ${{ inputs['sonarqube-github-token'] != '' && inputs['sonarqube-github-token'] || github.token }}
+
+  Govulncheck:
+    if: ${{ inputs.govulncheck }}
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/govulncheck.yaml
+
+  Gitleaks:
+    if: ${{ inputs.gitleaks }}
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/gitleaks.yaml

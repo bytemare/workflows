@@ -1,0 +1,124 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: Super Linter
+
+on:
+  workflow_call:
+    inputs:
+      enabled_linters:
+        description: 'Comma separated list of linters to enable (used for VALIDATE_*)'
+        required: false
+        type: string
+        default: ''
+      disabled_linters:
+        description: 'Comma separated list of linters to disable'
+        required: false
+        type: string
+        default: ''
+      go_config:
+        description: 'Path to GolangCI configuration file (if set)'
+        required: false
+        type: string
+        default: ''
+      python_config:
+        description: 'Path to Ruff/Pylint config file (optional)'
+        required: false
+        type: string
+        default: ''
+      markdown_config:
+        description: 'Path to markdownlint configuration file'
+        required: false
+        type: string
+        default: ''
+      yaml_config:
+        description: 'Path to yamllint configuration file'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            ghcr.io:443
+            registry-1.docker.io:443
+            download.docker.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure Super-Linter environment
+        shell: bash
+        env:
+          ENABLE: ${{ inputs.enabled_linters }}
+          DISABLE: ${{ inputs.disabled_linters }}
+          GO_CFG: ${{ inputs.go_config }}
+          PY_CFG: ${{ inputs.python_config }}
+          MD_CFG: ${{ inputs.markdown_config }}
+          YML_CFG: ${{ inputs.yaml_config }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          normalize() {
+            local value="$1"
+            value="${value//-/_}"
+            value="${value//./_}"
+            echo "${value^^}"
+          }
+
+          IFS=',' read -ra enabled <<< "${ENABLE// /}"
+          for item in "${enabled[@]}"; do
+            [[ -z "$item" ]] && continue
+            key=$(normalize "$item")
+            echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
+          done
+
+          IFS=',' read -ra disabled <<< "${DISABLE// /}"
+          for item in "${disabled[@]}"; do
+            [[ -z "$item" ]] && continue
+            key=$(normalize "$item")
+            echo "VALIDATE_${key}=false" >> "$GITHUB_ENV"
+          done
+
+          [[ -n "$GO_CFG" ]] && echo "GOLANGCI_LINT_CONFIG_FILE=$GO_CFG" >> "$GITHUB_ENV"
+          [[ -n "$PY_CFG" ]] && echo "PYTHON_PYLINT_CONFIG_FILE=$PY_CFG" >> "$GITHUB_ENV"
+          [[ -n "$MD_CFG" ]] && echo "MARKDOWN_CONFIG_FILE=$MD_CFG" >> "$GITHUB_ENV"
+          [[ -n "$YML_CFG" ]] && echo "YAML_CONFIG_FILE=$YML_CFG" >> "$GITHUB_ENV"
+
+          echo "VALIDATE_ALL_CODEBASE=false" >> "$GITHUB_ENV"
+          if [[ -z "$DEFAULT_BRANCH" ]]; then
+            DEFAULT_BRANCH="main"
+          fi
+          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> "$GITHUB_ENV"
+
+      - name: Run super-linter
+        uses: super-linter/super-linter@900b973697b89c3d89462a12bdd556c8dec5b4d0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

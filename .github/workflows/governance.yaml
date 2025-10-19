@@ -1,0 +1,105 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: Governance Suite
+
+on:
+  workflow_call:
+    inputs:
+      dependency-review:
+        description: 'Run Dependency Review'
+        required: false
+        type: boolean
+        default: false
+      license-check:
+        description: 'Run license compliance checks'
+        required: false
+        type: boolean
+        default: false
+      do-not-submit:
+        description: 'Run Do Not Submit checks'
+        required: false
+        type: boolean
+        default: false
+      scorecard:
+        description: 'Run OpenSSF Scorecard'
+        required: false
+        type: boolean
+        default: false
+      codecov:
+        description: 'Upload coverage to Codecov'
+        required: false
+        type: boolean
+        default: false
+      codecov-disable-search:
+        description: 'Forwarded to the Codecov reusable workflow'
+        required: false
+        type: string
+        default: 'true'
+    secrets:
+      scorecard-token:
+        required: false
+        description: 'PAT used by Scorecard when enabled'
+      codecov-token:
+        required: false
+        description: 'Codecov token when coverage upload is enabled'
+
+permissions: {}
+
+jobs:
+  DependencyReview:
+    if: ${{ inputs['dependency-review'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/dependency-review.yaml
+
+  LicenseCheck:
+    if: ${{ inputs['license-check'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/license-check.yaml
+
+  DoNotSubmit:
+    if: ${{ inputs['do-not-submit'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/do-not-submit.yaml
+
+  Scorecard:
+    if: ${{ inputs.scorecard }}
+    permissions:
+      security-events: write
+      id-token: write
+      actions: read
+      checks: read
+      attestations: read
+      contents: read
+      deployments: read
+      issues: read
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
+      models: read
+    uses: ./.github/workflows/scorecard.yaml
+    secrets:
+      token: ${{ secrets['scorecard-token'] }}
+
+  Codecov:
+    if: ${{ inputs.codecov }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/codecov.yaml
+    with:
+      disable_search: ${{ inputs['codecov-disable-search'] }}
+    secrets:
+      codecov: ${{ secrets['codecov-token'] }}

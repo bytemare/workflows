@@ -1,0 +1,105 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+name: Lint Suite
+
+on:
+  workflow_call:
+    inputs:
+      gofmt:
+        description: 'Run gofmt to ensure Go sources are formatted'
+        required: false
+        type: boolean
+        default: false
+      super-linter:
+        description: 'Run GitHub Super-Linter'
+        required: false
+        type: boolean
+        default: false
+      super-linter-enabled-linters:
+        description: 'Comma-separated list of linters to enable explicitly (maps to VALIDATE_* env vars)'
+        required: false
+        type: string
+        default: ''
+      super-linter-disabled-linters:
+        description: 'Comma-separated list of linters to disable (maps to VALIDATE_* env vars)'
+        required: false
+        type: string
+        default: ''
+      super-linter-go-config:
+        description: 'Path to golangci-lint configuration used by Super-Linter'
+        required: false
+        type: string
+        default: ''
+      super-linter-python-config:
+        description: 'Python lint configuration file (pylint/ruff)'
+        required: false
+        type: string
+        default: ''
+      super-linter-markdown-config:
+        description: 'markdownlint configuration file'
+        required: false
+        type: string
+        default: ''
+      super-linter-yaml-config:
+        description: 'yamllint configuration file'
+        required: false
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  GoFmt:
+    if: ${{ inputs.gofmt }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            go.dev:443
+            golang.org:443
+            objects.githubusercontent.com:443
+            proxy.golang.org:443
+            release-assets.githubusercontent.com:443
+
+      - name: Check out repository
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0
+
+      - name: Init go
+        uses: bytemare/actions/init-go@435fe38d773c381b8e162ce13da2233c9080c960
+
+      - name: Check formatting
+        run: |
+          if [[ -n "$(gofmt -l .)" ]]; then
+            echo "The following files are not formatted correctly:"
+            gofmt -l .
+            exit 1
+          fi
+
+  SuperLinter:
+    if: ${{ inputs['super-linter'] }}
+    uses: ./.github/workflows/super-linter.yaml
+    with:
+      enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
+      disabled_linters: ${{ inputs['super-linter-disabled-linters'] }}
+      go_config: ${{ inputs['super-linter-go-config'] }}
+      python_config: ${{ inputs['super-linter-python-config'] }}
+      markdown_config: ${{ inputs['super-linter-markdown-config'] }}
+      yaml_config: ${{ inputs['super-linter-yaml-config'] }}

@@ -6,6 +6,11 @@ You're welcome to use them, though they primarily target my own projects and I w
 
 All workflows enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
+- [Workflow Suites](#workflow-suites)
+  - [SAST Suite](#sast-suite)
+  - [Lint Suite](#lint-suite)
+  - [Governance Suite](#governance-suite)
+  - [Test Suite](#test-suite)
 - [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
 - [Security Workflows](#security-workflows)
   - [CodeQL](#codeql)
@@ -25,15 +30,91 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
 
 ---
 
+## Workflow Suites
+
+Five orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
+
+### SAST Suite
+
+Security scanners such as Semgrep, CodeQL, SonarQube, and Govulncheck. Enable a tool by setting its boolean input to `true` and supply optional tokens inline when required.
+
+```yaml
+jobs:
+  sast:
+    uses: bytemare/workflows/.github/workflows/sast.yaml@[pinned sha]
+    with:
+      semgrep: true
+      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      codeql: true
+      codeql-language: go
+      sonarqube: true
+      sonarqube-token: ${{ secrets.SONAR_TOKEN }}
+      sonarqube-configuration: .github/sonar-project.properties
+      govulncheck: true
+```
+
+Tokens are optional—if you enable Semgrep or SonarQube without providing one, the suite fails fast with a clear message.
+
+### Lint Suite
+
+`lint.yaml` covers formatting and content/style linters across languages (Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
+
+```yaml
+jobs:
+  lint:
+    uses: bytemare/workflows/.github/workflows/lint.yaml@[pinned sha]
+    with:
+      gofmt: true
+      super-linter: true
+      super-linter-enabled-linters: BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
+      super-linter-go-config: .github/.golangci.yml
+```
+
+Defaults keep configuration terse—you only need to override items like `super-linter-go-config`, `super-linter-enabled-linters`, or supply additional config files (Markdown, YAML, Python) when diverging from the standard settings. Use `super-linter-disabled-linters` to opt out of specific validators when the defaults are too noisy.
+
+### Governance Suite
+
+`governance.yaml` bundles project hygiene, compliance, and reporting jobs (dependency review, license audit, Do Not Submit, Scorecard, Codecov). Tokens are passed through the workflow `secrets` block when enabled.
+
+```yaml
+jobs:
+  governance:
+    uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned sha]
+    with:
+      dependency-review: true
+      license-check: true
+      do-not-submit: true
+      scorecard: true
+      codecov: true
+    secrets:
+      scorecard-token: ${{ secrets.SCORECARD_TOKEN }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+```
+
+### Test Suite
+
+`test-go.yaml` wraps provides Go testing with version matrixing.
+It runs `go test -v -race -vet=all ./...` and enforces egress filtering through Harden-Runner.
+
+```yaml
+jobs:
+  tests:
+    uses: bytemare/workflows/.github/workflows/tests.yaml@[pinned sha]
+    with:
+      go-versions: '["1.25", "1.24", "1.23"]'
+```
+
+All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
+
 ## Ready-to-use bundled workflows (recommended)
 
-The three `wf-*.yaml` files in `.github/workflows/` are complete drop-in workflows using all mechanisms in this repository with minimal configuration:
+The three `wf-*.yaml` files in `.github/workflows/` call the suites above with opinionated defaults, so copy/paste stays short while remaining easy to tweak:
 
 - **`wf-tests.yaml`** - Automated testing on pull requests and main branch
 - **`wf-analysis.yaml`** - Security and quality analysis (e.g. linting, CodeQL, OpenSSF Scorecard)
 - **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
 
-Copy these files to your `.github/workflows/` directory and customize as needed.
+Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
 
 ---
 
