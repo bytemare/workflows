@@ -61,7 +61,7 @@ jobs:
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
       - name: Ensure SonarQube token is available
-        if: ${{ !secrets.sonar }}
+        if: ${{ not secrets.sonar }}
         run: |
           echo "SonarQube token is required when running this job." >&2
           exit 1

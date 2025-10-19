@@ -62,7 +62,7 @@ jobs:
           publish_results: true
 
       - name: Missing PAT
-        if: ${{ !secrets.token }}
+        if: ${{ not secrets.token }}
         run: |
           echo "Scorecard requires a PAT when enabled." >&2
           exit 1

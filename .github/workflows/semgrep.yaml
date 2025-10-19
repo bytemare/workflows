@@ -30,7 +30,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Ensure Semgrep token is available
-        if: ${{ !secrets.semgrep }}
+        if: ${{ not secrets.semgrep }}
         run: |
           echo "Semgrep requires SEMGREP_APP_TOKEN when enabled." >&2
           exit 1
