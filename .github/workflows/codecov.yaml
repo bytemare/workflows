@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ensure Codecov token is available
-        if: ${{ not secrets.codecov }}
+        if: ${{ secrets.codecov == '' }}
         run: |
           echo "Codecov token is required when running this job." >&2
           exit 1

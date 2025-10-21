@@ -49,9 +49,9 @@ jobs:
       codecov: true
     secrets:
       # OpenSSF Scorecard token
-      scorecard-token: ${{ secrets.SCORECARD_TOKEN }}
+      scorecard_token: ${{ secrets.SCORECARD_TOKEN }}
       # Codecov token
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
   SAST:
     uses: ./.github/workflows/sast.yaml

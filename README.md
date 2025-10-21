@@ -87,8 +87,8 @@ jobs:
       scorecard: true
       codecov: true
     secrets:
-      scorecard-token: ${{ secrets.SCORECARD_TOKEN }}
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+      scorecard_token: ${{ secrets.SCORECARD_TOKEN }}
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
 ```
 
 ### Test Suite
