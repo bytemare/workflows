@@ -44,10 +44,12 @@ on:
         type: string
         default: 'true'
     secrets:
-      scorecard_token:
+      # OpenSSF Scorecard token
+      scorecard:
         required: false
         description: 'PAT used by Scorecard when enabled'
-      codecov_token:
+      # Codecov token
+      codecov:
         required: false
         description: 'Codecov token when coverage upload is enabled'
 
@@ -92,7 +94,7 @@ jobs:
       models: read
     uses: ./.github/workflows/scorecard.yaml
     secrets:
-      token: ${{ secrets.scorecard_token }}
+      token: ${{ secrets.scorecard }}
 
   Codecov:
     if: ${{ inputs.codecov }}
@@ -102,4 +104,4 @@ jobs:
     with:
       disable_search: ${{ inputs['codecov-disable-search'] }}
     secrets:
-      codecov: ${{ secrets.codecov_token }}
+      codecov: ${{ secrets.codecov }}

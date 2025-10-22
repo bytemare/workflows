@@ -18,10 +18,6 @@ on:
         required: false
         type: boolean
         default: false
-      semgrep-token:
-        description: 'Token passed to Semgrep when enabled'
-        required: false
-        type: string
       codeql:
         description: 'Run CodeQL analysis'
         required: false
@@ -42,14 +38,6 @@ on:
         required: false
         type: string
         default: .github/sonar-project.properties
-      sonarqube-token:
-        description: 'SonarQube token when SonarQube scan is enabled'
-        required: false
-        type: string
-      sonarqube-github-token:
-        description: 'Optional PAT to pass to SonarQube scan (defaults to GITHUB_TOKEN)'
-        required: false
-        type: string
       govulncheck:
         description: 'Run Govulncheck'
         required: false
@@ -60,6 +48,16 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      github:
+        description: 'GitHub token used by SonarQube (defaults to GITHUB_TOKEN)'
+        required: false
+      semgrep:
+        description: 'Token passed to Semgrep when enabled'
+        required: false
+      sonarqube:
+        description: 'SonarQube token when SonarQube scan is enabled'
+        required: false
 
 permissions: {}
 
@@ -71,7 +69,7 @@ jobs:
       security-events: write
     uses: ./.github/workflows/semgrep.yaml
     secrets:
-      semgrep: ${{ inputs['semgrep-token'] }}
+      semgrep: ${{ secrets.semgrep }}
 
   CodeQL:
     if: ${{ inputs.codeql }}
@@ -92,8 +90,8 @@ jobs:
     with:
       configuration: ${{ inputs['sonarqube-configuration'] }}
     secrets:
-      sonar: ${{ inputs['sonarqube-token'] }}
-      github: ${{ inputs['sonarqube-github-token'] != '' && inputs['sonarqube-github-token'] || github.token }}
+      sonar: ${{ secrets.sonarqube }}
+      github: ${{ secrets.github }}
 
   Govulncheck:
     if: ${{ inputs.govulncheck }}

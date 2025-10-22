@@ -30,8 +30,6 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.sonar }}
     permissions:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
@@ -56,23 +54,23 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@435fe38d773c381b8e162ce13da2233c9080c960
+        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
 
       - name: Code Coverage
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
       - name: Ensure SonarQube token is available
-        if: ${{ env.SONAR_TOKEN == '' }}
+        if: ${{ secrets.sonar == '' }}
         run: |
           echo "SonarQube token is required when running this job." >&2
           exit 1
 
       - uses: SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ secrets.sonar != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
-          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.sonar }}
         with:
           args: >
             -Dproject.settings=${{ inputs.configuration }}
