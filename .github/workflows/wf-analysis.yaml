@@ -94,6 +94,6 @@ jobs:
       gitleaks: true
     secrets:
       # Semgrep token
-      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
       # SonarQube token
-      sonarqube-token: ${{ secrets.SONAR_TOKEN }}
+      sonarqube: ${{ secrets.SONAR_TOKEN }}
