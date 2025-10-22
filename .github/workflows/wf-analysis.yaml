@@ -55,17 +55,20 @@ jobs:
 
   SAST:
     uses: ./.github/workflows/sast.yaml
+    env:
+      SEMGREP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     with:
       # Semgrep
       semgrep: true
-      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      semgrep-token: ${{ env.SEMGREP_TOKEN }}
       # CodeQL
       codeql: true
       codeql-language: go
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
-      sonarqube-token: ${{ secrets.SONAR_TOKEN }}
+      sonarqube-token: ${{ env.SONAR_TOKEN }}
       # Govulncheck
       govulncheck: true
       # Gitleaks
