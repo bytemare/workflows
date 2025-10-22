@@ -95,6 +95,10 @@ jobs:
 
   SuperLinter:
     if: ${{ inputs['super-linter'] }}
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     uses: ./.github/workflows/super-linter.yaml
     with:
       enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}

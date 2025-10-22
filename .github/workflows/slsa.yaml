@@ -111,9 +111,9 @@ jobs:
       image: golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
     permissions:
       actions: read
+      attestations: write
       contents: write
       id-token: write
-      attestations: write
       security-events: write
     steps:
       - name: Harden Runner

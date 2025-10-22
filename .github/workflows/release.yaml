@@ -39,16 +39,17 @@ on:
         type: boolean
         default: false
 
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
-  actions: read
-  security-events: write
+permissions: {}
 
 jobs:
   SLSA:
     if: ${{ inputs.slsa }}
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+      security-events: write
     uses: ./.github/workflows/slsa.yaml
     with:
       sign_blobs: ${{ inputs['sign-blobs'] }}
