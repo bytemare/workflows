@@ -26,6 +26,10 @@ permissions: {}
 jobs:
   Lint:
     uses: ./.github/workflows/lint.yaml
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     with:
       # gofmt
       gofmt: true
@@ -36,6 +40,11 @@ jobs:
 
   Governance:
     uses: ./.github/workflows/governance.yaml
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+      actions: read
     with:
       # Dependency Review
       dependency-review: true
@@ -55,6 +64,10 @@ jobs:
 
   SAST:
     uses: ./.github/workflows/sast.yaml
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     with:
       # Semgrep
       semgrep: true
