@@ -30,7 +30,9 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Ensure Semgrep token is available
-        if: ${{ secrets.semgrep == '' }}
+        env:
+          SEMGREP_TOKEN: ${{ secrets.semgrep }}
+        if: ${{ env.SEMGREP_TOKEN == '' }}
         run: |
           echo "Semgrep requires SEMGREP_APP_TOKEN when enabled." >&2
           exit 1
@@ -46,7 +48,9 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        if: ${{ secrets.semgrep != '' && always() }}
+        env:
+          SEMGREP_TOKEN: ${{ secrets.semgrep }}
+        if: ${{ env.SEMGREP_TOKEN != '' && always() }}
         uses: github/codeql-action/upload-sarif@d88a5540c3fd916f4e15b7744d287a124278e065
         with:
           sarif_file: semgrep.sarif
