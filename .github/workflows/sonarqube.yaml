@@ -35,6 +35,13 @@ jobs:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
     steps:
+      - name: Ensure SonarQube token is available
+        run: |
+          if [ -z "${{ secrets.sonar }}" ]; then
+            echo "SonarQube token is required when running this job." >&2
+            exit 1
+          fi
+
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
@@ -60,14 +67,7 @@ jobs:
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - name: Ensure SonarQube token is available
-        if: ${{ secrets.sonar == '' }}
-        run: |
-          echo "SonarQube token is required when running this job." >&2
-          exit 1
-
       - uses: SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
-        if: ${{ secrets.sonar != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
           SONAR_TOKEN: ${{ secrets.sonar }}

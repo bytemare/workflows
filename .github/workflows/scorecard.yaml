@@ -29,6 +29,13 @@ jobs:
       # Needed for GitHub OIDC token if publish_results is true
       id-token: write
     steps:
+      - name: Check the Scorecard PAT is set
+        run: |
+          if [ -z "${{ secrets.token }}" ]; then
+            echo "Scorecard requires a PAT when enabled." >&2
+            exit 1
+          fi
+
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
@@ -53,7 +60,6 @@ jobs:
           persist-credentials: false
 
       - name: "Run analysis"
-        if: ${{ secrets.token != '' }}
         uses: ossf/scorecard-action@2a21071f18aab4c0226332dcce19187d3ca03051
         with:
           results_file: results.sarif
@@ -61,14 +67,7 @@ jobs:
           repo_token: ${{ secrets.token }}
           publish_results: true
 
-      - name: Missing PAT
-        if: ${{ secrets.token == '' }}
-        run: |
-          echo "Scorecard requires a PAT when enabled." >&2
-          exit 1
-
       - name: "Upload artifact"
-        if: ${{ secrets.token != '' }}
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
           name: SARIF file
@@ -76,7 +75,6 @@ jobs:
           retention-days: 5
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        if: ${{ secrets.token != '' }}
         uses: github/codeql-action/upload-sarif@d88a5540c3fd916f4e15b7744d287a124278e065
         with:
           sarif_file: results.sarif

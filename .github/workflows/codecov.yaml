@@ -19,7 +19,7 @@ on:
         type: string
         default: 'true'
     secrets:
-      codecov:
+      token:
         required: false
 
 permissions: {}
@@ -31,12 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ensure Codecov token is available
-        env:
-          CODECOV_TOKEN: ${{ secrets.codecov }}
-        if: ${{ env.CODECOV_TOKEN == '' }}
         run: |
-          echo "Codecov token is required when running this job." >&2
-          exit 1
+          if [ -z "${{ secrets.token }}" ]; then
+            echo "Codecov token is required when running this job." >&2
+            exit 1
+          fi
 
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33

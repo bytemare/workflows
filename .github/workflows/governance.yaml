@@ -104,4 +104,4 @@ jobs:
     with:
       disable_search: ${{ inputs['codecov-disable-search'] }}
     secrets:
-      codecov: ${{ secrets.codecov }}
+      token: ${{ secrets.codecov }}
