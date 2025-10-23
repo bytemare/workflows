@@ -8,6 +8,8 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: SLSA Build Level 4 Provenance and GitHub Artifact Attestations
 
 on:

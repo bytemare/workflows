@@ -8,6 +8,8 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: Run Tests
 
 on:
