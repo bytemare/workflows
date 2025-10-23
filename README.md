@@ -68,6 +68,7 @@ jobs:
       super-linter: true
       super-linter-enabled-linters: BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
       super-linter-go-config: .github/.golangci.yml
+      super-linter-yaml-config: .github/linters/.yamllint
 ```
 
 Defaults keep configuration terse—you only need to override items like `super-linter-go-config`, `super-linter-enabled-linters`, or supply additional config files (Markdown, YAML, Python) when diverging from the standard settings. Use `super-linter-disabled-linters` to opt out of specific validators when the defaults are too noisy.

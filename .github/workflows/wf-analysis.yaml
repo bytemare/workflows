@@ -40,7 +40,7 @@ jobs:
       super-linter-enabled-linters: >-
         BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
       super-linter-go-config: .github/.golangci.yml
-      super-linter-yaml-config: .github/.yamllint
+      super-linter-yaml-config: .github/linters/.yamllint
 
   Governance:
     uses: ./.github/workflows/governance.yaml
