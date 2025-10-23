@@ -120,6 +120,6 @@ jobs:
           echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> "$GITHUB_ENV"
 
       - name: Run super-linter
-        uses: super-linter/super-linter@900b973697b89c3d89462a12bdd556c8dec5b4d0
+        uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
