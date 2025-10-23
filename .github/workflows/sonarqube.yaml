@@ -38,8 +38,10 @@ jobs:
       security-events: write
     steps:
       - name: Ensure SonarQube token is available
+        env:
+          token: ${{ secrets.sonar }}
         run: |
-          if [ -z "${{ secrets.sonar }}" ]; then
+          if [ -z "$token" ]; then
             echo "SonarQube token is required when running this job." >&2
             exit 1
           fi

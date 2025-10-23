@@ -32,8 +32,10 @@ jobs:
       id-token: write
     steps:
       - name: Check the Scorecard PAT is set
+        env:
+          token: ${{ secrets.token }}
         run: |
-          if [ -z "${{ secrets.token }}" ]; then
+          if [ -z "$token" ]; then
             echo "Scorecard requires a PAT when enabled." >&2
             exit 1
           fi
