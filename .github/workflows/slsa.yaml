@@ -154,11 +154,13 @@ jobs:
         id: paths
         run: |
           TAR="package/${{ needs.package_source.outputs.artifact_path }}"
-          echo "artifact_path=${TAR}" >> "$GITHUB_OUTPUT"
-          echo "subjects_path=package/subjects.sha256" >> "$GITHUB_OUTPUT"
-          echo "checksums_path=package/checksums.txt" >> "$GITHUB_OUTPUT"
-          echo "manifest_path=package/manifest.files.sha256" >> "$GITHUB_OUTPUT"
-          echo "metadata_path=package/verification.json" >> "$GITHUB_OUTPUT"
+          {
+            echo "artifact_path=${TAR}"
+            echo "subjects_path=package/subjects.sha256"
+            echo "checksums_path=package/checksums.txt"
+            echo "manifest_path=package/manifest.files.sha256"
+            echo "metadata_path=package/verification.json"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Install cosign (pinned)
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}

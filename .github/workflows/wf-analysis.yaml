@@ -55,7 +55,6 @@ jobs:
       pull-requests: read
       repository-projects: read
       statuses: read
-      models: read
     with:
       # Dependency Review
       dependency-review: true
