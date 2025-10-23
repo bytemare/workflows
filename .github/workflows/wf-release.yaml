@@ -15,12 +15,14 @@ name: Release
 on:
   push:
     tags:
-      - '*.*.*'       # run when a semver tag is pushed
-      - 'v*.*.*'     # run when a semver tag starting with v (e.g. v1.2.3) is pushed
-  workflow_dispatch:  # allow manual runs
-  pull_request:       # allow running in PR for dry-runs
+      # run when a semver tag is pushed
+      - '*.*.*'
+      # run when a semver tag starting with v (e.g. v1.2.3) is pushed
+      - 'v*.*.*'
+  workflow_dispatch: { } # allow manual runs
+  pull_request: { }      # allow running in PR for dry-runs
 
-permissions: {}
+permissions: { }
 
 jobs:
   Release:
@@ -31,8 +33,8 @@ jobs:
       sign_blobs: true
       extended_metadata: false # Set to true for forensics mode
     permissions:
-      contents: write               # create/update release & upload assets
-      id-token: write               # OIDC for attestations/provenance
-      attestations: write         # SBOM + build attestation API
-      actions: read                 # needed for attest-build-provenance
-      security-events: write  # allow SARIF upload (if needed in future)
+      contents: write          # create/update release & upload assets
+      id-token: write          # OIDC for attestations/provenance
+      attestations: write      # SBOM + build attestation API
+      actions: read            # needed for attest-build-provenance
+      security-events: write   # allow SARIF upload (if needed in future)

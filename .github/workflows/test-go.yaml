@@ -20,7 +20,7 @@ on:
         required: false
         type: string
 
-permissions: {}
+permissions: { }
 
 jobs:
   Test:
@@ -37,9 +37,6 @@ jobs:
             go.dev:443
             golang.org:443
             release-assets.githubusercontent.com:443
-
-      - name:  Check $HOME
-        run: echo "HOME is $HOME"
 
       - name: Checkout repo
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493

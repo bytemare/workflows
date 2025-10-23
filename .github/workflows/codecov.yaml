@@ -16,7 +16,9 @@ on:
   workflow_call:
     inputs:
       disable_search:
-        description: 'Disable search for coverage files. This is helpful when specifying what files you want to upload with the files option.'
+        description: >-
+          Disable search for coverage files. This is helpful when specifying
+          what files you want to upload with the files option.
         required: false
         type: string
         default: 'true'
@@ -24,7 +26,7 @@ on:
       token:
         required: false
 
-permissions: {}
+permissions: { }
 
 jobs:
   Codecov:
@@ -63,7 +65,12 @@ jobs:
 
       - name: Code Coverage
         shell: bash
-        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+        run: |
+          go test -v -race \
+            -covermode=atomic \
+            -coverpkg=./... \
+            -coverprofile=coverage.out \
+            ./...
 
       - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7
         env:

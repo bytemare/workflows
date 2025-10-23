@@ -61,7 +61,7 @@ on:
         description: 'SonarQube token when SonarQube scan is enabled'
         required: false
 
-permissions: {}
+permissions: { }
 
 jobs:
   Semgrep:

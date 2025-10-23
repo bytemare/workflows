@@ -15,7 +15,7 @@ name: Do Not Submit
 on:
   workflow_call:
 
-permissions: {}
+permissions: { }
 
 jobs:
   do-not-submit:

@@ -55,7 +55,7 @@ on:
         required: false
         description: 'Codecov token when coverage upload is enabled'
 
-permissions: {}
+permissions: { }
 
 jobs:
   DependencyReview:

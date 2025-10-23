@@ -18,7 +18,7 @@ on:
       semgrep:
         required: false
 
-permissions: {}
+permissions: { }
 
 jobs:
   Semgrep:

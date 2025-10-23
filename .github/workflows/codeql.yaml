@@ -19,7 +19,7 @@ on:
         required: true
         type: string
 
-permissions: {}
+permissions: { }
 
 jobs:
   codeql:

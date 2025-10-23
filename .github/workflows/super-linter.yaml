@@ -46,7 +46,7 @@ on:
         type: string
         default: ''
 
-permissions: {}
+permissions: { }
 
 jobs:
   lint:

@@ -33,7 +33,7 @@ on:
         required: false
         default: false
 
-permissions: {}
+permissions: { }
 
 concurrency:
   group: release-${{ github.repository }}-${{ github.ref }}

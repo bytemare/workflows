@@ -41,7 +41,7 @@ on:
         type: boolean
         default: false
 
-permissions: {}
+permissions: { }
 
 jobs:
   SLSA:
