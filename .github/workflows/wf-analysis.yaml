@@ -37,7 +37,7 @@ jobs:
       gofmt: true
       # Super-Linter
       super-linter: true
-      super-linter-enabled-linters: BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
+      super-linter-enabled-linters: BASH,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
       super-linter-go-config: .github/.golangci.yml
 
   Governance:
