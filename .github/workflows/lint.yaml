@@ -54,7 +54,7 @@ on:
         description: 'yamllint configuration file'
         required: false
         type: string
-        default: ''
+        default: .github/linters/.yamllint
 
 permissions: { }
 
