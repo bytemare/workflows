@@ -111,7 +111,7 @@ jobs:
           [[ -n "$GO_CFG" ]] && echo "GOLANGCI_LINT_CONFIG_FILE=$GO_CFG" >> "$GITHUB_ENV"
           [[ -n "$PY_CFG" ]] && echo "PYTHON_PYLINT_CONFIG_FILE=$PY_CFG" >> "$GITHUB_ENV"
           [[ -n "$MD_CFG" ]] && echo "MARKDOWN_CONFIG_FILE=$MD_CFG" >> "$GITHUB_ENV"
-          [[ -n "$YML_CFG" ]] && echo "YAML_CONFIG_FILE=$YML_CFG" >> "$GITHUB_ENV"
+          [[ -n "$YML_CFG" ]] && echo "YAML_LINTER_RULES=$YML_CFG" >> "$GITHUB_ENV"
 
           echo "VALIDATE_ALL_CODEBASE=false" >> "$GITHUB_ENV"
           if [[ -z "$DEFAULT_BRANCH" ]]; then
