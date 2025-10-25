@@ -1,10 +1,8 @@
-package addition_test
+package internal
 
 import (
 	"strconv"
 	"testing"
-
-	"github.com/bytemare/workflows/go/internal"
 )
 
 type test struct {
@@ -23,7 +21,7 @@ func TestAddition(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
-			result := internal.Addition(addition.a, addition.b)
+			result := Addition(addition.a, addition.b)
 			if result != addition.result {
 				t.Fatalf("%d: invalid result. Expected %d + %d = %d, got %d",
 					i, addition.a, addition.b, addition.result, result)
@@ -36,7 +34,7 @@ func FuzzAddition(f *testing.F) {
 	f.Fuzz(func(t *testing.T, a, b int) {
 		expected := a + b
 
-		result := internal.Addition(a, b)
+		result := Addition(a, b)
 		if result != expected {
 			t.Errorf("invalid result. Expected %d + %d = %d, got %d", a, b, expected, result)
 		}
