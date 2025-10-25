@@ -125,3 +125,4 @@ jobs:
         uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTIONS_COMMAND_ARGS: -ignore "unknown permission scope \"models\""
