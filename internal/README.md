@@ -1,1 +1,0 @@
-# This is a dummy go code to test the workflow files and linters.
