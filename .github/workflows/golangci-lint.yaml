@@ -52,11 +52,11 @@ jobs:
             raw.githubusercontent.com:443
             release-assets.githubusercontent.com:443
 
-      - uses: bytemare/actions/init-go@435fe38d773c381b8e162ce13da2233c9080c960
+      - uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
         with:
           go-mod: ${{ inputs.go-mod }}
 
-      - uses: golangci/golangci-lint-action@b68d21b131098f33ec55c11c242113b4a10dc30a
+      - uses: golangci/golangci-lint-action@b002b6ecfcabe6ac0e2c6cba1bcc779eb34ac51f
         with:
           version: latest
           args: --config=${{ inputs.config-path }} ${{ inputs.scope }}
