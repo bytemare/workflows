@@ -127,4 +127,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTIONS_COMMAND_ARGS: -ignore "unknown permission scope \"models\""
-          GO_GOLANGCI_LINT_ARGUMENTS: "./..."

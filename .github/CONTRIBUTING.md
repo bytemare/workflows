@@ -17,10 +17,11 @@
 * If you added code that impact tests, please add tests with relevant coverage and test cases. Bonus points for fuzzing.
 * 🛠️ Make sure the test suite passes.
 
-If your changes might have an impact on performance, please benchmark your code and measure the impact, share the results and the tests that lead to these results.
+If your changes might have an impact on performance, please benchmark your code and measure the impact,
+share the results and the tests that lead to these results.
 
-Please note that changes that are purely cosmetic and do not add anything substantial
-to the stability, functionality, or testability of the project may not be accepted.
+Please note that changes that are purely cosmetic and do not add anything substantial to the stability,
+functionality, or testability of the project may not be accepted.
 
 ### Coding Convention
 
