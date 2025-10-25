@@ -15,6 +15,11 @@ name: Test Go
 on:
   workflow_call:
     inputs:
+      module:
+        description: 'The Go module to test (if empty, run at root)'
+        required: false
+        type: string
+        default: './...'
       version:
         description: 'The Go version to use'
         required: false
@@ -49,4 +54,4 @@ jobs:
           go-version: ${{ inputs.version }}
 
       - name: Run Tests
-        run: go test -v -race -vet=all ./...
+        run: go test -v -race -vet=all ${{ inputs.module }}
