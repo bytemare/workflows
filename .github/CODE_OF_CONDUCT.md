@@ -1,10 +1,16 @@
-# Code of Conduct [![](https://img.shields.io/badge/code_of_conduct-Contributor_Covenant_3.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+# Code of Conduct [![Code of Conduct Badge](https://img.shields.io/badge/code_of_conduct-Contributor_Covenant_3.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 ## Our Pledge
 
 We pledge to make our community welcoming, safe, and equitable for all.
 
-We are committed to fostering an environment that respects and promotes the dignity, rights, and contributions of all individuals, regardless of characteristics including race, ethnicity, caste, color, age, physical characteristics, neurodiversity, disability, sex or gender, gender identity or expression, sexual orientation, language, philosophy or religion, national or social origin, socio-economic position, level of education, or other status. The same privileges of participation are extended to everyone who participates in good faith and in accordance with this Covenant.
+We are committed to fostering an environment that respects and promotes the dignity, rights,
+and contributions of all individuals, regardless of characteristics including race, ethnicity,
+caste, color, age, physical characteristics, neurodiversity, disability, sex or gender,
+gender identity or expression, sexual orientation, language, philosophy or religion,
+national or social origin, socio-economic position, level of education, or other status.
+The same privileges of participation are extended to everyone who participates in good faith
+and in accordance with this Covenant.
 
 ## Encouraged Behaviors
 
@@ -44,9 +50,15 @@ We agree to restrict the following behaviors in our community. Instances, threat
 
 Tensions can occur between community members even when they are trying their best to collaborate. Not every conflict represents a code of conduct violation, and this Code of Conduct reinforces encouraged behaviors and norms that can help avoid conflicts and minimize harm.
 
-When an incident does occur, it is important to report it promptly. To report a possible violation, use the private GitHub Security Advisory form: https://github.com/bytemare/workflows/security/advisories. The advisory workflow keeps the conversation limited to the maintainer team until a resolution path is agreed.
+When an incident does occur, it is important to report it promptly. To report a possible violation, use the private GitHub Security Advisory form: <https://github.com/bytemare/workflows/security/advisories>. The advisory workflow keeps the conversation limited to the maintainer team until a resolution path is agreed.
 
-Community Moderators take reports of violations seriously and will make every effort to respond in a timely manner. They will investigate all reports of code of conduct violations, reviewing messages, logs, and recordings, or interviewing witnesses and other participants. Community Moderators will keep investigation and enforcement actions as transparent as possible while prioritizing safety and confidentiality. In order to honor these values, enforcement actions are carried out in private with the involved parties, but communicating to the whole community may be part of a mutually agreed upon resolution.
+Community Moderators take reports of violations seriously and will make every effort to respond
+in a timely manner. They will investigate all reports of code of conduct violations, reviewing
+messages, logs, and recordings, or interviewing witnesses and other participants. Community
+Moderators will keep investigation and enforcement actions as transparent as possible while
+prioritizing safety and confidentiality. In order to honor these values, enforcement actions
+are carried out in private with the involved parties, but communicating to the whole community
+may be part of a mutually agreed upon resolution.
 
 ## Addressing and Repairing Harm
 
@@ -80,7 +92,10 @@ This enforcement ladder is intended as a guideline. It does not limit the abilit
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public or other spaces. Examples of representing our community include using an official email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
+This Code of Conduct applies within all community spaces, and also applies when an individual
+is officially representing the community in public or other spaces. Examples of representing
+our community include using an official email address, posting via an official social media
+account, or acting as an appointed representative at an online or offline event.
 
 ## Attribution
 

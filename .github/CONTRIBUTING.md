@@ -1,6 +1,6 @@
 # How to contribute
 
-### Did you find a bug? 🐞
+## Did you find a bug? 🐞
 
 * 🔎 Please ensure your findings have not already been reported by searching on the project repository under [Issues](https://github.com/bytemare/workflows).
 * If you think your findings can be complementary to an existing issue, don't hesitate to join the conversation 😃☕
@@ -19,7 +19,8 @@
 
 If your changes might have an impact on performance, please benchmark your code and measure the impact, share the results and the tests that lead to these results.
 
-Please note that changes that are purely cosmetic and do not add anything substantial to the stability, functionality, or testability of the project may not be accepted.
+Please note that changes that are purely cosmetic and do not add anything substantial
+to the stability, functionality, or testability of the project may not be accepted.
 
 ### Coding Convention
 
