@@ -75,36 +75,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Ensure yamllint configuration
-        shell: bash
-        env:
-          YAML_INPUT: ${{ inputs.yaml_config }}
-        run: |
-          set -euo pipefail
-          CONFIG_PATH="$YAML_INPUT"
-          if [ -z "$CONFIG_PATH" ]; then
-            CONFIG_PATH=".github/.yamllint"
-          fi
-          if [ ! -f "$CONFIG_PATH" ]; then
-            mkdir -p "$(dirname "$CONFIG_PATH")"
-            cat <<'EOF' > "$CONFIG_PATH"
-extends: default
-
-rules:
-  line-length:
-    max: 140
-    allow-non-breakable-words: true
-    allow-non-breakable-inline-mappings: true
-  braces:
-    min-spaces-inside: 0
-  brackets:
-    min-spaces-inside: 0
-  colons:
-    max-spaces-after: 1
-EOF
-          fi
-          echo "YAML_CONFIG_PATH=$CONFIG_PATH" >> "$GITHUB_ENV"
-
       - name: Configure Super-Linter environment
         shell: bash
         env:
@@ -113,7 +83,7 @@ EOF
           GO_CFG: ${{ inputs.go_config }}
           PY_CFG: ${{ inputs.python_config }}
           MD_CFG: ${{ inputs.markdown_config }}
-          YML_CFG: ${{ env.YAML_CONFIG_PATH }}
+          YML_CFG: ${{ inputs.yaml_config }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
@@ -141,7 +111,9 @@ EOF
           [[ -n "$GO_CFG" ]] && echo "GOLANGCI_LINT_CONFIG_FILE=$GO_CFG" >> "$GITHUB_ENV"
           [[ -n "$PY_CFG" ]] && echo "PYTHON_PYLINT_CONFIG_FILE=$PY_CFG" >> "$GITHUB_ENV"
           [[ -n "$MD_CFG" ]] && echo "MARKDOWN_CONFIG_FILE=$MD_CFG" >> "$GITHUB_ENV"
-          [[ -n "$YML_CFG" ]] && echo "YAML_LINTER_RULES=$YML_CFG" >> "$GITHUB_ENV"
+          if [ -n "$YML_CFG" ]; then
+            echo "YAML_LINTER_RULES=$YML_CFG" >> "$GITHUB_ENV"
+          fi
 
           echo "VALIDATE_ALL_CODEBASE=false" >> "$GITHUB_ENV"
           if [[ -z "$DEFAULT_BRANCH" ]]; then
