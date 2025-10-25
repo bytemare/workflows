@@ -38,6 +38,9 @@ This project follows the [Benevolent Dictator Governance Model](http://oss-watch
 
 By contributing to this project, you agree that your contributions will be licensed under the project's [License](https://github.com/bytemare/workflows/blob/main/LICENSE).
 
-All contributions (including pull requests) must agree to the [Developer Certificate of Origin (DCO) version 1.1](https://developercertificate.org). It states that the contributor has the right to submit the patch for inclusion into the project. Simply submitting a contribution implies this agreement, however, please include the "Signed-off-by" git tag in every commit (this tag is a conventional way to confirm that you agree to the DCO).
+All contributions (including pull requests) must agree to the [Developer Certificate of Origin (DCO) version 1.1](https://developercertificate.org).
+It states that the contributor has the right to submit the patch for inclusion into the project.
+Simply submitting a contribution implies this agreement, however, please include the "Signed-off-by" git tag in
+every commit (this tag is a conventional way to confirm that you agree to the DCO).
 
 Thanks! :heart:
