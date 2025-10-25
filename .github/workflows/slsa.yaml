@@ -8,6 +8,8 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: SLSA Build Level 4 Provenance and GitHub Artifact Attestations
 
 on:
@@ -31,7 +33,7 @@ on:
         required: false
         default: false
 
-permissions: {}
+permissions: { }
 
 concurrency:
   group: release-${{ github.repository }}-${{ github.ref }}
@@ -111,9 +113,9 @@ jobs:
       image: golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
     permissions:
       actions: read
+      attestations: write
       contents: write
       id-token: write
-      attestations: write
       security-events: write
     steps:
       - name: Harden Runner
@@ -154,11 +156,13 @@ jobs:
         id: paths
         run: |
           TAR="package/${{ needs.package_source.outputs.artifact_path }}"
-          echo "artifact_path=${TAR}" >> "$GITHUB_OUTPUT"
-          echo "subjects_path=package/subjects.sha256" >> "$GITHUB_OUTPUT"
-          echo "checksums_path=package/checksums.txt" >> "$GITHUB_OUTPUT"
-          echo "manifest_path=package/manifest.files.sha256" >> "$GITHUB_OUTPUT"
-          echo "metadata_path=package/verification.json" >> "$GITHUB_OUTPUT"
+          {
+            echo "artifact_path=${TAR}"
+            echo "subjects_path=package/subjects.sha256"
+            echo "checksums_path=package/checksums.txt"
+            echo "manifest_path=package/manifest.files.sha256"
+            echo "metadata_path=package/verification.json"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Install cosign (pinned)
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}

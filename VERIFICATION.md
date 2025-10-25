@@ -13,7 +13,6 @@
 - [Complete Verification (SLSA Level 3 + Level 4)](#complete-verification-slsa-level-3--level-4)
 - [Reproducing Builds Locally (SLSA Level 4 verification)](#reproducing-builds-locally-slsa-level-4-verification)
 - [Troubleshooting](#troubleshooting)
-- [SLSA Compliance](#slsa-compliance)
 
 ---
 
@@ -50,7 +49,7 @@ A set of artifacts are produced per release, and a verification script to help y
 | **Lean** (default) | Default setting           | Core artifacts only | Fast builds, sufficient for most verification |
 | **Extended**       | `extended_metadata: true` | + git tree + Go env | Deep forensics, regulatory compliance         |
 
-#### Core Artifacts (Always Present)
+### Core Artifacts (Always Present)
 
 | File                                    | Purpose                                                 | SLSA Level and requirement                      |
 |-----------------------------------------|---------------------------------------------------------|-------------------------------------------------|
@@ -451,10 +450,10 @@ hermetic while attestations/signatures run with a tightly scoped allowlist.
 
 ## Additional Resources
 
-- **SLSA Framework:** https://slsa.dev
-- **CycloneDX SBOM:** https://cyclonedx.org
-- **Sigstore Documentation:** https://docs.sigstore.dev
-- **Cosign CLI:** https://docs.sigstore.dev/cosign/overview
+- **SLSA Framework:** <https://slsa.dev>
+- **CycloneDX SBOM:** <https://cyclonedx.org>
+- **Sigstore Documentation:** <https://docs.sigstore.dev>
+- **Cosign CLI:** <https://docs.sigstore.dev/cosign/overview>
 
 ---
 

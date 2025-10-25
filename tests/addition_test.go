@@ -1,4 +1,4 @@
-package addition_test
+package tests
 
 import (
 	"strconv"
