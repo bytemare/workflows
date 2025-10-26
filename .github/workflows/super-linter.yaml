@@ -14,36 +14,6 @@ name: Super Linter
 
 on:
   workflow_call:
-    inputs:
-      enabled_linters:
-        description: 'Comma separated list of linters to enable (used for VALIDATE_*)'
-        required: false
-        type: string
-        default: ''
-      disabled_linters:
-        description: 'Comma separated list of linters to disable'
-        required: false
-        type: string
-      go_config:
-        description: 'Path to GolangCI configuration file (if set)'
-        required: false
-        type: string
-        default: ''
-      python_config:
-        description: 'Path to Ruff/Pylint config file (optional)'
-        required: false
-        type: string
-        default: ''
-      markdown_config:
-        description: 'Path to markdownlint configuration file'
-        required: false
-        type: string
-        default: ''
-      yaml_config:
-        description: 'Path to yamllint configuration file'
-        required: false
-        type: string
-        default: ''
 
 permissions: { }
 
@@ -74,39 +44,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Configure Super-Linter environment
-        shell: bash
-        env:
-          ENABLE: ${{ inputs.enabled_linters }}
-          DISABLE: ${{ inputs.disabled_linters }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          set -euo pipefail
-          echo '::group::Configure Super-Linter environment'
-          normalize() {
-            local value="$1"
-            value="${value//-/_}"
-            value="${value//./_}"
-            echo "${value^^}"
-          }
-
-          IFS=',' read -ra enabled <<< "${ENABLE// /}"
-          for item in "${enabled[@]}"; do
-            [[ -z "$item" ]] && continue
-            key=$(normalize "$item")
-            echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
-          done
-
-          IFS=',' read -ra disabled <<< "${DISABLE// /}"
-          for item in "${disabled[@]}"; do
-            [[ -z "$item" ]] && continue
-            key=$(normalize "$item")
-            echo "VALIDATE_${key}=false" >> "$GITHUB_ENV"
-          done
-
-          echo "DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}" >> "$GITHUB_ENV"
-          echo '::endgroup::'
 
       - name: Run super-linter
         uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
