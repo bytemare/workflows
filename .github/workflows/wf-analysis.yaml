@@ -38,8 +38,7 @@ jobs:
       # Super-Linter
       super-linter: true
       super-linter-enabled-linters: >-
-        BASH,GITHUB_ACTIONS,MARKDOWN,YAML,PYTHON,SPELL
-      super-linter-disabled-linters: GO
+        BASH,GITHUB_ACTIONS,GO,MARKDOWN,YAML,PYTHON,SPELL
       super-linter-go-config: .github/.golangci.yml
       super-linter-yaml-config: .github/.yamllint
 
