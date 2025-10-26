@@ -14,6 +14,22 @@ name: Super Linter
 
 on:
   workflow_call:
+    inputs:
+        validate-all-codebase:
+            description: 'Validate all codebase'
+            required: false
+            type: boolean
+            default: true
+        enabled_linters:
+          description: 'Comma separated list of linters to enable (used for VALIDATE_*)'
+          required: false
+          type: string
+          default: ''
+        linter-rules-path:
+          description: 'Path to directory with custom linter rules'
+          required: false
+          type: string
+          default: '.github'
 
 permissions: { }
 
@@ -44,6 +60,32 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Configure Super-Linter environment
+        shell: bash
+        env:
+          ENABLE: ${{ inputs.enabled_linters }}
+          DISABLE: ${{ inputs.disabled_linters }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          echo '::group::Configure Super-Linter environment'
+          
+          normalize() {
+            local value="$1"
+            value="${value//-/_}"
+            value="${value//./_}"
+            echo "${value^^}"
+          }
+          
+          IFS=',' read -ra enabled <<< "${ENABLE// /}"
+          for item in "${enabled[@]}"; do
+            [[ -z "$item" ]] && continue
+            key=$(normalize "$item")
+            echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
+          done
+        
+          echo '::endgroup::'
 
       - name: Run super-linter
         uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
