@@ -116,7 +116,6 @@ jobs:
             echo "YAML_LINTER_RULES=$YML_CFG" >> "$GITHUB_ENV"
           fi
 
-          echo "VALIDATE_GO=false" >> "$GITHUB_ENV"
           echo "VALIDATE_ALL_CODEBASE=true" >> "$GITHUB_ENV"
           if [[ -z "$DEFAULT_BRANCH" ]]; then
             DEFAULT_BRANCH="main"
