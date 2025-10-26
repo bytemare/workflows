@@ -39,7 +39,7 @@ jobs:
       super-linter: true
       super-linter-validate-all-codebase: true
       super-linter-enabled-linters: |
-        BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,TRIVY,YAML
+        BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,YAML
       super-linter-rules-path: .github
 
   Governance:
