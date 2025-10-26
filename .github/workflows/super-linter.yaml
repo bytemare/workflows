@@ -65,11 +65,8 @@ jobs:
         shell: bash
         env:
           ENABLE: ${{ inputs.enabled_linters }}
-          DISABLE: ${{ inputs.disabled_linters }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          echo '::group::Configure Super-Linter environment'
           
           normalize() {
             local value="$1"
@@ -84,8 +81,6 @@ jobs:
             key=$(normalize "$item")
             echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
           done
-        
-          echo '::endgroup::'
 
       - name: Run super-linter
         uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9

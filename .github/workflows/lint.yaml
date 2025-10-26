@@ -84,3 +84,5 @@ jobs:
       packages: read
       statuses: write
     uses: ./.github/workflows/super-linter.yaml
+    with:
+      enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
