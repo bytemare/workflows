@@ -24,7 +24,6 @@ on:
         description: 'Comma separated list of linters to disable'
         required: false
         type: string
-        default: ''
       go_config:
         description: 'Path to GolangCI configuration file (if set)'
         required: false
@@ -114,6 +113,5 @@ jobs:
         env:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true
-          VALIDATE_GO: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTIONS_COMMAND_ARGS: -ignore "unknown permission scope \"models\""
