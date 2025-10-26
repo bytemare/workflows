@@ -117,6 +117,7 @@ jobs:
           fi
 
           echo "VALIDATE_GO=false" >> "$GITHUB_ENV"
+          echo "VALIDATE_ALL_CODEBASE=true" >> "$GITHUB_ENV"
           if [[ -z "$DEFAULT_BRANCH" ]]; then
             DEFAULT_BRANCH="main"
           fi
