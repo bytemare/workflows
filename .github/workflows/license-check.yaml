@@ -33,7 +33,9 @@ jobs:
         uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
 
       - name: Install golicense
-        run: go install github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
+        run: |
+          go install \
+            github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
 
       - name: Run golicense
         run: |

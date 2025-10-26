@@ -28,7 +28,9 @@ on:
         required: false
         default: true
       extended_metadata:
-        description: 'Generate extended metadata (full per-file manifest + full commit metadata)'
+        description: >-
+          Generate extended metadata (full per-file manifest + full commit
+          metadata)
         type: boolean
         required: false
         default: false
@@ -51,14 +53,15 @@ jobs:
     runs-on: ubuntu-latest
     # Fully containerize to ensure hermetic, consistent environment.
     container:
-      image: golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+      image: >-
+        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
     permissions:
       actions: read
       contents: read
     outputs:
       artifact_filename: ${{ steps.package.outputs.artifact_filename }}
       artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
-      subjects_b64:  ${{ steps.package.outputs.subjects_b64 }}
+      subjects_b64: ${{ steps.package.outputs.subjects_b64 }}
       artifact_path: ${{ steps.package.outputs.artifact_path }}
     steps:
       - name: Harden Runner
@@ -86,7 +89,8 @@ jobs:
           extended_metadata: ${{ inputs.extended_metadata }}
         env:
           # Persist the builder digest so build.env captures it for downstream verification.
-          SLSA_BUILDER_IMAGE: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
+          SLSA_BUILDER_IMAGE: >-
+            golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
 
       - name: Upload packaging bundle
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
@@ -110,7 +114,8 @@ jobs:
     if: ${{ inputs.dry_run || github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     container:
-      image: golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+      image: >-
+        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
     permissions:
       actions: read
       attestations: write
@@ -168,7 +173,8 @@ jobs:
         if: ${{ !inputs.dry_run && inputs.sign_blobs }}
         env:
           COSIGN_VERSION: v2.4.0
-          COSIGN_SHA256: cd7636b3586a3bdac2d9c8f3b421ed119edcb20499107887fd929211110e8418
+          COSIGN_SHA256: >-
+            cd7636b3586a3bdac2d9c8f3b421ed119edcb20499107887fd929211110e8418
         run: |
           set -euo pipefail
           curl -sSLo cosign "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
@@ -223,7 +229,8 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
+        uses: >-
+          softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
@@ -266,7 +273,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       # Mirror the hermetic builder so the rebuild check uses identical bits.
-      image: golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+      image: >-
+        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
     permissions:
       contents: read
     steps:
@@ -293,7 +301,8 @@ jobs:
           extended_metadata: ${{ inputs.extended_metadata }}
         env:
           # The rebuild must mirror the original builder image to satisfy L4 reproducibility.
-          SLSA_BUILDER_IMAGE: golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
+          SLSA_BUILDER_IMAGE: >-
+            golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
 
       - name: Compare digests
         # Fails fast if non-deterministic differences emerge.
@@ -303,7 +312,7 @@ jobs:
           new='${{ steps.repackage.outputs.artifact_sha256 }}'
           echo "Original digest: $orig"
           echo "Rebuilt  digest: $new"
-          if [ "$orig" != "$new" ]; then
+          if [ "x$orig" != "x$new" ]; then
             echo 'Digest mismatch! Rebuild not deterministic.' >&2
             exit 1
           fi

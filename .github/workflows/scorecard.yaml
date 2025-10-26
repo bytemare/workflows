@@ -17,7 +17,9 @@ on:
     secrets:
       token:
         required: true
-        description: "PAT used to check Branch Protection. To create the PAT, see https://github.com/ossf/scorecard-action#authentication-with-pat."
+        description: >-
+          PAT used to check Branch Protection.
+          To create the PAT, see https://github.com/ossf/scorecard-action#authentication-with-pat.
 
 permissions: read-all
 

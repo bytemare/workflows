@@ -30,7 +30,9 @@ on:
         required: false
         type: boolean
       super-linter-enabled-linters:
-        description: 'Comma-separated list of linters to enable explicitly (maps to VALIDATE_* env vars)'
+        description: >-
+          Comma-separated list of linters to enable explicitly
+          (maps to VALIDATE_* env vars)
         required: false
         type: string
       super-linter-rules-path:

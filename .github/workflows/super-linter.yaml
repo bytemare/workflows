@@ -15,21 +15,22 @@ name: Super Linter
 on:
   workflow_call:
     inputs:
-        validate-all-codebase:
-            description: 'Validate all codebase'
-            required: false
-            type: boolean
-            default: true
-        enabled_linters:
-          description: 'Comma separated list of linters to enable (used for VALIDATE_*)'
-          required: false
-          type: string
-          default: ''
-        linter-rules-path:
-          description: 'Path to directory with custom linter rules'
-          required: false
-          type: string
-          default: '.github'
+      validate-all-codebase:
+        description: 'Validate all codebase'
+        required: false
+        type: boolean
+        default: true
+      enabled_linters:
+        description: >-
+          Comma separated list of linters to enable (used for VALIDATE_*)
+        required: false
+        type: string
+        default: ''
+      linter-rules-path:
+        description: 'Path to directory with custom linter rules'
+        required: false
+        type: string
+        default: '.github'
 
 permissions: { }
 
@@ -67,14 +68,14 @@ jobs:
           ENABLE: ${{ inputs.enabled_linters }}
         run: |
           set -euo pipefail
-          
+
           normalize() {
             local value="$1"
             value="${value//-/_}"
             value="${value//./_}"
             echo "${value^^}"
           }
-          
+
           IFS=',' read -ra enabled <<< "${ENABLE// /}"
           for item in "${enabled[@]}"; do
             [[ -z "$item" ]] && continue
@@ -88,4 +89,5 @@ jobs:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTIONS_COMMAND_ARGS: -ignore "unknown permission scope \"models\""
+          GITHUB_ACTIONS_COMMAND_ARGS: >-
+            -ignore "unknown permission scope \"models\""

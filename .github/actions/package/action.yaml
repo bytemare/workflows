@@ -1,5 +1,7 @@
+---
 name: 'Package Reproducible Source'
-description: 'Creates deterministic source tarball with SLSA provenance metadata'
+description: >-
+  Creates deterministic source tarball with SLSA provenance metadata
 
 inputs:
   extended_metadata:
