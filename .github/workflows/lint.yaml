@@ -25,36 +25,6 @@ on:
         required: false
         type: boolean
         default: false
-      super-linter-enabled-linters:
-        description: 'Comma-separated list of linters to enable explicitly (maps to VALIDATE_* env vars)'
-        required: false
-        type: string
-        default: ''
-      super-linter-disabled-linters:
-        description: 'Comma-separated list of linters to disable (maps to VALIDATE_* env vars)'
-        required: false
-        type: string
-        default: ''
-      super-linter-go-config:
-        description: 'Path to golangci-lint configuration used by Super-Linter'
-        required: false
-        type: string
-        default: ''
-      super-linter-python-config:
-        description: 'Python lint configuration file (pylint/ruff)'
-        required: false
-        type: string
-        default: ''
-      super-linter-markdown-config:
-        description: 'markdownlint configuration file'
-        required: false
-        type: string
-        default: ''
-      super-linter-yaml-config:
-        description: 'yamllint configuration file'
-        required: false
-        type: string
-        default: ''
 
 permissions: { }
 
@@ -102,10 +72,3 @@ jobs:
       packages: read
       statuses: write
     uses: ./.github/workflows/super-linter.yaml
-    with:
-      enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
-      disabled_linters: ${{ inputs['super-linter-disabled-linters'] }}
-      go_config: ${{ inputs['super-linter-go-config'] }}
-      python_config: ${{ inputs['super-linter-python-config'] }}
-      markdown_config: ${{ inputs['super-linter-markdown-config'] }}
-      yaml_config: ${{ inputs['super-linter-yaml-config'] }}
