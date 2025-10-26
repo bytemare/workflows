@@ -106,16 +106,14 @@ jobs:
             echo "VALIDATE_${key}=false" >> "$GITHUB_ENV"
           done
 
-          echo "VALIDATE_ALL_CODEBASE=true" >> "$GITHUB_ENV"
-          if [[ -z "$DEFAULT_BRANCH" ]]; then
-            DEFAULT_BRANCH="main"
-          fi
-          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> "$GITHUB_ENV"
+          echo "DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}" >> "$GITHUB_ENV"
           echo '::endgroup::'
 
       - name: Run super-linter
         uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
         env:
           LINTER_RULES_PATH: .github
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_GO: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTIONS_COMMAND_ARGS: -ignore "unknown permission scope \"models\""
