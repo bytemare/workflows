@@ -312,7 +312,7 @@ jobs:
           new='${{ steps.repackage.outputs.artifact_sha256 }}'
           echo "Original digest: $orig"
           echo "Rebuilt  digest: $new"
-          if [ "x$orig" != "x$new" ]; then
+          if [ "$orig" != "$new" ]; then
             echo 'Digest mismatch! Rebuild not deterministic.' >&2
             exit 1
           fi
