@@ -8,6 +8,8 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: Scorecard Analysis
 
 on:
@@ -15,7 +17,9 @@ on:
     secrets:
       token:
         required: true
-        description: "PAT used to check Branch Protection. To create the PAT, see https://github.com/ossf/scorecard-action#authentication-with-pat."
+        description: >-
+          PAT used to check Branch Protection.
+          To create the PAT, see https://github.com/ossf/scorecard-action#authentication-with-pat.
 
 permissions: read-all
 
@@ -29,6 +33,15 @@ jobs:
       # Needed for GitHub OIDC token if publish_results is true
       id-token: write
     steps:
+      - name: Check the Scorecard PAT is set
+        env:
+          token: ${{ secrets.token }}
+        run: |
+          if [ -z "$token" ]; then
+            echo "Scorecard requires a PAT when enabled." >&2
+            exit 1
+          fi
+
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:

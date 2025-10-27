@@ -1,0 +1,93 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Super Linter
+
+on:
+  workflow_call:
+    inputs:
+      validate-all-codebase:
+        description: 'Validate all codebase'
+        required: false
+        type: boolean
+        default: true
+      enabled_linters:
+        description: >-
+          Comma separated list of linters to enable (used for VALIDATE_*)
+        required: false
+        type: string
+        default: ''
+      linter-rules-path:
+        description: 'Path to directory with custom linter rules'
+        required: false
+        type: string
+        default: '.github'
+
+permissions: { }
+
+jobs:
+  lint:
+    name: Super Linter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            ghcr.io:443
+            registry-1.docker.io:443
+            download.docker.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure Super-Linter environment
+        shell: bash
+        env:
+          ENABLE: ${{ inputs.enabled_linters }}
+        run: |
+          set -euo pipefail
+
+          normalize() {
+            local value="$1"
+            value="${value//-/_}"
+            value="${value//./_}"
+            echo "${value^^}"
+          }
+
+          IFS=',' read -ra enabled <<< "${ENABLE// /}"
+          for item in "${enabled[@]}"; do
+            [[ -z "$item" ]] && continue
+            key=$(normalize "$item")
+            echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
+          done
+
+      - name: Run super-linter
+        uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
+        env:
+          LINTER_RULES_PATH: .github
+          VALIDATE_ALL_CODEBASE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTIONS_COMMAND_ARGS: >-
+            -ignore "unknown permission scope \"models\""

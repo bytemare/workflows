@@ -10,23 +10,21 @@
 
 ---
 
-name: Test Go
+name: Gitleaks
 
 on:
   workflow_call:
-    inputs:
-      version:
-        description: 'The Go version to use'
-        required: false
-        type: string
 
-permissions: { }
+permissions:
+  contents: read
 
 jobs:
-  Test:
+  gitleaks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Harden Runner
+      - name: Harden runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
           disable-sudo: true
@@ -34,19 +32,16 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             github.com:443
-            go.dev:443
-            golang.org:443
             release-assets.githubusercontent.com:443
+            objects.githubusercontent.com:443
 
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           fetch-depth: 0
 
-      - name: Init go
-        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
-        with:
-          go-version: ${{ inputs.version }}
-
-      - name: Run Tests
-        run: go test -v -race -vet=all ./...
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@bf2dc8e55639c1e091e9b45970152e4313705814
+        env:
+          # To report GitHub Actions status checks
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

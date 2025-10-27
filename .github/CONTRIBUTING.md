@@ -1,6 +1,6 @@
 # How to contribute
 
-### Did you find a bug? 🐞
+## Did you find a bug? 🐞
 
 * 🔎 Please ensure your findings have not already been reported by searching on the project repository under [Issues](https://github.com/bytemare/workflows).
 * If you think your findings can be complementary to an existing issue, don't hesitate to join the conversation 😃☕
@@ -17,9 +17,14 @@
 * If you added code that impact tests, please add tests with relevant coverage and test cases. Bonus points for fuzzing.
 * 🛠️ Make sure the test suite passes.
 
-If your changes might have an impact on performance, please benchmark your code and measure the impact, share the results and the tests that lead to these results.
+If your changes might have an impact on performance, please benchmark your code and measure the impact,
+share the results and the tests that lead to these results.
 
-Please note that changes that are purely cosmetic and do not add anything substantial to the stability, functionality, or testability of the project may not be accepted.
+Please note that changes that are purely cosmetic and do not add anything substantial.
+
+
+
+to the stability, functionality, or testability of the project may not be accepted.
 
 ### Coding Convention
 
@@ -33,6 +38,9 @@ This project follows the [Benevolent Dictator Governance Model](http://oss-watch
 
 By contributing to this project, you agree that your contributions will be licensed under the project's [License](https://github.com/bytemare/workflows/blob/main/LICENSE).
 
-All contributions (including pull requests) must agree to the [Developer Certificate of Origin (DCO) version 1.1](https://developercertificate.org). It states that the contributor has the right to submit the patch for inclusion into the project. Simply submitting a contribution implies this agreement, however, please include the "Signed-off-by" git tag in every commit (this tag is a conventional way to confirm that you agree to the DCO).
+All contributions (including pull requests) must agree to the [Developer Certificate of Origin (DCO) version 1.1](https://developercertificate.org).
+It states that the contributor has the right to submit the patch for inclusion into the project.
+Simply submitting a contribution implies this agreement, however, please include the "Signed-off-by" git tag in
+every commit (this tag is a conventional way to confirm that you agree to the DCO).
 
 Thanks! :heart:

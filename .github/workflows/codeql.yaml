@@ -8,6 +8,8 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: "CodeQL"
 
 on:
@@ -17,7 +19,7 @@ on:
         required: true
         type: string
 
-permissions: {}
+permissions: { }
 
 jobs:
   codeql:

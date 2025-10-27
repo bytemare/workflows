@@ -8,21 +8,25 @@
 # https://spdx.org/licenses/MIT.html
 #
 
+---
+
 name: Codecov
 
 on:
   workflow_call:
     inputs:
       disable_search:
-        description: 'Disable search for coverage files. This is helpful when specifying what files you want to upload with the files option.'
+        description: >-
+          Disable search for coverage files. This is helpful when specifying
+          what files you want to upload with the files option.
         required: false
         type: string
         default: 'true'
     secrets:
-      codecov:
-        required: true
+      token:
+        required: false
 
-permissions: {}
+permissions: { }
 
 jobs:
   Codecov:
@@ -30,6 +34,15 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure Codecov token is available
+        env:
+          token: ${{ secrets.token }}
+        run: |
+          if [ -z "$token" ]; then
+            echo "Codecov token is required when running this job." >&2
+            exit 1
+          fi
+
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
@@ -48,15 +61,20 @@ jobs:
               o26192.ingest.us.sentry.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@435fe38d773c381b8e162ce13da2233c9080c960
+        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
 
       - name: Code Coverage
         shell: bash
-        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+        run: |
+          go test -v -race \
+            -covermode=atomic \
+            -coverpkg=./... \
+            -coverprofile=coverage.out \
+            ./...
 
       - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7
         env:
-          CODECOV_TOKEN: ${{ secrets.codecov }}
+          CODECOV_TOKEN: ${{ secrets.token }}
         with:
           files: coverage.out
           disable_search: ${{ inputs.disable_search }}
