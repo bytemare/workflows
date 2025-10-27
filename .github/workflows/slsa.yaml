@@ -229,8 +229,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: >-
-          softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
+        uses: softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true

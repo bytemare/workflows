@@ -71,8 +71,7 @@ jobs:
         shell: bash
         run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
 
-      - uses: >-
-          SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
+      - uses: SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
           SONAR_TOKEN: ${{ secrets.sonar }}
