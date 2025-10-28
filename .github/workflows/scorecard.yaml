@@ -31,15 +31,6 @@ jobs:
       # Needed if using Code scanning alerts
       security-events: write
     steps:
-      - name: Check the Scorecard PAT is set
-        env:
-          token: ${{ secrets.token }}
-        run: |
-          if [ -z "$token" ]; then
-            echo "Scorecard requires a PAT when enabled." >&2
-            exit 1
-          fi
-
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
         with:
