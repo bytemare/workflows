@@ -30,6 +30,8 @@ jobs:
     permissions:
       # Needed if using Code scanning alerts
       security-events: write
+      # Needed for GitHub OIDC token if publish_results is true
+      id-token: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
