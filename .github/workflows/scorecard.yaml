@@ -30,8 +30,6 @@ jobs:
     permissions:
       # Needed if using Code scanning alerts
       security-events: write
-      # Needed for GitHub OIDC token if publish_results is true
-      id-token: write
     steps:
       - name: Check the Scorecard PAT is set
         env:
