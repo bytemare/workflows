@@ -16,14 +16,18 @@ on:
   workflow_call:
     inputs:
       create_release:
+        description: >-
+          Create or update the GitHub Release
         type: boolean
         required: false
         default: true
       dry_run:
+        description: Run the workflow in dry-run mode
         type: boolean
         required: false
         default: false
       sign_blobs:
+        description: Sign release artifacts
         type: boolean
         required: false
         default: true

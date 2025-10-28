@@ -30,6 +30,18 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
 
 ---
 
+## Ready-to-use bundled workflows (recommended)
+
+The three `wf-*.yaml` files in `.github/workflows/` call all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak:
+
+- **`wf-tests.yaml`** - Automated testing on pull requests and main branch for Go code
+- **`wf-analysis.yaml`** - Security and quality analysis (e.g. linting, CodeQL, OpenSSF Scorecard)
+- **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
+
+Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
+
+---
+
 ## Workflow Suites
 
 Five orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
@@ -106,18 +118,6 @@ jobs:
 ```
 
 All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
-
-## Ready-to-use bundled workflows (recommended)
-
-The three `wf-*.yaml` files in `.github/workflows/` call the suites above with opinionated defaults, so copy/paste stays short while remaining easy to tweak:
-
-- **`wf-tests.yaml`** - Automated testing on pull requests and main branch
-- **`wf-analysis.yaml`** - Security and quality analysis (e.g. linting, CodeQL, OpenSSF Scorecard)
-- **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
-
-Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
-
----
 
 ## Security Workflows
 
