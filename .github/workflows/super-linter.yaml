@@ -84,7 +84,7 @@ jobs:
           done
 
       - name: Run super-linter
-        uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
+        uses: super-linter/super-linter@39aba7679238de915382df7ecbe0194bc6677af9
         env:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true

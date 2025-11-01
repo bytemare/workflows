@@ -30,7 +30,7 @@ jobs:
           egress-policy: audit
 
       - name: Init go
-        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
+        uses: bytemare/actions/init-go@9a679a89527b5ac3e8e88dc4de61b5af7b46072c
 
       - name: Install golicense
         run: |
