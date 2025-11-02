@@ -42,6 +42,23 @@ jobs:
         BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,YAML
       super-linter-rules-path: .github
 
+  licenses-and-ort:
+    uses: bytemare/workflows/.github/workflows/license-check-2.yml@main
+    with:
+      # ---- Baseline PR gate (fast) ----
+      allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      warn_only: false                  # set true for a gentle rollout
+      use_pr_comment: true              # Comment on PR, needs 'pull-requests: write' permission
+      run_component_detection: true     # ensures polyglot coverage on PR heads
+
+      # ---- High assurance gate (runs on 'high' OR on v* tags) ----
+      assurance: high                   # opt-in high-assurance for all pushes (plus tags)
+      #ort_config_repository: "https://github.com/bytemare/global-ort-config"  # optional
+      #ort_config_revision: ""           # pin if you want deterministic policy
+      # ort_fail_on: "violations"         # fail on policy violations
+      # Example: limit package managers or pass labels
+      #ort_cli_args: "-P ort.analyzer.enabledPackageManagers=NPM,Yarn,Gradle,GoMod -l org=blablacar -l dist=oss"
+
   Governance:
     uses: ./.github/workflows/governance.yaml
     permissions:

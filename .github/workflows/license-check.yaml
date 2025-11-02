@@ -14,31 +14,63 @@ name: License Check
 
 on:
   workflow_call:
+    inputs:
+      # Safe defaults for MIT-licensed OSS. Override per repo if needed.
+      allow_spdx:
+        description: "Comma-separated SPDX allowlist"
+        required: false
+        type: string
+        default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      warn_only:
+        description: "Report findings but do not fail"
+        required: false
+        type: boolean
+        default: false
+      use_pr_comment:
+        description: "Write a summary comment to PR (requires extra perm)"
+        required: false
+        type: boolean
+        default: false
 
-permissions:
-  contents: read
+permissions: { }
 
 jobs:
-  check-licenses:
-    name: Check Dependency Licenses
+  # Ensure the Dependency Graph is populated for this PR.
+  prepare-graph:
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+
+      # Multi-ecosystem dependency submission.
+      - name: Submit dependencies (component detection)
+        uses: advanced-security/component-detection-dependency-submission-action@c7cb2bbc9360d8a011e4fac7dc542c689415d62f
+
+  dependency-review:
+    needs: [prepare-graph]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      comment: ${{ steps.review.outputs.comment-content }}
+    steps:
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+
+      # If a repo config exists, use it.
+      - name: Dependency Review (repo config)
+        id: review_cfg
+        if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
+        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
         with:
-          disable-sudo: true
-          egress-policy: audit
+          config-file: .github/dependency-review-config.yml
 
-      - name: Init go
-        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
-
-      - name: Install golicense
-        run: |
-          go install \
-            github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
-
-      - name: Run golicense
-        run: |
-          go-licenses check \
-            --allowed_licenses="MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause" \
-            ./...
+      # Otherwise, use inline defaults.
+      - name: Dependency Review (inline)
+        id: review
+        if: ${{ steps.review_cfg.outcome == '' }}
+        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
+        with:
+          allow-licenses: ${{ inputs.allow_spdx }}
+          warn-only: ${{ inputs.warn_only }}

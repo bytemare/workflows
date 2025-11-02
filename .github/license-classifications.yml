@@ -1,0 +1,32 @@
+# License categories used by evaluator.rules.kts
+categories:
+  permissive:
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - MIT
+    - CC0-1.0
+    - Unlicense
+
+  copyleft-limited:       # "weak copyleft" — warn by default
+    - MPL-2.0
+    - LGPL-2.1-only
+    - LGPL-2.1-or-later
+    - LGPL-3.0-only
+    - LGPL-3.0-or-later
+
+  copyleft:               # "strong copyleft" — fail by default
+    - GPL-2.0-only
+    - GPL-2.0-or-later
+    - GPL-3.0-only
+    - GPL-3.0-or-later
+    - AGPL-3.0-only
+    - AGPL-3.0-or-later
+
+  forbidden:              # non-OSI or problematic
+    - SSPL-1.0
+    - BUSL-1.1
+    - PolyForm-Noncommercial-1.0.0
+    - PolyForm-Small-Business-1.0.0
+    - LicenseRef-clearlydefined-OTHER   # non-SPDX “OTHER” from ClearlyDefined
