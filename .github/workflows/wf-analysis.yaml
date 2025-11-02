@@ -48,6 +48,7 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
+      actions: read
     with:
       # ---- Baseline PR gate (fast) ----
       allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
