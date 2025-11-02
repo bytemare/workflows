@@ -128,18 +128,19 @@ jobs:
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
 
+      - name: Download ORT artifacts
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          path: ort-artifacts
+          merge-multiple: true
+
       - name: Locate ORT evaluation result
         id: find-eval
         if: ${{ always() }}
         shell: bash
         run: |
           set -euo pipefail
-            # Find the JSON used by the Web App / reporter (“EvaluatedModel” or evaluator output).
-            # Search a few levels deep, handle both JSON / YAML.
-            EVAL_JSON=$(find "$GITHUB_WORKSPACE" -maxdepth 6 -type f -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' | head -n1 || true)
-            if [[ -z "${EVAL_JSON:-}" ]]; then
-              echo "No evaluation-result JSON found (will skip summary)."
-          fi
+         EVAL=$(find ort-artifacts -type f -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' | head -n1 || true)
           echo "eval_json=${EVAL_JSON:-}" >> "$GITHUB_OUTPUT"
 
       - name: Summarize ORT rule violations in Job Summary
