@@ -43,7 +43,7 @@ jobs:
       super-linter-rules-path: .github
 
   licenses-and-ort:
-    uses: ./.github/workflows/license-check-2.yaml
+    uses: ./.github/workflows/license-check.yaml
     permissions:
       contents: write
       pull-requests: write
@@ -86,7 +86,7 @@ jobs:
       # Dependency Review
       dependency-review: true
       # License Check
-      license-check: true
+      #license-check: true
       # Do Not Submit
       do-not-submit: true
       # OpenSSF Scorecard

@@ -64,11 +64,11 @@ jobs:
       contents: read
     uses: ./.github/workflows/dependency-review.yaml
 
-  LicenseCheck:
-    if: ${{ inputs['license-check'] }}
-    permissions:
-      contents: read
-    uses: ./.github/workflows/license-check.yaml
+  #LicenseCheck:
+  #  if: ${{ inputs['license-check'] }}
+  #  permissions:
+  #    contents: read
+  #  uses: ./.github/workflows/license-check.yaml
 
   DoNotSubmit:
     if: ${{ inputs['do-not-submit'] }}
