@@ -1,4 +1,3 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 # Code of Conduct [![Code of Conduct Badge](https://img.shields.io/badge/code_of_conduct-Contributor_Covenant_3.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 ## Our Pledge

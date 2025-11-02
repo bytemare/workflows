@@ -121,12 +121,71 @@ jobs:
       - name: Run ORT (policy-driven)
         uses: oss-review-toolkit/ort-ci-github-action@1805edcf1f4f55f35ae6e4d2d9795ccfb29b6021
         with:
-          # Optional: global policy repo: if empty, run with defaults
-          #ort-config-repository: ${{ inputs.ort_config_repository }}
-          #ort-config-revision:   ${{ inputs.ort_config_revision }}
           # Fail on policy violations (configurable in ORT config)
           fail-on: ${{ inputs.ort_fail_on }}
           # Run full pipeline
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
+      - name: Locate ORT evaluation result
+        id: find-eval
+        shell: bash
+        run: |
+          set -euo pipefail
+            # Find the JSON used by the Web App / reporter (“EvaluatedModel” or evaluator output).
+            # Search a few levels deep, handle both JSON / YAML.
+            EVAL_JSON=$(find "$GITHUB_WORKSPACE" -maxdepth 6 -type f -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' | head -n1 || true)
+            if [[ -z "${EVAL_JSON:-}" ]]; then
+              echo "No evaluation-result JSON found (will skip summary)."
+          fi
+          echo "eval_json=${EVAL_JSON:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize ORT rule violations in Job Summary
+        if: ${{ steps.find-eval.outputs.eval_json != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
+          {
+            echo "## ORT rule violations (top 50)"
+            echo
+            echo "| Severity | Rule | Package/Project | License | Message |"
+            echo "|---|---|---|---|---|"
+            # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
+            jq -r '
+              .. | objects
+              | select(has("violations") or has("rule_violations") or has("ruleViolations"))
+              | (.violations // .rule_violations // .ruleViolations)
+              | .[]
+              | {
+                  sev: (.severity // .level // ""),
+                  rule: (.rule?.name // .rule?.id // .rule // ""),
+                  pkg: (.pkg?.id // .package?.id // .project?.id // .id // ""),
+                  lic: (.license?.id // .license // .licenseFinding?.license // ""),
+                  msg: (.message // .description // "")
+                }
+              | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.msg)"
+            ' -- "${EVAL_JSON}" \
+            | head -n 50 \
+            | sed 's/|/ | /g' \
+            | sed 's/^/| /; s/$/ |/'
+            echo
+            echo "_Full evidence remains in the artifact Web App if you need deep dive._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit lightweight GitHub annotations
+        if: ${{ steps.find-eval.outputs.eval_json != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
+          jq -r '
+            .. | objects
+            | select(has("violations") or has("rule_violations") or has("ruleViolations"))
+            | (.violations // .rule_violations // .ruleViolations)
+            | .[]
+            | {sev: (.severity // "ERROR"), msg: (.message // "ORT violation")}
+            | "::" + (if (.sev|ascii_upcase) == "ERROR" then "error" else "warning" end) + "::" + .msg
+          ' -- "${EVAL_JSON}" | while IFS= read -r line; do
+            echo "$line"
+          done
