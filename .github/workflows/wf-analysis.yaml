@@ -43,7 +43,7 @@ jobs:
       super-linter-rules-path: .github
 
   licenses-and-ort:
-    uses: bytemare/workflows/.github/workflows/license-check-2.yaml@main
+    uses: ./.github/workflows/license-check-2.yaml@main
     with:
       # ---- Baseline PR gate (fast) ----
       allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
