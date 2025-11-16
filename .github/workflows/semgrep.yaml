@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
 
       - name: Run Semgrep
         run: semgrep ci --no-suppress-errors --sarif --output semgrep.sarif
@@ -49,6 +49,6 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@d88a5540c3fd916f4e15b7744d287a124278e065
+        uses: github/codeql-action/upload-sarif@85f1517bb46a9e4d5e1ad15a6ef251b3124ba42b
         with:
           sarif_file: semgrep.sarif
