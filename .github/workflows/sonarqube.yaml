@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2
         with:
           disable-sudo: true
           egress-policy: block
@@ -65,7 +65,7 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
-        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
+        uses: bytemare/actions/init-go@4bd02bede5ae49c456c2f400521f22fc0c64456b
 
       - name: Code Coverage
         shell: bash
