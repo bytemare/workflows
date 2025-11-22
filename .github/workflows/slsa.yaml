@@ -58,7 +58,7 @@ jobs:
     # Fully containerize to ensure hermetic, consistent environment.
     container:
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:e17419604b6d1f9bc245694425f0ec9b1b53685c80850900a376fb10cb0f70cb
     permissions:
       actions: read
       contents: read
@@ -69,7 +69,7 @@ jobs:
       artifact_path: ${{ steps.package.outputs.artifact_path }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2
         with:
           disable-sudo: true
           egress-policy: block
@@ -82,7 +82,7 @@ jobs:
             artifactcache.actions.githubusercontent.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
         with:
           fetch-depth: 0
 
@@ -97,7 +97,7 @@ jobs:
             golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
 
       - name: Upload packaging bundle
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: package-${{ steps.package.outputs.artifact_filename }}
           retention-days: 7
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:e17419604b6d1f9bc245694425f0ec9b1b53685c80850900a376fb10cb0f70cb
     permissions:
       actions: read
       attestations: write
@@ -128,7 +128,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2
         with:
           disable-sudo: true
           egress-policy: block
@@ -151,12 +151,12 @@ jobs:
             storage.googleapis.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
         with:
           fetch-depth: 0
 
       - name: Download packaging bundle
-        uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
+        uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05
         with:
           name: package-${{ needs.package_source.outputs.artifact_filename }}
           path: package
@@ -200,7 +200,7 @@ jobs:
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@ba965ac88abfc6fa49344893ed19e5bf479a07d6
+        uses: actions/attest-build-provenance@f8ed128a91e929ad1a60576dc6403658f56ec3b1
         with:
           subject-path: ${{ steps.paths.outputs.artifact_path }}
 
@@ -233,7 +233,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
@@ -253,7 +253,7 @@ jobs:
 
       - name: Upload artifacts (PR dry run)
         if: ${{ inputs.dry_run }}
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: dryrun-${{ needs.package_source.outputs.artifact_filename }}
           if-no-files-found: warn
@@ -277,12 +277,12 @@ jobs:
     container:
       # Mirror the hermetic builder so the rebuild check uses identical bits.
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:e17419604b6d1f9bc245694425f0ec9b1b53685c80850900a376fb10cb0f70cb
     permissions:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2
         with:
           disable-sudo: true
           egress-policy: block
@@ -293,7 +293,7 @@ jobs:
             pipelines.actions.githubusercontent.com:443
 
       - name: Checkout repo (fresh workspace)
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
         with:
           fetch-depth: 0
 
