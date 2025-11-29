@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2
         with:
           disable-sudo: true
           egress-policy: block
@@ -49,15 +49,15 @@ jobs:
             uploads.github.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@c2d88d3ecc89a9ef08eebf45d9637801dcee7eb5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@d88a5540c3fd916f4e15b7744d287a124278e065
+        uses: github/codeql-action/init@ecec1f88769052ebc45aa0affc53ea30d474cffa
         with:
           languages: ${{ inputs.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@d88a5540c3fd916f4e15b7744d287a124278e065
+        uses: github/codeql-action/autobuild@ecec1f88769052ebc45aa0affc53ea30d474cffa
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@d88a5540c3fd916f4e15b7744d287a124278e065
+        uses: github/codeql-action/analyze@ecec1f88769052ebc45aa0affc53ea30d474cffa
