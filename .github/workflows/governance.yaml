@@ -110,7 +110,6 @@ jobs:
       models: read
       artifact-metadata: read # permissions:disable-line
     uses: ./.github/workflows/scorecard.yaml
-    with:
     secrets:
       token: ${{ secrets.scorecard }}
 
