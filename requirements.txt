@@ -1,7 +1,0 @@
-# SPDX-License-Identifier: GPL-3.0-only
-#
-# This intentionally introduces a GPL-3.0-only dependency so the standard
-# dependency-review gate can be exercised in CI. Do not vendor or use this
-# requirement outside of license enforcement tests.
-
-ansible==9.1.0
