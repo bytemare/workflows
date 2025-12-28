@@ -240,7 +240,7 @@ End-to-end dependency due diligence that works for any language:
 
 - Dependency graph submission on pull requests so GitHub understands PR-only dependencies.
 - Dependency Review with a strict SPDX allow-list (`allow_spdx`) plus optional warn-only and PR summary comment modes.
-- Optional high-assurance tier (`assurance: high` or `v*` tags) that runs ORT + ScanCode and surfaces rule violations directly in the job summary and annotations. You can pass your organization policy repo via `ort_config_repository`.
+- Optional high-assurance tier (`assurance: high` or `v*` tags) that runs ORT + ScanCode and surfaces rule violations directly in the job summary and annotations. Provide a git URL for your ORT policy repo via `ort_config_repository` to enable the job (it is skipped otherwise).
 
 **Configuration:**
 
@@ -254,8 +254,8 @@ jobs:
       use_pr_comment: true
       run_component_detection: true
       assurance: standard # switch to "high" (or use v* tags) for ORT + ScanCode
-      ort_config_repository: your-org/compliance-policy # optional
-      ort_config_revision: main
+      ort_config_repository: https://github.com/your-org/ort-config.git # required for ORT
+      ort_config_revision: main # optional pin
       ort_fail_on: violations
       ort_cli_args: ""
     permissions:

@@ -57,7 +57,7 @@ jobs:
       run_component_detection: true     # ensures polyglot coverage on PR heads
 
       # ---- High assurance gate (runs on 'high' OR on v* tags) ----
-      assurance: high                   # opt-in high-assurance for all pushes (plus tags)
+      assurance: standard               # switch to "high" when supplying an ORT policy repo
       #ort_config_repository: "https://github.com/bytemare/global-ort-config"  # optional
       #ort_config_revision: ""           # pin if you want deterministic policy
       # ort_fail_on: "violations"         # fail on policy violations
