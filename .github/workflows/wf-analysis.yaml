@@ -82,7 +82,7 @@ jobs:
       repository-projects: read
       statuses: read
       models: read # permissions:disable-line
-      artifact-metadata: read
+      artifact-metadata: read  # permissions:disable-line
     with:
       # Dependency Review
       dependency-review: true

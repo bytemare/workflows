@@ -140,8 +140,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EVAL=$(find ort-artifacts -type f -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' | head -n1 || true)
-          echo "eval_json=${EVAL_JSON}" >> "$GITHUB_OUTPUT"
+          ART_DIR="ort-artifacts"
+          eval_path=""
+          if [ -d "${ART_DIR}" ]; then
+            eval_path="$(find "${ART_DIR}" -type f \( -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' \) -print | head -n1 || true)"
+          fi
+          echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
 
       - name: Summarize ORT rule violations in Job Summary
         if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
