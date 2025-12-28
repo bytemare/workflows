@@ -236,7 +236,11 @@ jobs:
 
 ### [License Check](https://github.com/google/golicense)
 
-Scans Go dependencies for compliance with an allowed license policy.
+End-to-end dependency due diligence that works for any language:
+
+- Dependency graph submission on pull requests so GitHub understands PR-only dependencies.
+- Dependency Review with a strict SPDX allow-list (`allow_spdx`) plus optional warn-only and PR summary comment modes.
+- Optional high-assurance tier (`assurance: high` or `v*` tags) that runs ORT + ScanCode and surfaces rule violations directly in the job summary and annotations. You can pass your organization policy repo via `ort_config_repository`.
 
 **Configuration:**
 
@@ -244,8 +248,19 @@ Scans Go dependencies for compliance with an allowed license policy.
 jobs:
   license-check:
     uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
+    with:
+      allow_spdx: MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0
+      warn_only: false
+      use_pr_comment: true
+      run_component_detection: true
+      assurance: standard # switch to "high" (or use v* tags) for ORT + ScanCode
+      ort_config_repository: your-org/compliance-policy # optional
+      ort_config_revision: main
+      ort_fail_on: violations
+      ort_cli_args: ""
     permissions:
       contents: read
+      pull-requests: write # required when posting PR comments
 ```
 
 ---
