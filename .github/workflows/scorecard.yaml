@@ -14,12 +14,6 @@ name: Scorecard Analysis
 
 on:
   workflow_call:
-    inputs:
-      artifact-metadata-permission:
-        description: 'Set to true to request the artifact-metadata permission (required by OSSF Scorecard >=v5)'
-        required: false
-        type: boolean
-        default: false
     secrets:
       token:
         required: true
@@ -36,7 +30,7 @@ jobs:
       security-events: write
       # Needed for GitHub OIDC token if publish_results is true
       id-token: write
-      artifact-metadata: ${{ inputs['artifact-metadata-permission'] && 'read' || 'none' }}
+      artifact-metadata: read # permissions:disable-line
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33

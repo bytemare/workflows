@@ -82,6 +82,7 @@ jobs:
       repository-projects: read
       statuses: read
       models: read # permissions:disable-line
+      artifact-metadata: read # permissions:disable-line
     with:
       # Dependency Review
       dependency-review: true
@@ -93,7 +94,6 @@ jobs:
       scorecard: true
       # Codecov upload
       codecov: true
-      artifact-metadata-permission: false
     secrets:
       # OpenSSF Scorecard token
       scorecard: ${{ secrets.SCORECARD_TOKEN }}
