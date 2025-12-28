@@ -23,8 +23,6 @@ on:
     # Every 3 days at 7 a.m.
     - cron: '0 7 */3 * *'
 
-permissions: { }
-
 jobs:
   Lint:
     uses: ./.github/workflows/lint.yaml
