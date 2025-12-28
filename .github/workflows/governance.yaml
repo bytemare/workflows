@@ -109,6 +109,8 @@ jobs:
       statuses: read
       models: read
     uses: ./.github/workflows/scorecard.yaml
+    with:
+      artifact-metadata-permission: false
     secrets:
       token: ${{ secrets.scorecard }}
 
