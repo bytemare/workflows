@@ -108,6 +108,7 @@ jobs:
       repository-projects: read
       statuses: read
       models: read
+      artifact-metadata: read
     uses: ./.github/workflows/scorecard.yaml
     secrets:
       token: ${{ secrets.scorecard }}
