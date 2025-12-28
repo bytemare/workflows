@@ -21,8 +21,6 @@ on:
           PAT used to check Branch Protection.
           To create the PAT, see https://github.com/ossf/scorecard-action#authentication-with-pat.
 
-permissions: read-all
-
 jobs:
   scorecard:
     name: Scorecard Analysis
