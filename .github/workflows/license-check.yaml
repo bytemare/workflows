@@ -64,6 +64,9 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
   # Populate Dependency Graph
   component-detection:
