@@ -64,8 +64,7 @@ on:
         type: string
         default: ""
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   # Populate Dependency Graph
