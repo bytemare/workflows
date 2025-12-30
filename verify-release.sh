@@ -436,7 +436,7 @@ cd "$WORK_DIR"
 
 SUBJECTS_URL="https://github.com/${REPO}/releases/download/${TAG}/subjects.sha256"
 info "Downloading subjects.sha256"
-curl -sSLo subjects.sha256 "$SUBJECTS_URL" || fail "Unable to fetch subjects.sha256"
+curl -sSo subjects.sha256 "$SUBJECTS_URL" || fail "Unable to fetch subjects.sha256"
 sha_from_subjects=$(awk 'NR==1 {print $1}' subjects.sha256)
 artifact_from_subjects=$(awk 'NR==1 {print $2}' subjects.sha256)
 if [[ "$artifact_from_subjects" != "$ARTIFACT_NAME" ]]; then
@@ -449,7 +449,7 @@ ok
 
 info "Downloading ${ARTIFACT_NAME}"
 mkdir -p "$(dirname "$ARTIFACT_NAME")"
-curl -sSLo "$ARTIFACT_NAME" "https://github.com/${REPO}/releases/download/${TAG}/${ARTIFACT_NAME}" || fail "Unable to download artifact"
+curl -sSo "$ARTIFACT_NAME" "https://github.com/${REPO}/releases/download/${TAG}/${ARTIFACT_NAME}" || fail "Unable to download artifact"
 ok
 
 info "Validating downloaded digest"
