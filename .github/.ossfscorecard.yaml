@@ -1,0 +1,9 @@
+---
+
+annotation-version: 1
+annotations:
+  - name: Token-Permissions
+    reasons:
+      - "contents:write in component-detection job is required by GitHub's Dependency Submission API"
+    locations:
+      - ".github/workflows/license-check.yaml:75"

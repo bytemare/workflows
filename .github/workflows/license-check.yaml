@@ -64,8 +64,7 @@ on:
         type: string
         default: ""
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   # Populate Dependency Graph
@@ -73,7 +72,7 @@ jobs:
     if: ${{ inputs.run_component_detection && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # required to submit dependencies to the graph
+      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph - safe: job-scoped, PR-only, official GH action
       id-token: write   # required by the action (OIDC)
     steps:
       - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
