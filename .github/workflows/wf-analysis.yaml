@@ -42,7 +42,7 @@ jobs:
         BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,YAML
       super-linter-rules-path: .github
 
-  licenses-and-ort:
+  Licenses:
     uses: ./.github/workflows/license-check.yaml
     permissions:
       contents: write
