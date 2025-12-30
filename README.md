@@ -1,8 +1,6 @@
 # Workflows
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/bytemare/workflows/badge)](https://scorecard.dev/viewer/?uri=github.com/bytemare/workflows)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5621/badge)](https://www.bestpractices.dev/projects/5621)
-[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 A collection of hardened, reusable GitHub Workflows for Go projects with high assurance supply chain security.
 They don't reinvent the wheel but combine tools and best practices into easy-to-use, modular workflows.
