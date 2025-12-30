@@ -1,5 +1,7 @@
 # Workflows
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/bytemare/workflows/badge)](https://scorecard.dev/viewer/?uri=github.com/bytemare/workflows)
+
 A collection of hardened, reusable GitHub Workflows for Go projects with high assurance supply chain security.
 They don't reinvent the wheel but combine tools and best practices into easy-to-use, modular workflows.
 You're welcome to use them, though they primarily target my own projects and I will adapt them accordingly.
@@ -236,7 +238,11 @@ jobs:
 
 ### [License Check](https://github.com/google/golicense)
 
-Scans Go dependencies for compliance with an allowed license policy.
+End-to-end dependency due diligence that works for any language:
+
+- Dependency graph submission on pull requests so GitHub understands PR-only dependencies.
+- Dependency Review with a strict SPDX allow-list (`allow_spdx`) plus optional warn-only and PR summary comment modes.
+- Optional high-assurance tier (`assurance: high` or `v*` tags) that runs ORT + ScanCode and surfaces rule violations directly in the job summary and annotations. Provide a git URL for your ORT policy repo via `ort_config_repository` to enable the job (it is skipped otherwise).
 
 **Configuration:**
 
@@ -244,8 +250,19 @@ Scans Go dependencies for compliance with an allowed license policy.
 jobs:
   license-check:
     uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
+    with:
+      allow_spdx: MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0
+      warn_only: false
+      use_pr_comment: true
+      run_component_detection: true
+      assurance: standard # switch to "high" (or use v* tags) for ORT + ScanCode
+      ort_config_repository: https://github.com/your-org/ort-config.git # required for ORT
+      ort_config_revision: main # optional pin
+      ort_fail_on: violations
+      ort_cli_args: ""
     permissions:
       contents: read
+      pull-requests: write # required when posting PR comments
 ```
 
 ---

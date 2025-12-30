@@ -10,35 +10,195 @@
 
 ---
 
-name: License Check
+name: License and Dependency Compliance Check
 
 on:
   workflow_call:
+    inputs:
+      # Dependency Review
+      allow_spdx:
+        description: "Comma-separated SPDX allow-list"
+        required: false
+        type: string
+        default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      warn_only:
+        description: "Report but do not fail PRs"
+        required: false
+        type: boolean
+        default: false
+      use_pr_comment:
+        description: "Post summary comment on PR (requires pull-requests: write)"
+        required: false
+        type: boolean
+        default: false
+      run_component_detection:
+        description: "Populate Dependency Graph on PR SHAs (recommended)"
+        required: false
+        type: boolean
+        default: true
 
-permissions:
-  contents: read
+      # ORT + ScanCode (High-assurance mode)
+      assurance:
+        description: "low | standard | high (runs ORT when 'high' or on v* tags)"
+        required: false
+        type: string
+        default: "standard"
+      ort_config_repository:
+        description: "Optional ORT config repo (global policy, rules)"
+        required: false
+        type: string
+        default: ""
+      ort_config_revision:
+        description: "Optional ref/commit for ORT config repo"
+        required: false
+        type: string
+        default: ""
+      ort_fail_on:
+        description: "Fail-on mode for ORT (violations|issues|never)"
+        required: false
+        type: string
+        default: "violations"
+      ort_cli_args:
+        description: "Optional extra ORT CLI args (e.g. -P flags)"
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
 
 jobs:
-  check-licenses:
-    name: Check Dependency Licenses
+  # Populate Dependency Graph
+  component-detection:
+    name: Component Detection (Dependency Graph Population)
+    if: ${{ inputs.run_component_detection && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph - safe: job-scoped, PR-only, official GH action
+      id-token: write   # required by the action (OIDC)
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: Component Detection (Dependency Submission)
+        uses: advanced-security/component-detection-dependency-submission-action@c7cb2bbc9360d8a011e4fac7dc542c689415d62f
+
+  # Fast Dependency Review
+  dependency-review:
+    name: Dependency Review
+    needs: [component-detection]
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # needed only when posting the summary
+    steps:
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+
+      # If a repo config exists, use it, else use inline defaults
+      - name: Dependency Review (repo config)
+        id: review_cfg
+        if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
+        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
         with:
-          disable-sudo: true
-          egress-policy: audit
+          config-file: .github/dependency-review-config.yml
+          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
 
-      - name: Init go
-        uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
+      - name: Dependency Review (inline defaults)
+        if: ${{ steps.review_cfg.outcome == '' }}
+        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
+        with:
+          allow-licenses: ${{ inputs.allow_spdx }}
+          warn-only: ${{ inputs.warn_only }}
+          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
 
-      - name: Install golicense
+  # High-assurance: ORT end-to-end (Analyzer→Scanner→Evaluator→Reporter)
+  ort-high-assurance:
+    name: ORT License Compliance (High Assurance)
+    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) && inputs.ort_config_repository != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+
+      # ORT + ScanCode
+      - name: Run ORT (policy-driven)
+        env:
+          ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
+          ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
+        uses: oss-review-toolkit/ort-ci-github-action@1805edcf1f4f55f35ae6e4d2d9795ccfb29b6021
+        with:
+          # Fail on policy violations (configurable in ORT config)
+          fail-on: ${{ inputs.ort_fail_on }}
+          # Run full pipeline
+          run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
+          # Extra CLI args
+          ort-cli-args: ${{ inputs.ort_cli_args }}
+
+      - name: Download ORT artifacts
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          path: ort-artifacts
+          merge-multiple: true
+
+      - name: Locate ORT evaluation result
+        id: find-eval
+        if: ${{ always() }}
+        shell: bash
         run: |
-          go install \
-            github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2
+          set -euo pipefail
+          ART_DIR="ort-artifacts"
+          eval_path=""
+          if [ -d "${ART_DIR}" ]; then
+            eval_path="$(find "${ART_DIR}" -type f \( -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' \) -print | head -n1 || true)"
+          fi
+          echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
 
-      - name: Run golicense
+      - name: Summarize ORT rule violations in Job Summary
+        if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
+        shell: bash
         run: |
-          go-licenses check \
-            --allowed_licenses="MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause" \
-            ./...
+          set -euo pipefail
+          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
+          {
+            echo "## ORT rule violations (top 50)"
+            echo
+            echo "| Severity | Rule | Package/Project | License | Message |"
+            echo "|---|---|---|---|---|"
+            # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
+            jq -r '
+              .. | objects
+              | select(has("violations") or has("rule_violations") or has("ruleViolations"))
+              | (.violations // .rule_violations // .ruleViolations)
+              | .[]
+              | {
+                  sev: (.severity // .level // ""),
+                  rule: (.rule?.name // .rule?.id // .rule // ""),
+                  pkg: (.pkg?.id // .package?.id // .project?.id // .id // ""),
+                  lic: (.license?.id // .license // .licenseFinding?.license // ""),
+                  msg: (.message // .description // "")
+                }
+              | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.msg)"
+            ' -- "${EVAL_JSON}" \
+            | head -n 50 \
+            | sed 's/|/ | /g' \
+            | sed 's/^/| /; s/$/ |/'
+            echo
+            echo "_Full evidence remains in the artifact Web App if you need deep dive._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit lightweight GitHub annotations
+        if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
+          jq -r '
+            .. | objects
+            | select(has("violations") or has("rule_violations") or has("ruleViolations"))
+            | (.violations // .rule_violations // .ruleViolations)
+            | .[]
+            | {sev: (.severity // "ERROR"), msg: (.message // "ORT violation")}
+            | "::" + (if (.sev|ascii_upcase) == "ERROR" then "error" else "warning" end) + "::" + .msg
+          ' -- "${EVAL_JSON}" | while IFS= read -r line; do
+            echo "$line"
+          done

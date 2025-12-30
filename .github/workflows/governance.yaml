@@ -64,11 +64,11 @@ jobs:
       contents: read
     uses: ./.github/workflows/dependency-review.yaml
 
-  LicenseCheck:
-    if: ${{ inputs['license-check'] }}
-    permissions:
-      contents: read
-    uses: ./.github/workflows/license-check.yaml
+  #LicenseCheck:
+  #  if: ${{ inputs['license-check'] }}
+  #  permissions:
+  #    contents: read
+  #  uses: ./.github/workflows/license-check.yaml
 
   DoNotSubmit:
     if: ${{ inputs['do-not-submit'] }}
@@ -81,6 +81,11 @@ jobs:
     if: ${{ inputs.scorecard }}
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+        with:
+          egress-policy: block
+
       - env:
           token: ${{ secrets.scorecard }}
         run: |
@@ -108,6 +113,7 @@ jobs:
       repository-projects: read
       statuses: read
       models: read
+      artifact-metadata: read # permissions:disable-line
     uses: ./.github/workflows/scorecard.yaml
     secrets:
       token: ${{ secrets.scorecard }}

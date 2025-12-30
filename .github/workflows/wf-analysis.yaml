@@ -23,7 +23,7 @@ on:
     # Every 3 days at 7 a.m.
     - cron: '0 7 */3 * *'
 
-permissions: { }
+permissions: {}
 
 jobs:
   Lint:
@@ -41,6 +41,28 @@ jobs:
       super-linter-enabled-linters: |
         BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,YAML
       super-linter-rules-path: .github
+
+  Licenses:
+    uses: ./.github/workflows/license-check.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+      actions: read
+    with:
+      # ---- Baseline PR gate (fast, GitHub-native) ----
+      allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      warn_only: false              # set true for a gentle rollout
+      use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
+      run_component_detection: true # submits PR dependency graph for polyglot repos
+
+      # ---- High assurance gate (ORT + ScanCode) ----
+      # Enable only when you provide an ORT policy repo; runs on assurance: high or v* tags.
+      assurance: standard           # switch to "high" once ort_config_repository is set
+      # ort_config_repository: "https://github.com/bytemare/global-ort-config.git"
+      # ort_config_revision: ""     # optional pin for deterministic policy
+      # ort_fail_on: "violations"   # fail mode: violations|issues|never
+      # ort_cli_args: "-P ort.analyzer.enabledPackageManagers=NPM,Yarn,Gradle,GoMod -l org=your-org -l dist=oss"
 
   Governance:
     uses: ./.github/workflows/governance.yaml
@@ -60,11 +82,12 @@ jobs:
       repository-projects: read
       statuses: read
       models: read # permissions:disable-line
+      artifact-metadata: read # permissions:disable-line
     with:
       # Dependency Review
       dependency-review: true
       # License Check
-      license-check: true
+      #license-check: true
       # Do Not Submit
       do-not-submit: true
       # OpenSSF Scorecard
