@@ -69,6 +69,7 @@ permissions: {}
 jobs:
   # Populate Dependency Graph
   component-detection:
+    name: Component Detection (Dependency Graph Population)
     if: ${{ inputs.run_component_detection && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
@@ -81,6 +82,7 @@ jobs:
 
   # Fast Dependency Review
   dependency-review:
+    name: Dependency Review
     needs: [component-detection]
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
