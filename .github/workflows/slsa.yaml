@@ -58,7 +58,7 @@ jobs:
     # Fully containerize to ensure hermetic, consistent environment.
     container:
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
     permissions:
       actions: read
       contents: read
@@ -69,7 +69,7 @@ jobs:
       artifact_path: ${{ steps.package.outputs.artifact_path }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           disable-sudo: true
           egress-policy: block
@@ -82,7 +82,7 @@ jobs:
             artifactcache.actions.githubusercontent.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
@@ -97,7 +97,7 @@ jobs:
             golang:1.25-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
 
       - name: Upload packaging bundle
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: package-${{ steps.package.outputs.artifact_filename }}
           retention-days: 7
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
     permissions:
       actions: read
       attestations: write
@@ -128,7 +128,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           disable-sudo: true
           egress-policy: block
@@ -151,12 +151,12 @@ jobs:
             storage.googleapis.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
       - name: Download packaging bundle
-        uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: package-${{ needs.package_source.outputs.artifact_filename }}
           path: package
@@ -193,14 +193,14 @@ jobs:
 
       - name: Attest SBOM (bind SBOM to tarball digest)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-sbom@580d4aff2154158e1f746a6ad674799329ccfad1
+        uses: actions/attest-sbom@afc801dbf7bc8dde898196598b60e9a1bec9a90c
         with:
           subject-checksums: ${{ steps.paths.outputs.subjects_path }}
           sbom-path: sbom.cdx.json
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@ba965ac88abfc6fa49344893ed19e5bf479a07d6
+        uses: actions/attest-build-provenance@405d0eac46dee8bbc8a98b540f33935742b4d7c8
         with:
           subject-path: ${{ steps.paths.outputs.artifact_path }}
 
@@ -233,7 +233,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@5434409c2b6457c050f109d68b2547fcbf1db07b
+        uses: softprops/action-gh-release@5122b4edc95f85501a71628a57dc180a03ec7588
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
@@ -253,7 +253,7 @@ jobs:
 
       - name: Upload artifacts (PR dry run)
         if: ${{ inputs.dry_run }}
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: dryrun-${{ needs.package_source.outputs.artifact_filename }}
           if-no-files-found: warn
@@ -277,12 +277,12 @@ jobs:
     container:
       # Mirror the hermetic builder so the rebuild check uses identical bits.
       image: >-
-        golang:1.25-bookworm@sha256:51b6b12427dc03451c24f7fc996c43a20e8a8e56f0849dd0db6ff6e9225cc892
+        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
     permissions:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           disable-sudo: true
           egress-policy: block
@@ -293,7 +293,7 @@ jobs:
             pipelines.actions.githubusercontent.com:443
 
       - name: Checkout repo (fresh workspace)
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
