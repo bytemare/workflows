@@ -11,7 +11,7 @@ assignees: bytemare
 Please answer these questions before submitting your issue. Thanks!
 -->
 
-### Describe the feature
+## Describe the feature
 
 A clear and concise description of what the enhancement is and what problem it solves.
 
