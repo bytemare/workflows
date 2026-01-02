@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -54,11 +54,11 @@ jobs:
             raw.githubusercontent.com:443
             release-assets.githubusercontent.com:443
 
-      - uses: bytemare/actions/init-go@5e1f07171089dbf83698c3b4ac12d3d7dd46d192
+      - uses: bytemare/actions/init-go@69ba525cb742a88f268ae52db7eaa9a320656a74
         with:
           go-mod: ${{ inputs.go-mod }}
 
-      - uses: golangci/golangci-lint-action@b68d21b131098f33ec55c11c242113b4a10dc30a
+      - uses: golangci/golangci-lint-action@e9dc9291fdbc9e66624efbea4aa18d55cc13543e
         with:
           version: latest
           args: --config=${{ inputs.config-path }} ${{ inputs.scope }}

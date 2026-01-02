@@ -44,7 +44,7 @@ jobs:
       statuses: write
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@92c522aaa6f53af082553dedc1596c80b71aba33
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           disable-sudo: true
           egress-policy: block
@@ -57,7 +57,7 @@ jobs:
             download.docker.com:443
 
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -84,7 +84,7 @@ jobs:
           done
 
       - name: Run super-linter
-        uses: super-linter/super-linter@b42af6f21b7bc5b827acd2c977b6047baad41ce9
+        uses: super-linter/super-linter@7aa6b2aa6f29c33d4dc31baf7bded46475009f37
         env:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true

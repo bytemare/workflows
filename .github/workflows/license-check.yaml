@@ -76,9 +76,9 @@ jobs:
       contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph - safe: job-scoped, PR-only, official GH action
       id-token: write   # required by the action (OIDC)
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Component Detection (Dependency Submission)
-        uses: advanced-security/component-detection-dependency-submission-action@c7cb2bbc9360d8a011e4fac7dc542c689415d62f
+        uses: advanced-security/component-detection-dependency-submission-action@51ff88ad105a2df32251ba5f361412b753f9a27d
 
   # Fast Dependency Review
   dependency-review:
@@ -90,20 +90,20 @@ jobs:
       contents: read
       pull-requests: write   # needed only when posting the summary
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       # If a repo config exists, use it, else use inline defaults
       - name: Dependency Review (repo config)
         id: review_cfg
         if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
-        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
+        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
         with:
           config-file: .github/dependency-review-config.yml
           comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
 
       - name: Dependency Review (inline defaults)
         if: ${{ steps.review_cfg.outcome == '' }}
-        uses: actions/dependency-review-action@8e51299cdfc42118ace4e33e543a1a621a633cf5
+        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
         with:
           allow-licenses: ${{ inputs.allow_spdx }}
           warn-only: ${{ inputs.warn_only }}
@@ -118,14 +118,14 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       # ORT + ScanCode
       - name: Run ORT (policy-driven)
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
-        uses: oss-review-toolkit/ort-ci-github-action@1805edcf1f4f55f35ae6e4d2d9795ccfb29b6021
+        uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
           # Fail on policy violations (configurable in ORT config)
           fail-on: ${{ inputs.ort_fail_on }}
@@ -135,7 +135,7 @@ jobs:
           ort-cli-args: ${{ inputs.ort_cli_args }}
 
       - name: Download ORT artifacts
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           path: ort-artifacts
           merge-multiple: true
