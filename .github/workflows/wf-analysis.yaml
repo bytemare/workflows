@@ -111,10 +111,13 @@ jobs:
       semgrep: true
       # CodeQL
       codeql: true
-      codeql-language: go
+      codeql-language: go # comma-separated list supported
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
+      sonarqube-coverage: true
+      sonarqube-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      sonarqube-coverage-setup-go: true
       # Govulncheck
       govulncheck: true
       # Gitleaks
