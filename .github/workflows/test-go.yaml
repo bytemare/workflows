@@ -40,12 +40,12 @@ jobs:
             release-assets.githubusercontent.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           fetch-depth: 0
 
       - name: Init go
-        uses: bytemare/actions/init-go@69ba525cb742a88f268ae52db7eaa9a320656a74
+        uses: bytemare/actions/init-go@d49dfa00ad58318c556988a441a4f177445b6a3a
         with:
           go-version: ${{ inputs.version }}
 

@@ -34,9 +34,9 @@ jobs:
             github.com:443
 
       - name: 'Checkout Repository'
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
+        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
         with:
           base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
