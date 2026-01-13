@@ -1,3 +1,3 @@
 module github.com/bytemare/workflows
 
-go 1.25
+go 1.23
