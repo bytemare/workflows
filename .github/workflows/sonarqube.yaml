@@ -85,9 +85,11 @@ jobs:
       - name: Validate coverage config
         if: ${{ inputs.coverage }}
         shell: bash
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-command'] }}
         run: |
           set -euo pipefail
-          if [ -z "${{ inputs.coverage-command }}" ]; then
+          if [ -z "$COVERAGE_CMD" ]; then
             echo "Coverage is enabled but coverage-command is empty." >&2
             exit 1
           fi
