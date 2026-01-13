@@ -70,7 +70,6 @@ jobs:
               o26192.ingest.us.sentry.io:443
 
       - name: Validate coverage config
-        if: ${{ inputs.coverage }}
         shell: bash
         env:
           COVERAGE_CMD: ${{ inputs['coverage-command'] }}
@@ -82,14 +81,13 @@ jobs:
           fi
 
       - name: Init go
-        if: ${{ inputs.coverage && inputs['coverage-setup-go'] }}
+        if: ${{ inputs['coverage-setup-go'] }}
         uses: bytemare/actions/init-go@d49dfa00ad58318c556988a441a4f177445b6a3a
         with:
           go-version: '1.25'
           go-mod: 'go.mod'
 
       - name: Code Coverage
-        if: ${{ inputs.coverage }}
         shell: bash
         env:
           COVERAGE_CMD: ${{ inputs['coverage-command'] }}
