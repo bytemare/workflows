@@ -40,6 +40,20 @@ on:
         required: false
         type: string
         default: .github/sonar-project.properties
+      sonarqube-coverage:
+        description: 'Run coverage command before SonarQube scan'
+        required: false
+        type: boolean
+        default: false
+      sonarqube-coverage-command:
+        description: 'Coverage command executed before SonarQube scan'
+        required: false
+        type: string
+      sonarqube-coverage-setup-go:
+        description: 'Run Go setup before coverage command'
+        required: false
+        type: boolean
+        default: false
       govulncheck:
         description: 'Run Govulncheck'
         required: false
@@ -91,6 +105,9 @@ jobs:
     uses: ./.github/workflows/sonarqube.yaml
     with:
       configuration: ${{ inputs['sonarqube-configuration'] }}
+      coverage: ${{ inputs['sonarqube-coverage'] }}
+      coverage-command: ${{ inputs['sonarqube-coverage-command'] }}
+      coverage-setup-go: ${{ inputs['sonarqube-coverage-setup-go'] }}
     secrets:
       sonar: ${{ secrets.sonarqube }}
       github: ${{ secrets.github }}

@@ -64,6 +64,9 @@ jobs:
       sonarqube: true
       sonarqube-token: ${{ secrets.SONAR_TOKEN }}
       sonarqube-configuration: .github/sonar-project.properties
+      sonarqube-coverage: false
+      sonarqube-coverage-command: "pytest --cov=."
+      sonarqube-coverage-setup-go: false
       govulncheck: true
 ```
 
@@ -313,6 +316,7 @@ Continuous code quality and security inspection with detailed metrics.
 **Notes:**
 - Requires SonarQube setup and `SONAR_TOKEN` repository secret.
 - It's recommended to provide an adapted `sonar-project.properties` configuration file.
+- Coverage is optional; disable it or supply a custom command for non-Go repos.
 
 **Configuration:**
 
@@ -322,6 +326,9 @@ jobs:
     uses: bytemare/workflows/.github/workflows/sonarqube.yaml@[pinned commit SHA]
     with:
       configuration: ${{ inputs.sonar-configuration }}
+      coverage: false
+      coverage-command: "pytest --cov=."
+      coverage-setup-go: false
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
       sonar: ${{ secrets.SONAR_TOKEN }}

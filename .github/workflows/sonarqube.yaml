@@ -19,6 +19,20 @@ on:
         description: "Path to the configuration file."
         type: string
         required: true
+      coverage:
+        description: "Run coverage command before scanning"
+        type: boolean
+        required: false
+        default: false
+      coverage-command:
+        description: "Command used to generate coverage data"
+        type: string
+        required: false
+      coverage-setup-go:
+        description: "Run Go toolchain setup before coverage command"
+        type: boolean
+        required: false
+        default: false
     secrets:
       github:
         required: false
@@ -65,11 +79,23 @@ jobs:
               sonarcloud.io:443
 
       - name: Init go
+        if: ${{ inputs.coverage && inputs['coverage-setup-go'] }}
         uses: bytemare/actions/init-go@69ba525cb742a88f268ae52db7eaa9a320656a74
 
-      - name: Code Coverage
+      - name: Validate coverage config
+        if: ${{ inputs.coverage }}
         shell: bash
-        run: go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+        run: |
+          set -euo pipefail
+          if [ -z "${{ inputs['coverage-command'] }}" ]; then
+            echo "Coverage is enabled but coverage-command is empty." >&2
+            exit 1
+          fi
+
+      - name: Code Coverage
+        if: ${{ inputs.coverage }}
+        shell: bash
+        run: ${{ inputs['coverage-command'] }}
 
       - uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         env:
