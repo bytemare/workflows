@@ -50,11 +50,12 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             api.github.com:443
+            download.docker.com:443
+            ghcr.io:443
             github.com:443
             objects.githubusercontent.com:443
-            ghcr.io:443
+            proxy.golang.org:443
             registry-1.docker.io:443
-            download.docker.com:443
 
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8

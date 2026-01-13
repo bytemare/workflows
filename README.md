@@ -60,14 +60,14 @@ jobs:
       semgrep: true
       semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
       codeql: true
-      codeql-language: go
+      codeql-language: go,python,javascript-typescript
       sonarqube: true
       sonarqube-token: ${{ secrets.SONAR_TOKEN }}
       sonarqube-configuration: .github/sonar-project.properties
       govulncheck: true
 ```
 
-Tokens are optional—if you enable Semgrep or SonarQube without providing one, the suite fails fast with a clear message.
+Tokens are optional. If you enable Semgrep or SonarQube without providing one, the suite fails fast with a clear message. For bash, rely on Semgrep (CodeQL does not support it).
 
 ### Lint Suite
 
@@ -85,7 +85,7 @@ jobs:
       super-linter-yaml-config: .github/.yamllint
 ```
 
-Defaults keep configuration terse—you only need to override items like `super-linter-go-config`, `super-linter-enabled-linters`, or supply additional config files (Markdown, YAML, Python) when diverging from the standard settings. Use `super-linter-disabled-linters` to opt out of specific validators when the defaults are too noisy.
+Defaults keep configuration short. You only need to override items like `super-linter-go-config`, `super-linter-enabled-linters`, or supply additional config files (Markdown, YAML, Python) when diverging from the standard settings. Use `super-linter-disabled-linters` to opt out of specific validators when the defaults are too noisy.
 
 ### Governance Suite
 

@@ -111,7 +111,7 @@ jobs:
       semgrep: true
       # CodeQL
       codeql: true
-      codeql-language: go
+      codeql-language: go # comma-separated list supported
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
