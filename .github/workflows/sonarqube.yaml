@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${{ inputs['coverage-command'] }}" ]; then
+          if [ -z "${{ inputs.coverage-command }}" ]; then
             echo "Coverage is enabled but coverage-command is empty." >&2
             exit 1
           fi
@@ -95,7 +95,9 @@ jobs:
       - name: Code Coverage
         if: ${{ inputs.coverage }}
         shell: bash
-        run: ${{ inputs['coverage-command'] }}
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-command'] }}
+        run: $COVERAGE_CMD
 
       - uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         env:
