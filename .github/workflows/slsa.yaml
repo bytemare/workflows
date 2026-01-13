@@ -58,7 +58,7 @@ jobs:
     # Fully containerize to ensure hermetic, consistent environment.
     container:
       image: >-
-        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
+        golang:1.25-bookworm@sha256:019c22232e57fda8ded2b10a8f201989e839f3d3f962d4931375069bbb927e03
     permissions:
       actions: read
       contents: read
@@ -82,7 +82,7 @@ jobs:
             artifactcache.actions.githubusercontent.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           fetch-depth: 0
 
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: >-
-        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
+        golang:1.25-bookworm@sha256:019c22232e57fda8ded2b10a8f201989e839f3d3f962d4931375069bbb927e03
     permissions:
       actions: read
       attestations: write
@@ -151,7 +151,7 @@ jobs:
             storage.googleapis.com:443
 
       - name: Checkout repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           fetch-depth: 0
 
@@ -193,14 +193,14 @@ jobs:
 
       - name: Attest SBOM (bind SBOM to tarball digest)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-sbom@afc801dbf7bc8dde898196598b60e9a1bec9a90c
+        uses: actions/attest-sbom@6cf30ca381902d015a1ba331977ad71315dffb36
         with:
           subject-checksums: ${{ steps.paths.outputs.subjects_path }}
           sbom-path: sbom.cdx.json
 
       - name: Attest build provenance (GitHub native)
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@405d0eac46dee8bbc8a98b540f33935742b4d7c8
+        uses: actions/attest-build-provenance@98f3aa9c27c3d6da66cf51b7d38fb7511df72d3a
         with:
           subject-path: ${{ steps.paths.outputs.artifact_path }}
 
@@ -233,7 +233,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ !inputs.dry_run && inputs.create_release }}
-        uses: softprops/action-gh-release@5122b4edc95f85501a71628a57dc180a03ec7588
+        uses: softprops/action-gh-release@78237c54eb15310cb292a15480c4be010be47aeb
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
@@ -277,7 +277,7 @@ jobs:
     container:
       # Mirror the hermetic builder so the rebuild check uses identical bits.
       image: >-
-        golang:1.25-bookworm@sha256:2c7c65601b020ee79db4c1a32ebee0bf3d6b298969ec683e24fcbea29305f10e
+        golang:1.25-bookworm@sha256:019c22232e57fda8ded2b10a8f201989e839f3d3f962d4931375069bbb927e03
     permissions:
       contents: read
     steps:
@@ -293,7 +293,7 @@ jobs:
             pipelines.actions.githubusercontent.com:443
 
       - name: Checkout repo (fresh workspace)
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           fetch-depth: 0
 
