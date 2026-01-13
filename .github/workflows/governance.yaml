@@ -45,6 +45,15 @@ on:
         required: false
         type: string
         default: 'true'
+      codecov-coverage-command:
+        description: 'Coverage command executed before Codecov scan'
+        required: false
+        type: string
+      codecov-coverage-setup-go:
+        description: 'Run Go setup before coverage command'
+        required: false
+        type: boolean
+        default: false
     secrets:
       # OpenSSF Scorecard token
       scorecard:
@@ -125,5 +134,7 @@ jobs:
     uses: ./.github/workflows/codecov.yaml
     with:
       disable_search: ${{ inputs['codecov-disable-search'] }}
+      coverage-command: ${{ inputs['codecov-coverage-command'] }}
+      coverage-setup-go: ${{ inputs['codecov-coverage-setup-go'] }}
     secrets:
       token: ${{ secrets.codecov }}

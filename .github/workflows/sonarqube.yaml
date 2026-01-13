@@ -78,10 +78,6 @@ jobs:
               scanner.sonarcloud.io:443
               sonarcloud.io:443
 
-      - name: Init go
-        if: ${{ inputs.coverage && inputs['coverage-setup-go'] }}
-        uses: bytemare/actions/init-go@d49dfa00ad58318c556988a441a4f177445b6a3a
-
       - name: Validate coverage config
         if: ${{ inputs.coverage }}
         shell: bash
@@ -93,6 +89,13 @@ jobs:
             echo "Coverage is enabled but coverage-command is empty." >&2
             exit 1
           fi
+
+      - name: Init go
+        if: ${{ inputs.coverage && inputs['coverage-setup-go'] }}
+        uses: bytemare/actions/init-go@d49dfa00ad58318c556988a441a4f177445b6a3a
+        with:
+          go-version: '1.25'
+          go-mod: 'go.mod'
 
       - name: Code Coverage
         if: ${{ inputs.coverage }}
