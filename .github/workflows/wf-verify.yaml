@@ -37,7 +37,7 @@ jobs:
     if: ${{ github.event.inputs.mode == 'quick' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    uses: bytemare/slsa/.github/workflows/verify.yaml@2184cea79d12bbfc60716c06eee63ebd8d746b2e
     with:
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
@@ -47,7 +47,7 @@ jobs:
     if: ${{ contains(github.event.inputs.mode, 'full') || !github.event.inputs.mode }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    uses: bytemare/slsa/.github/workflows/verify.yaml@2184cea79d12bbfc60716c06eee63ebd8d746b2e
     with:
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
@@ -59,7 +59,7 @@ jobs:
     if: contains(github.event.inputs.mode, 'reproduce')
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    uses: bytemare/slsa/.github/workflows/verify.yaml@2184cea79d12bbfc60716c06eee63ebd8d746b2e
     with:
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
@@ -69,7 +69,7 @@ jobs:
     if: ${{ github.event.inputs.mode == 'vsa' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    uses: bytemare/slsa/.github/workflows/verify.yaml@2184cea79d12bbfc60716c06eee63ebd8d746b2e
     with:
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
