@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: Component Detection (Dependency Submission)
-        uses: advanced-security/component-detection-dependency-submission-action@bbaabfd2f98a6dbe7badaed86dba11ba751bf527
+        uses: advanced-security/component-detection-dependency-submission-action@386aa5c15429f99d6257060dfbaa057da1e71a43
 
   # Fast Dependency Review
   dependency-review:
