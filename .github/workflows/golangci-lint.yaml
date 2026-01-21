@@ -54,7 +54,7 @@ jobs:
             raw.githubusercontent.com:443
             release-assets.githubusercontent.com:443
 
-      - uses: bytemare/actions/init-go@d0ca7e17046c141751d3cace937083c298a4df2c
+      - uses: bytemare/actions/init-go@632e91df0441cb63611b4909d8e33550cf0b5835
         with:
           go-mod: ${{ inputs.go-mod }}
 
