@@ -39,6 +39,7 @@ jobs:
       contents: read
     uses: bytemare/slsa/.github/workflows/verify.yaml@66194c81b327e97d86869222c1b8df727b9c7875
     with:
+      workflow_ref: 66194c81b327e97d86869222c1b8df727b9c7875
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: quick
@@ -49,6 +50,7 @@ jobs:
       contents: read
     uses: bytemare/slsa/.github/workflows/verify.yaml@66194c81b327e97d86869222c1b8df727b9c7875
     with:
+      workflow_ref: 66194c81b327e97d86869222c1b8df727b9c7875
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: ${{ github.event.inputs.mode || 'full' }}
@@ -61,6 +63,7 @@ jobs:
       contents: read
     uses: bytemare/slsa/.github/workflows/verify.yaml@66194c81b327e97d86869222c1b8df727b9c7875
     with:
+      workflow_ref: 66194c81b327e97d86869222c1b8df727b9c7875
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: reproduce
@@ -71,6 +74,7 @@ jobs:
       contents: read
     uses: bytemare/slsa/.github/workflows/verify.yaml@66194c81b327e97d86869222c1b8df727b9c7875
     with:
+      workflow_ref: 66194c81b327e97d86869222c1b8df727b9c7875
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: vsa

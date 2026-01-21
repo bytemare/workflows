@@ -26,6 +26,7 @@ jobs:
   Release:
     uses: bytemare/slsa/.github/workflows/slsa.yaml@66194c81b327e97d86869222c1b8df727b9c7875
     with:
+      workflow_ref: 66194c81b327e97d86869222c1b8df727b9c7875
       dry_run: ${{ github.event_name == 'pull_request' }}
       create_release: ${{ github.event_name != 'pull_request' }}
       sign_blobs: true
