@@ -379,71 +379,30 @@ jobs:
 
 ---
 
-### Release (SLSA Level 3 & 4)
+## Release Integrity (SLSA Level 3)
+Releases are built with the reusable [bytemare/slsa](https://github.com/bytemare/slsa) workflow and ship the evidence required for SLSA Level 3 compliance:
 
-Build and publish signed, reproducible release artifacts with SLSA Level 4 provenance.
-
-- 🔒 **SLSA Level 4 Compliance** - Hermetic, reproducible builds with non-falsifiable provenance.
-- 📦 **SBOM** - CycloneDX Software Bill of Materials
-- ✍️ **Keyless Signing** - Cosign signatures with Rekor transparency logs
-- 🗂️ **Complete Metadata** - Commit metadata, environment snapshots, verification reports
-- ⚓️ **Native GitHub Attestations** - With the SBOM and build provenance
-
-**Configuration:**
-
+- 📦 Artifacts are uploaded to the release page, and include the deterministic source archive plus subjects.sha256, signed SBOM (sbom.cdx.json), GitHub provenance (*.intoto.jsonl), a reproducibility report (verification.json), and a signed Verification Summary Attestation (verification-summary.attestation.json[.bundle]).
+- ✍️ All artifacts are signed using [Sigstore](https://sigstore.dev) with transparency via [Rekor](https://rekor.sigstore.dev).
+- ✅ Verification (or see the latest docs at [bytemare/slsa](https://github.com/bytemare/slsa)):
+```shell
+curl -sSL https://raw.githubusercontent.com/bytemare/slsa/main/verify-release.sh -o verify-release.sh
+chmod +x verify-release.sh
+./verify-release.sh --repo bytemare/workflows --tag <tag> --mode full
+```
+Add `--mode reproduce` to rerun the build in a container, or `--mode vsa` to validate just the verification summary.
+- 🔁 Automated verification with the reusable verifier workflow from [bytemare/slsa](https://github.com/bytemare/slsa) in GitHub Actions:
 ```yaml
-name: Release
-
-on:
-  push:
-    tags:
-      - '*.*.*'      # Semantic versioning tags
-      - 'v*.*.*'     # Tags starting with 'v'
-  workflow_dispatch:  # Manual trigger
-  pull_request:       # Dry-run on PRs
-
 permissions: {}
 
 jobs:
-  release:
-    uses: bytemare/workflows/.github/workflows/slsa.yaml@[pinned commit SHA]
+  verify-release:
+    uses: bytemare/slsa/.github/workflows/verify.yaml@<pinned-commit>
     with:
-      dry_run: ${{ github.event_name == 'pull_request' }}
-      create_release: ${{ github.event_name != 'pull_request' }}
-      sign_blobs: true
-      extended_metadata: false  # Set to true for forensics mode
+      repo: <owner>/<repo>
+      tag: <tag>
+      mode: full,reproduce
+      emit_vsa: true
     permissions:
-      contents: write           # Create releases
-      id-token: write          # OIDC for signing
-      attestations: write      # GitHub attestations
-      actions: read            # Read workflow data
-      security-events: write   # Upload SARIF (optional)
+      contents: read
 ```
-
-Quick verification using the helper script:
-```bash
-# Download the verification script
-curl -sSL https://raw.githubusercontent.com/bytemare/workflows/main/verify-release.sh -o verify-release.sh
-chmod +x verify-release.sh
-
-# Run quick verification (checksums + signatures)
-./verify-release.sh --repo <owner>/<repo> --tag <tag>
-
-# Run full verification (all artifacts)
-./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode full
-
-# Run containerized reproducibility check (rebuilds inside golang:1.25-bookworm@sha256:42d8e9de...)
-./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode reproduce
-```
-
-See [VERIFICATION.md](VERIFICATION.md) for complete documentation and verification instructions.
-
-## Notes
-
-- **Pinned Dependencies:** Update the container digest (`golang:1.25-bookworm@sha256:...`) and cosign checksum in `.github/workflows/slsa.yaml` if you need to change toolchains. The packaging metadata (`build.env`) records this value under `SLSA_BUILDER_IMAGE` so verification tooling can reuse it.
-- **Permissions:** All workflows use minimal permissions as per least-privilege principle
-- **Secrets:** SonarQube, Codecov, and OpenSSF Scorecard require repository secrets to be configured
-- **Customization:** Most workflows support additional inputs - check the workflow file for details
-- **Verification tooling:** `verify-release.sh --mode reproduce` requires Docker to be available locally.
-
-For questions or issues, see the [issue tracker](https://github.com/bytemare/workflows/issues).

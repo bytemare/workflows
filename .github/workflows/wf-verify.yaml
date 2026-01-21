@@ -1,0 +1,76 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Verify SLSA Compliance
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Repository to verify (default: this repo)'
+        required: false
+      tag:
+        description: 'Release tag to verify'
+        required: true
+      mode:
+        description: 'Verification mode ("quick", "full", or "full,reproduce")'
+        required: false
+        default: full
+      emit_vsa:
+        description: 'Emit VSA during verification (true/false)'
+        required: false
+        default: 'false'
+
+permissions: {}
+
+jobs:
+  quick_verification:
+    if: ${{ github.event.inputs.mode == 'quick' }}
+    permissions:
+      contents: read
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    with:
+      repo: ${{ github.event.inputs.repo || github.repository }}
+      tag: ${{ github.event.inputs.tag }}
+      mode: quick
+
+  full_verification:
+    if: ${{ contains(github.event.inputs.mode, 'full') || !github.event.inputs.mode }}
+    permissions:
+      contents: read
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    with:
+      repo: ${{ github.event.inputs.repo || github.repository }}
+      tag: ${{ github.event.inputs.tag }}
+      mode: ${{ github.event.inputs.mode || 'full' }}
+      emit_vsa: ${{ github.event.inputs.emit_vsa == 'true' }}
+      verifier_id: https://github.com/bytemare/slsa/.github/workflows/verify.yaml
+
+  reproduce_verification:
+    if: contains(github.event.inputs.mode, 'reproduce')
+    permissions:
+      contents: read
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    with:
+      repo: ${{ github.event.inputs.repo || github.repository }}
+      tag: ${{ github.event.inputs.tag }}
+      mode: reproduce
+
+  vsa_only:
+    if: ${{ github.event.inputs.mode == 'vsa' }}
+    permissions:
+      contents: read
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f731755dd3416c38daf819efc7d43b3b1a5cb2d
+    with:
+      repo: ${{ github.event.inputs.repo || github.repository }}
+      tag: ${{ github.event.inputs.tag }}
+      mode: vsa
