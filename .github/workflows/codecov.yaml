@@ -82,7 +82,7 @@ jobs:
 
       - name: Init go
         if: ${{ inputs['coverage-setup-go'] }}
-        uses: bytemare/actions/init-go@d49dfa00ad58318c556988a441a4f177445b6a3a
+        uses: bytemare/actions/init-go@d0ca7e17046c141751d3cace937083c298a4df2c
         with:
           go-version: '1.25'
           go-mod: 'go.mod'
