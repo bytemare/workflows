@@ -28,7 +28,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [Codecov](#codecov)
 - [Build & Release Workflows](#build--release-workflows)
   - [Tests](#tests)
-  - [SLSA Level 3 / SLSA Level 4](#release-slsa-level-3--4)
+- [Release Integrity (SLSA Level 3)](#release-integrity-slsa-level-3)
 
 ---
 
