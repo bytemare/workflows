@@ -93,3 +93,4 @@ jobs:
           GITHUB_ACTIONS_COMMAND_ARGS: >-
             -ignore "unknown permission scope \"models\""
             -ignore "unknown permission scope \"artifact-metadata\""
+            -ignore "unknown permission scope \"workflows\""
