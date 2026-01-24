@@ -37,9 +37,9 @@ jobs:
     if: ${{ github.event.inputs.mode == 'quick' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@1f8b89ca0892e9bff602fb1511783f72df839de9
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
     with:
-      workflow_ref: 1f8b89ca0892e9bff602fb1511783f72df839de9
+      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: quick
@@ -48,9 +48,9 @@ jobs:
     if: ${{ contains(github.event.inputs.mode, 'full') || !github.event.inputs.mode }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@1f8b89ca0892e9bff602fb1511783f72df839de9
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
     with:
-      workflow_ref: 1f8b89ca0892e9bff602fb1511783f72df839de9
+      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: ${{ github.event.inputs.mode || 'full' }}
@@ -61,9 +61,9 @@ jobs:
     if: contains(github.event.inputs.mode, 'reproduce')
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@1f8b89ca0892e9bff602fb1511783f72df839de9
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
     with:
-      workflow_ref: 1f8b89ca0892e9bff602fb1511783f72df839de9
+      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: reproduce
@@ -72,9 +72,9 @@ jobs:
     if: ${{ github.event.inputs.mode == 'vsa' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@1f8b89ca0892e9bff602fb1511783f72df839de9
+    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
     with:
-      workflow_ref: 1f8b89ca0892e9bff602fb1511783f72df839de9
+      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
       repo: ${{ github.event.inputs.repo || github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: vsa
