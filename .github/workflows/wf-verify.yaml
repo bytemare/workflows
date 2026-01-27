@@ -15,9 +15,6 @@ name: Verify SLSA Compliance
 on:
   workflow_dispatch:
     inputs:
-      repo:
-        description: 'Repository to verify (default: this repo)'
-        required: false
       tag:
         description: 'Release tag to verify'
         required: true
@@ -34,47 +31,51 @@ permissions: {}
 
 jobs:
   quick_verification:
-    if: ${{ github.event.inputs.mode == 'quick' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'quick' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
+      id-token: write
+    uses: bytemare/slsa/.github/workflows/verify.yaml@0b63793efcde9767f5e6bed5a025c1287df819f9
     with:
-      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
-      repo: ${{ github.event.inputs.repo || github.repository }}
+      repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: quick
+      workflow_ref: ${{ github.sha }}
 
   full_verification:
-    if: ${{ contains(github.event.inputs.mode, 'full') || !github.event.inputs.mode }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (contains(github.event.inputs.mode, 'full') || !github.event.inputs.mode) }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
+      id-token: write
+    uses: bytemare/slsa/.github/workflows/verify.yaml@0b63793efcde9767f5e6bed5a025c1287df819f9
     with:
-      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
-      repo: ${{ github.event.inputs.repo || github.repository }}
+      repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: ${{ github.event.inputs.mode || 'full' }}
       emit_vsa: ${{ github.event.inputs.emit_vsa == 'true' }}
       verifier_id: https://github.com/bytemare/slsa/.github/workflows/verify.yaml
+      workflow_ref: ${{ github.sha }}
 
   reproduce_verification:
-    if: contains(github.event.inputs.mode, 'reproduce')
+    if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.mode, 'reproduce') }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
+      id-token: write
+    uses: bytemare/slsa/.github/workflows/verify.yaml@0b63793efcde9767f5e6bed5a025c1287df819f9
     with:
-      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
-      repo: ${{ github.event.inputs.repo || github.repository }}
+      repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: reproduce
+      workflow_ref: ${{ github.sha }}
 
   vsa_only:
-    if: ${{ github.event.inputs.mode == 'vsa' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'vsa' }}
     permissions:
       contents: read
-    uses: bytemare/slsa/.github/workflows/verify.yaml@7f9cf7aa95e64c305f70097a0965f373b44a2fb0
+      id-token: write
+    uses: bytemare/slsa/.github/workflows/verify.yaml@0b63793efcde9767f5e6bed5a025c1287df819f9
     with:
-      workflow_ref: 7f9cf7aa95e64c305f70097a0965f373b44a2fb0
-      repo: ${{ github.event.inputs.repo || github.repository }}
+      repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: vsa
+      workflow_ref: ${{ github.sha }}

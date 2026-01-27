@@ -389,21 +389,6 @@ Releases are built with the reusable [bytemare/slsa](https://github.com/bytemare
 ```shell
 curl -sSL https://raw.githubusercontent.com/bytemare/slsa/main/verify-release.sh -o verify-release.sh
 chmod +x verify-release.sh
-./verify-release.sh --repo bytemare/workflows --tag <tag> --mode full
+./verify-release.sh --repo <owner>/<repo> --tag <tag> --mode full --signer-repo bytemare/slsa
 ```
-Add `--mode reproduce` to rerun the build in a container, or `--mode vsa` to validate just the verification summary.
-- 🔁 Automated verification with the reusable verifier workflow from [bytemare/slsa](https://github.com/bytemare/slsa) in GitHub Actions:
-```yaml
-permissions: {}
-
-jobs:
-  verify-release:
-    uses: bytemare/slsa/.github/workflows/verify.yaml@<pinned-commit>
-    with:
-      repo: <owner>/<repo>
-      tag: <tag>
-      mode: full,reproduce
-      emit_vsa: true
-    permissions:
-      contents: read
-```
+Run again with `--mode reproduce` to build in a container, or `--mode vsa` to validate just the verification summary.
