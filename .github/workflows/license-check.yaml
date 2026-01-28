@@ -185,6 +185,9 @@ jobs:
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
 
       - name: Run ORT (policy-driven)
+        env:
+          ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
+          ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
         uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
           # Fail on policy violations (configurable in ORT config)
