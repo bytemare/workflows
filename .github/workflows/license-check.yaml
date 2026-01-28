@@ -141,6 +141,7 @@ jobs:
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
+          ort-config-path: "/home/ort/.github/ort"
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
