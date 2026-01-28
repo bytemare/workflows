@@ -117,7 +117,7 @@ jobs:
   # High-assurance: ORT end-to-end (Analyzer→Scanner→Evaluator→Reporter)
   ort-high-assurance:
     name: ORT License Compliance (High Assurance)
-    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) && inputs.ort_config_repository != '' }}
+    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -128,10 +128,8 @@ jobs:
       # ORT + ScanCode
       - name: Run ORT (policy-driven)
         env:
-          ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
-          ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
-          ORT_CONFIG_DIR: '.github/ort'
-          ORT_CONFIG_PATH:  "/home/ort/.github/ort"
+          ORT_CONFIG_DIR: '.github/ort'  # default path within the repo
+          ORT_CONFIG_PATH: '.github/ort'  # default path within the repo
         uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
           # Fail on policy violations (configurable in ORT config)
@@ -141,7 +139,7 @@ jobs:
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
-          ort-config-path: "/home/ort/.github/ort"
+          ort-config-path: "github/ort"
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
