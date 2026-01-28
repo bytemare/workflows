@@ -54,12 +54,12 @@ on:
         type: string
         default: ""
       ort_config_source:
-        description: "Source path for ORT config files (job fails if missing)"
+        description: "Source path for ORT config files (workspace-relative; job fails if missing)"
         required: false
         type: string
         default: ".github/ort"
       ort_config_target:
-        description: "Target directory for ORT config files (job fails if present)"
+        description: "Target directory for ORT config files (workspace-relative; must not exist)"
         required: false
         type: string
         default: "~/.ort/config"
@@ -134,11 +134,16 @@ jobs:
       - name: Stage ORT config
         id: stage_ort_config
         shell: bash
+        env:
+          ORT_CONFIG_SOURCE: ${{ inputs.ort_config_source }}
+          ORT_CONFIG_TARGET: ${{ inputs.ort_config_target }}
+          WORKSPACE: ${{ github.workspace }}
         run: |
           set -euo pipefail
           IFS=$'\n\t'
-          SOURCE_RAW="${{ inputs.ort_config_source }}"
-          TARGET_RAW="${{ inputs.ort_config_target }}"
+          SOURCE_RAW="$ORT_CONFIG_SOURCE"
+          TARGET_RAW="$ORT_CONFIG_TARGET"
+          WORKSPACE_PATH="${WORKSPACE:-$PWD}"
 
           reject_control_chars() {
             local value="$1"
@@ -149,26 +154,53 @@ jobs:
             fi
           }
 
-          expand_path() {
+          resolve_path() {
             local p="$1"
-            if [[ "$p" == "~"* ]]; then
-              printf '%s\n' "${p/#\~/$HOME}"
-            else
-              printf '%s\n' "$p"
+            if [[ "$p" == "~" ]]; then
+              printf '%s\n' "$WORKSPACE_PATH"
+              return 0
             fi
+            if [[ "$p" == "~/"* ]]; then
+              printf '%s\n' "$WORKSPACE_PATH/${p#\~/}"
+              return 0
+            fi
+            if [[ "$p" == "~"* ]]; then
+              echo "::error::Only '~' or '~/' are supported in ORT config paths: $p"
+              exit 1
+            fi
+            if [[ "$p" == /* ]]; then
+              printf '%s\n' "$p"
+              return 0
+            fi
+            printf '%s\n' "$WORKSPACE_PATH/$p"
+          }
+
+          rel_to_workspace() {
+            local p="$1"
+            if [[ "$p" == "$WORKSPACE_PATH" ]]; then
+              printf '%s\n' "."
+              return 0
+            fi
+            if [[ "$p" == "$WORKSPACE_PATH/"* ]]; then
+              printf '%s\n' "${p#"$WORKSPACE_PATH"/}"
+              return 0
+            fi
+            printf '%s\n' "$p"
           }
 
           if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
             echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
-            echo "target=''" >> "$GITHUB_OUTPUT"
+            echo "target=" >> "$GITHUB_OUTPUT"
+            echo "target_for_ort=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           reject_control_chars "$SOURCE_RAW" "ort_config_source"
           reject_control_chars "$TARGET_RAW" "ort_config_target"
 
-          SOURCE="$(expand_path "$SOURCE_RAW")"
-          TARGET="$(expand_path "$TARGET_RAW")"
+          SOURCE="$(resolve_path "$SOURCE_RAW")"
+          TARGET="$(resolve_path "$TARGET_RAW")"
+          TARGET_FOR_ORT="$(rel_to_workspace "$TARGET")"
 
           if [[ ! -d "$SOURCE" ]]; then
             echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
@@ -180,9 +212,11 @@ jobs:
             exit 1
           fi
 
+          echo "Staging ORT config from '$SOURCE' to '$TARGET' (ort-config-path: '$TARGET_FOR_ORT')."
           mkdir -p -- "$TARGET"
           cp -a -- "$SOURCE"/. "$TARGET"/
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "target_for_ort=$TARGET_FOR_ORT" >> "$GITHUB_OUTPUT"
 
       - name: Run ORT (policy-driven)
         env:
@@ -196,7 +230,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
-          ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
+          ort-config-path: ${{ steps.stage_ort_config.outputs.target_for_ort }}
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
@@ -220,9 +254,10 @@ jobs:
       - name: Summarize ORT rule violations in Job Summary
         if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
         shell: bash
+        env:
+          EVAL_JSON: ${{ steps.find-eval.outputs.eval_json }}
         run: |
           set -euo pipefail
-          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
           {
             echo "## ORT rule violations (top 50)"
             echo
@@ -253,9 +288,10 @@ jobs:
       - name: Emit lightweight GitHub annotations
         if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
         shell: bash
+        env:
+          EVAL_JSON: ${{ steps.find-eval.outputs.eval_json }}
         run: |
           set -euo pipefail
-          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
           jq -r '
             .. | objects
             | select(has("violations") or has("rule_violations") or has("ruleViolations"))
