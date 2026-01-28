@@ -53,6 +53,16 @@ on:
         required: false
         type: string
         default: ""
+      ort_config_source:
+        description: "Source path for ORT config files (copied before ORT runs; job fails if missing)"
+        required: false
+        type: string
+        default: ".github/ort"
+      ort_config_target:
+        description: "Target directory for ORT config files (must not exist; job fails if present)"
+        required: false
+        type: string
+        default: "~/.ort/config"
       ort_yml_path:
         description: "Optional ORT configuration file path"
         required: false
@@ -126,10 +136,60 @@ jobs:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       # ORT + ScanCode
+      - name: Stage ORT config
+        id: stage_ort_config
+        shell: bash
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+          SOURCE_RAW="${{ inputs.ort_config_source }}"
+          TARGET_RAW="${{ inputs.ort_config_target }}"
+
+          reject_control_chars() {
+            local value="$1"
+            local label="$2"
+            if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+              echo "::error::${label} contains a newline, which is not allowed."
+              exit 1
+            fi
+          }
+
+          expand_path() {
+            local p="$1"
+            if [[ "$p" == "~"* ]]; then
+              printf '%s\n' "${p/#\~/$HOME}"
+            else
+              printf '%s\n' "$p"
+            fi
+          }
+
+          if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
+            echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
+            echo "target=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          reject_control_chars "$SOURCE_RAW" "ort_config_source"
+          reject_control_chars "$TARGET_RAW" "ort_config_target"
+
+          SOURCE="$(expand_path "$SOURCE_RAW")"
+          TARGET="$(expand_path "$TARGET_RAW")"
+
+          if [[ ! -d "$SOURCE" ]]; then
+            echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
+            exit 1
+          fi
+
+          if [[ -e "$TARGET" ]]; then
+            echo "::error::ORT config target already exists; refusing to overwrite: $TARGET"
+            exit 1
+          fi
+
+          mkdir -p -- "$TARGET"
+          cp -a -- "$SOURCE"/. "$TARGET"/
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
       - name: Run ORT (policy-driven)
-        env:
-          ORT_CONFIG_DIR: '.github/ort'  # default path within the repo
-          ORT_CONFIG_PATH: '.github/ort'  # default path within the repo
         uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
           # Fail on policy violations (configurable in ORT config)
@@ -139,7 +199,7 @@ jobs:
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
-          ort-config-path: "github/ort"
+          ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
