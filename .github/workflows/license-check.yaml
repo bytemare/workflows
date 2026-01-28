@@ -53,6 +53,11 @@ on:
         required: false
         type: string
         default: ""
+      ort_yml_path:
+        description: "Optional ORT configuration file path"
+        required: false
+        type: string
+        default: ""
       ort_fail_on:
         description: "Fail-on mode for ORT (violations|issues|never)"
         required: false
@@ -133,6 +138,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
+          ort-yml-path: ${{ inputs.ort_yml_path }}
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
