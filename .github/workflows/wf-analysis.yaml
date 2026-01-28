@@ -66,7 +66,6 @@ jobs:
       ort_config_target: "~/.ort/config"
       ort_fail_on: "violations"   # fail mode: violations|issues|never
       ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
-      ort_yml_path: "/home/ort/.github/ort/ort.yaml"
 
   Governance:
     uses: ./.github/workflows/governance.yaml
