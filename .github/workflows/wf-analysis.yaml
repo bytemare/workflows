@@ -58,11 +58,11 @@ jobs:
 
       # ---- High assurance gate (ORT + ScanCode) ----
       # Enable only when you provide an ORT policy repo; runs on assurance: high or v* tags.
-      assurance: standard           # switch to "high" once ort_config_repository is set
-      # ort_config_repository: "https://github.com/bytemare/global-ort-config.git"
-      # ort_config_revision: ""     # optional pin for deterministic policy
-      # ort_fail_on: "violations"   # fail mode: violations|issues|never
-      # ort_cli_args: "-P ort.analyzer.enabledPackageManagers=NPM,Yarn,Gradle,GoMod -l org=your-org -l dist=oss"
+      assurance: high           # switch to "high" once ort_config_repository is set
+      ort_config_repository: "https://github.com/oss-review-toolkit/ort-config"
+      ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df"     # optional pin for deterministic policy
+      ort_fail_on: "violations"   # fail mode: violations|issues|never
+      ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
 
   Governance:
     uses: ./.github/workflows/governance.yaml
