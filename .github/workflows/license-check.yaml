@@ -54,12 +54,12 @@ on:
         type: string
         default: ""
       ort_config_source:
-        description: "Source path for ORT config files (workspace-relative; job fails if missing)"
+        description: "Source path for ORT config files (relative to workspace, or absolute; job fails if missing)"
         required: false
         type: string
         default: ".github/ort"
       ort_config_target:
-        description: "Target directory for ORT config files (workspace-relative; must not exist)"
+        description: "Target directory for ORT config files (supports ~ for HOME; must not exist)"
         required: false
         type: string
         default: "~/.ort/config"
@@ -144,6 +144,7 @@ jobs:
           SOURCE_RAW="$ORT_CONFIG_SOURCE"
           TARGET_RAW="$ORT_CONFIG_TARGET"
           WORKSPACE_PATH="${WORKSPACE:-$PWD}"
+          HOME_PATH="${HOME:-$WORKSPACE_PATH}"
 
           reject_control_chars() {
             local value="$1"
@@ -156,15 +157,15 @@ jobs:
 
           resolve_path() {
             local p="$1"
-            if [[ "$p" == "~" ]]; then
-              printf '%s\n' "$WORKSPACE_PATH"
+            if [[ $p == \~ ]]; then
+              printf '%s\n' "$HOME_PATH"
               return 0
             fi
-            if [[ "$p" == "~/"* ]]; then
-              printf '%s\n' "$WORKSPACE_PATH/${p#\~/}"
+            if [[ $p == \~/* ]]; then
+              printf '%s\n' "$HOME_PATH/${p#\~/}"
               return 0
             fi
-            if [[ "$p" == "~"* ]]; then
+            if [[ $p == \~* ]]; then
               echo "::error::Only '~' or '~/' are supported in ORT config paths: $p"
               exit 1
             fi
@@ -191,6 +192,7 @@ jobs:
           if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
             echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
             echo "target=" >> "$GITHUB_OUTPUT"
+            echo "source_for_ort=" >> "$GITHUB_OUTPUT"
             echo "target_for_ort=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -200,10 +202,15 @@ jobs:
 
           SOURCE="$(resolve_path "$SOURCE_RAW")"
           TARGET="$(resolve_path "$TARGET_RAW")"
+          SOURCE_FOR_ORT="$(rel_to_workspace "$SOURCE")"
           TARGET_FOR_ORT="$(rel_to_workspace "$TARGET")"
 
           if [[ ! -d "$SOURCE" ]]; then
             echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
+            exit 1
+          fi
+          if [[ ! -f "$SOURCE/config.yml" ]]; then
+            echo "::error::ORT config source is missing config.yml: $SOURCE/config.yml"
             exit 1
           fi
 
@@ -212,11 +219,17 @@ jobs:
             exit 1
           fi
 
-          echo "Staging ORT config from '$SOURCE' to '$TARGET' (ort-config-path: '$TARGET_FOR_ORT')."
+          echo "Staging ORT config from '$SOURCE' to '$TARGET'."
           mkdir -p -- "$TARGET"
           cp -a -- "$SOURCE"/. "$TARGET"/
+          if [[ ! -f "$TARGET/config.yml" ]]; then
+            echo "::error::ORT config target is missing config.yml after copy: $TARGET/config.yml"
+            exit 1
+          fi
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "source_for_ort=$SOURCE_FOR_ORT" >> "$GITHUB_OUTPUT"
           echo "target_for_ort=$TARGET_FOR_ORT" >> "$GITHUB_OUTPUT"
+          echo "Staged ORT config for action from '$SOURCE_FOR_ORT'."
 
       - name: Run ORT (policy-driven)
         env:
@@ -230,7 +243,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
-          ort-config-path: ${{ steps.stage_ort_config.outputs.target_for_ort }}
+          ort-config-path: ${{ steps.stage_ort_config.outputs.source_for_ort }}
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
