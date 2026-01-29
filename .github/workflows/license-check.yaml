@@ -137,12 +137,16 @@ jobs:
         env:
           ORT_CONFIG_SOURCE: ${{ inputs.ort_config_source }}
           ORT_CONFIG_TARGET: ${{ inputs.ort_config_target }}
+          ORT_CONFIG_REPO: ${{ inputs.ort_config_repository }}
+          ORT_CONFIG_REVISION: ${{ inputs.ort_config_revision }}
           WORKSPACE: ${{ github.workspace }}
         run: |
           set -euo pipefail
           IFS=$'\n\t'
           SOURCE_RAW="$ORT_CONFIG_SOURCE"
           TARGET_RAW="$ORT_CONFIG_TARGET"
+          REPO_RAW="$ORT_CONFIG_REPO"
+          REV_RAW="$ORT_CONFIG_REVISION"
           WORKSPACE_PATH="${WORKSPACE:-$PWD}"
           HOME_PATH="${HOME:-$WORKSPACE_PATH}"
 
@@ -176,34 +180,25 @@ jobs:
             printf '%s\n' "$WORKSPACE_PATH/$p"
           }
 
-          rel_to_workspace() {
-            local p="$1"
-            if [[ "$p" == "$WORKSPACE_PATH" ]]; then
-              printf '%s\n' "."
-              return 0
-            fi
-            if [[ "$p" == "$WORKSPACE_PATH/"* ]]; then
-              printf '%s\n' "${p#"$WORKSPACE_PATH"/}"
-              return 0
-            fi
-            printf '%s\n' "$p"
-          }
-
           if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
             echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
-            echo "target=" >> "$GITHUB_OUTPUT"
-            echo "source_for_ort=" >> "$GITHUB_OUTPUT"
-            echo "target_for_ort=" >> "$GITHUB_OUTPUT"
+            {
+              echo "target="
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           reject_control_chars "$SOURCE_RAW" "ort_config_source"
           reject_control_chars "$TARGET_RAW" "ort_config_target"
+          if [[ -n "$REPO_RAW" ]]; then
+            reject_control_chars "$REPO_RAW" "ort_config_repository"
+          fi
+          if [[ -n "$REV_RAW" ]]; then
+            reject_control_chars "$REV_RAW" "ort_config_revision"
+          fi
 
           SOURCE="$(resolve_path "$SOURCE_RAW")"
           TARGET="$(resolve_path "$TARGET_RAW")"
-          SOURCE_FOR_ORT="$(rel_to_workspace "$SOURCE")"
-          TARGET_FOR_ORT="$(rel_to_workspace "$TARGET")"
 
           if [[ ! -d "$SOURCE" ]]; then
             echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
@@ -219,17 +214,29 @@ jobs:
             exit 1
           fi
 
+          if [[ -n "$REPO_RAW" ]]; then
+            if [[ -n "$REV_RAW" ]]; then
+              git init -q "$TARGET"
+              git -C "$TARGET" remote add origin "$REPO_RAW"
+              git -C "$TARGET" fetch -q --depth 1 origin "$REV_RAW"
+              git -C "$TARGET" checkout -q FETCH_HEAD
+            else
+              git clone -q --depth 1 -- "$REPO_RAW" "$TARGET"
+            fi
+          else
+            mkdir -p -- "$TARGET"
+          fi
+
           echo "Staging ORT config from '$SOURCE' to '$TARGET'."
-          mkdir -p -- "$TARGET"
           cp -a -- "$SOURCE"/. "$TARGET"/
           if [[ ! -f "$TARGET/config.yml" ]]; then
             echo "::error::ORT config target is missing config.yml after copy: $TARGET/config.yml"
             exit 1
           fi
-          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
-          echo "source_for_ort=$SOURCE_FOR_ORT" >> "$GITHUB_OUTPUT"
-          echo "target_for_ort=$TARGET_FOR_ORT" >> "$GITHUB_OUTPUT"
-          echo "Staged ORT config for action from '$SOURCE_FOR_ORT'."
+          {
+            echo "target=$TARGET"
+          } >> "$GITHUB_OUTPUT"
+          echo "Staged ORT config for action at '$TARGET'."
 
       - name: Run ORT (policy-driven)
         env:
@@ -243,7 +250,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
-          ort-config-path: ${{ steps.stage_ort_config.outputs.source_for_ort }}
+          ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
