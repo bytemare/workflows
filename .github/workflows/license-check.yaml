@@ -279,25 +279,48 @@ jobs:
           {
             echo "## ORT rule violations (top 50)"
             echo
-            echo "| Severity | Rule | Package/Project | License | Message |"
-            echo "|---|---|---|---|---|"
+            echo "| Severity | Rule | Package/Project | License | Disposition | Message |"
+            echo "|---|---|---|---|---|---|"
             # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
             jq -r '
               def to_list:
                 if type == "array" then . else [.] end;
-              def viols:
-                if type == "object" then
-                  (.violations? // .rule_violations? // .ruleViolations? // empty)
-                else empty end;
-              (.. | objects | viols) | to_list | .[]
-              | {
-                  sev: (.severity // .level // ""),
-                  rule: (if (.rule | type) == "object" then (.rule.name // .rule.id // "") else (.rule // "") end),
-                  pkg: (if (.pkg | type) == "object" then (.pkg.id // "") else (.pkg // "") end),
-                  lic: (if (.license | type) == "object" then (.license.id // "") else (.license // "") end),
-                  msg: (.message // .description // "")
-                }
-              | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.msg)"
+              def matches_resolution($v; $r):
+                ((($r.rule? // "") | tostring) as $rr | ($rr == "" or ($v.rule // "" | tostring) == $rr))
+                and ((($r.pkg? // "") | tostring) as $rp | ($rp == "" or ($v.pkg // "" | tostring) == $rp))
+                and ((($r.message? // "") | tostring) as $re
+                  | ($re == "" or (($v.message // "") | test($re))));
+              . as $root
+              | ($root.resolved_configuration?.resolutions?.rule_violations
+                  // $root.resolvedConfiguration?.resolutions?.ruleViolations
+                  // []) | to_list as $resolutions
+              | ($root.evaluator? // $root.evaluation? // $root.evaluatorResult? // empty)
+                | (.violations? // .rule_violations? // .ruleViolations? // empty)
+                | to_list as $violations
+              | if ($violations | length) == 0 then
+                  "OK||||Compatible|No rule violations found."
+                else
+                  $violations[] | . as $v
+                  | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
+                  | ($matches[0]) as $res
+                  | {
+                      sev: ($v.severity // $v.level // ""),
+                      rule: (if ($v.rule | type) == "object" then ($v.rule.name // $v.rule.id // "") else ($v.rule // "") end),
+                      pkg: (if ($v.pkg | type) == "object" then ($v.pkg.id // "") else ($v.pkg // "") end),
+                      lic: (if ($v.license | type) == "object" then ($v.license.id // "") else ($v.license // "") end),
+                      msg: ($v.message // $v.description // ""),
+                      disp: (
+                        if $res != null then
+                          "Accepted (" + ($res.reason // "resolution") + ")"
+                        elif ($v.message // "") == "" and ($v.rule // "") == "" then
+                          "Unknown"
+                        else
+                          "Not accepted"
+                        end
+                      )
+                    }
+                  | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.disp)|\(.msg)"
+                end
             ' -- "${EVAL_JSON}" 2>/dev/null \
             | head -n 50 \
             | sed 's/|/ | /g' \
@@ -316,13 +339,34 @@ jobs:
           jq -r '
             def to_list:
               if type == "array" then . else [.] end;
-            def viols:
-              if type == "object" then
-                (.violations? // .rule_violations? // .ruleViolations? // empty)
-              else empty end;
-            (.. | objects | viols) | to_list | .[]
-            | {sev: (.severity // "ERROR"), msg: (.message // "ORT violation")}
-            | "::" + (if (.sev|ascii_upcase) == "ERROR" then "error" else "warning" end) + "::" + .msg
+            def matches_resolution($v; $r):
+              ((($r.rule? // "") | tostring) as $rr | ($rr == "" or ($v.rule // "" | tostring) == $rr))
+              and ((($r.pkg? // "") | tostring) as $rp | ($rp == "" or ($v.pkg // "" | tostring) == $rp))
+              and ((($r.message? // "") | tostring) as $re
+                | ($re == "" or (($v.message // "") | test($re))));
+            . as $root
+            | ($root.resolved_configuration?.resolutions?.rule_violations
+                // $root.resolvedConfiguration?.resolutions?.ruleViolations
+                // []) | to_list as $resolutions
+            | ($root.evaluator? // $root.evaluation? // $root.evaluatorResult? // empty)
+              | (.violations? // .rule_violations? // .ruleViolations? // empty)
+              | to_list as $violations
+            | if ($violations | length) == 0 then empty
+              else $violations[] | . as $v
+              | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
+              | ($matches[0]) as $res
+              | if $res != null then
+                  {sev: "NOTICE", msg: ("Accepted: " + ($v.message // "ORT violation") + " (" + ($res.reason // "resolution") + ")")}
+                else
+                  {sev: ($v.severity // "ERROR"), msg: ($v.message // "ORT violation")}
+                end
+              | "::" + (
+                  if (.sev|ascii_upcase) == "ERROR" then "error"
+                  elif (.sev|ascii_upcase) == "WARNING" then "warning"
+                  else "notice"
+                  end
+                ) + "::" + .msg
+              end
           ' -- "${EVAL_JSON}" 2>/dev/null | while IFS= read -r line; do
             echo "$line"
           done
