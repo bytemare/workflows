@@ -1,0 +1,5 @@
+---
+rule_violations:
+  - message: ".*CC-BY-SA-4.0 - The ScanCode 'copyleft-limited' categorized license CC-BY-SA-4.0 was detected in project 'GoMod::github.com/bytemare/workflows:.*'.*"
+    reason: "NOT_MODIFIED_EXCEPTION"
+    comment: "This comes from .github/CODE_OF_CONDUCT.md which is under CC-BY-SA-4.0 license, and has not been modified."

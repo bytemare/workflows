@@ -149,6 +149,7 @@ jobs:
           REV_RAW="$ORT_CONFIG_REVISION"
           WORKSPACE_PATH="${WORKSPACE:-$PWD}"
           HOME_PATH="${HOME:-$WORKSPACE_PATH}"
+          output_lines=()
 
           reject_control_chars() {
             local value="$1"
@@ -182,61 +183,58 @@ jobs:
 
           if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
             echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
-            {
-              echo "target="
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          reject_control_chars "$SOURCE_RAW" "ort_config_source"
-          reject_control_chars "$TARGET_RAW" "ort_config_target"
-          if [[ -n "$REPO_RAW" ]]; then
-            reject_control_chars "$REPO_RAW" "ort_config_repository"
-          fi
-          if [[ -n "$REV_RAW" ]]; then
-            reject_control_chars "$REV_RAW" "ort_config_revision"
-          fi
-
-          SOURCE="$(resolve_path "$SOURCE_RAW")"
-          TARGET="$(resolve_path "$TARGET_RAW")"
-
-          if [[ ! -d "$SOURCE" ]]; then
-            echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
-            exit 1
-          fi
-          if [[ ! -f "$SOURCE/config.yml" ]]; then
-            echo "::error::ORT config source is missing config.yml: $SOURCE/config.yml"
-            exit 1
-          fi
-
-          if [[ -e "$TARGET" ]]; then
-            echo "::error::ORT config target already exists. Refusing to overwrite: $TARGET"
-            exit 1
-          fi
-
-          if [[ -n "$REPO_RAW" ]]; then
-            if [[ -n "$REV_RAW" ]]; then
-              git init -q "$TARGET"
-              git -C "$TARGET" remote add origin "$REPO_RAW"
-              git -C "$TARGET" fetch -q --depth 1 origin "$REV_RAW"
-              git -C "$TARGET" checkout -q FETCH_HEAD
-            else
-              git clone -q --depth 1 -- "$REPO_RAW" "$TARGET"
-            fi
+            output_lines+=("target=")
           else
-            mkdir -p -- "$TARGET"
+            reject_control_chars "$SOURCE_RAW" "ort_config_source"
+            reject_control_chars "$TARGET_RAW" "ort_config_target"
+            if [[ -n "$REPO_RAW" ]]; then
+              reject_control_chars "$REPO_RAW" "ort_config_repository"
+            fi
+            if [[ -n "$REV_RAW" ]]; then
+              reject_control_chars "$REV_RAW" "ort_config_revision"
+            fi
+
+            SOURCE="$(resolve_path "$SOURCE_RAW")"
+            TARGET="$(resolve_path "$TARGET_RAW")"
+
+            if [[ ! -d "$SOURCE" ]]; then
+              echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
+              exit 1
+            fi
+            if [[ ! -f "$SOURCE/config.yml" ]]; then
+              echo "::error::ORT config source is missing config.yml: $SOURCE/config.yml"
+              exit 1
+            fi
+
+            if [[ -e "$TARGET" ]]; then
+              echo "::error::ORT config target already exists. Refusing to overwrite: $TARGET"
+              exit 1
+            fi
+
+            if [[ -n "$REPO_RAW" ]]; then
+              if [[ -n "$REV_RAW" ]]; then
+                git init -q "$TARGET"
+                git -C "$TARGET" remote add origin "$REPO_RAW"
+                git -C "$TARGET" fetch -q --depth 1 origin "$REV_RAW"
+                git -C "$TARGET" checkout -q FETCH_HEAD
+              else
+                git clone -q --depth 1 -- "$REPO_RAW" "$TARGET"
+              fi
+            else
+              mkdir -p -- "$TARGET"
+            fi
+
+            echo "Staging ORT config from '$SOURCE' to '$TARGET'."
+            cp -a -- "$SOURCE"/. "$TARGET"/
+            if [[ ! -f "$TARGET/config.yml" ]]; then
+              echo "::error::ORT config target is missing config.yml after copy: $TARGET/config.yml"
+              exit 1
+            fi
+            output_lines+=("target=$TARGET")
+            echo "Staged ORT config for action at '$TARGET'."
           fi
 
-          echo "Staging ORT config from '$SOURCE' to '$TARGET'."
-          cp -a -- "$SOURCE"/. "$TARGET"/
-          if [[ ! -f "$TARGET/config.yml" ]]; then
-            echo "::error::ORT config target is missing config.yml after copy: $TARGET/config.yml"
-            exit 1
-          fi
-          {
-            echo "target=$TARGET"
-          } >> "$GITHUB_OUTPUT"
-          echo "Staged ORT config for action at '$TARGET'."
+          printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
 
       - name: Run ORT (policy-driven)
         env:
