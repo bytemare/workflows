@@ -283,19 +283,22 @@ jobs:
             echo "|---|---|---|---|---|"
             # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
             jq -r '
-              .. | objects
-              | select(has("violations") or has("rule_violations") or has("ruleViolations"))
-              | (.violations // .rule_violations // .ruleViolations)
-              | .[]
+              def to_list:
+                if type == "array" then . else [.] end;
+              def viols:
+                if type == "object" then
+                  (.violations? // .rule_violations? // .ruleViolations? // empty)
+                else empty end;
+              (.. | objects | viols) | to_list | .[]
               | {
                   sev: (.severity // .level // ""),
-                  rule: (.rule?.name // .rule?.id // .rule // ""),
-                  pkg: (.pkg?.id // .package?.id // .project?.id // .id // ""),
-                  lic: (.license?.id // .license // .licenseFinding?.license // ""),
+                  rule: (if (.rule | type) == "object" then (.rule.name // .rule.id // "") else (.rule // "") end),
+                  pkg: (if (.pkg | type) == "object" then (.pkg.id // "") else (.pkg // "") end),
+                  lic: (if (.license | type) == "object" then (.license.id // "") else (.license // "") end),
                   msg: (.message // .description // "")
                 }
               | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.msg)"
-            ' -- "${EVAL_JSON}" \
+            ' -- "${EVAL_JSON}" 2>/dev/null \
             | head -n 50 \
             | sed 's/|/ | /g' \
             | sed 's/^/| /; s/$/ |/'
@@ -311,12 +314,15 @@ jobs:
         run: |
           set -euo pipefail
           jq -r '
-            .. | objects
-            | select(has("violations") or has("rule_violations") or has("ruleViolations"))
-            | (.violations // .rule_violations // .ruleViolations)
-            | .[]
+            def to_list:
+              if type == "array" then . else [.] end;
+            def viols:
+              if type == "object" then
+                (.violations? // .rule_violations? // .ruleViolations? // empty)
+              else empty end;
+            (.. | objects | viols) | to_list | .[]
             | {sev: (.severity // "ERROR"), msg: (.message // "ORT violation")}
             | "::" + (if (.sev|ascii_upcase) == "ERROR" then "error" else "warning" end) + "::" + .msg
-          ' -- "${EVAL_JSON}" | while IFS= read -r line; do
+          ' -- "${EVAL_JSON}" 2>/dev/null | while IFS= read -r line; do
             echo "$line"
           done
