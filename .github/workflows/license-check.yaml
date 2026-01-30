@@ -54,12 +54,12 @@ on:
         type: string
         default: "34c5d317e44e86505d0d257f2c1076deda35d9df"
       ort_config_source:
-        description: "Source path for ORT config files (relative to workspace, or absolute; job fails if missing)"
+        description: "Source path for ORT config files (relative to workspace, or absolute. Job fails if provided and missing)"
         required: false
         type: string
-        default: ".github/ort"
+        default: ""
       ort_config_target:
-        description: "Target directory for ORT config files (supports ~ for HOME; must not exist)"
+        description: "Target directory for ORT config files (supports ~ for HOME. Must not exist)"
         required: false
         type: string
         default: "~/.ort/config"
@@ -186,11 +186,13 @@ jobs:
             printf '%s\n' "$WORKSPACE_PATH/$p"
           }
 
-          if [[ -z "$SOURCE_RAW" || -z "$TARGET_RAW" ]]; then
-            echo "Skipping ORT config staging because ort_config_source or ort_config_target is empty."
+          if [[ -z "$TARGET_RAW" ]]; then
+            echo "Skipping ORT config staging because ort_config_target is empty."
             output_lines+=("target=")
           else
-            reject_control_chars "$SOURCE_RAW" "ort_config_source"
+            if [[ -n "$SOURCE_RAW" ]]; then
+              reject_control_chars "$SOURCE_RAW" "ort_config_source"
+            fi
             reject_control_chars "$TARGET_RAW" "ort_config_target"
             if [[ -n "$REPO_RAW" ]]; then
               reject_control_chars "$REPO_RAW" "ort_config_repository"
@@ -199,17 +201,7 @@ jobs:
               reject_control_chars "$REV_RAW" "ort_config_revision"
             fi
 
-            SOURCE="$(resolve_path "$SOURCE_RAW")"
             TARGET="$(resolve_path "$TARGET_RAW")"
-
-            if [[ ! -d "$SOURCE" ]]; then
-              echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
-              exit 1
-            fi
-            if [[ ! -f "$SOURCE/config.yml" ]]; then
-              echo "::error::ORT config source is missing config.yml: $SOURCE/config.yml"
-              exit 1
-            fi
 
             if [[ -e "$TARGET" ]]; then
               echo "::error::ORT config target already exists. Refusing to overwrite: $TARGET"
@@ -229,12 +221,19 @@ jobs:
               mkdir -p -- "$TARGET"
             fi
 
-            echo "Staging ORT config from '$SOURCE' to '$TARGET'."
-            cp -a -- "$SOURCE"/. "$TARGET"/
-            if [[ ! -f "$TARGET/config.yml" ]]; then
-              echo "::error::ORT config target is missing config.yml after copy: $TARGET/config.yml"
-              exit 1
+            if [[ -n "$SOURCE_RAW" ]]; then
+              SOURCE="$(resolve_path "$SOURCE_RAW")"
+              if [[ -d "$SOURCE" ]]; then
+                echo "Staging ORT config overlay from '$SOURCE' to '$TARGET'."
+                cp -a -- "$SOURCE"/. "$TARGET"/
+              else
+                echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
+                exit 1
+              fi
+            else
+              echo "ORT config source not provided; continuing without overlay."
             fi
+
             output_lines+=("target=$TARGET")
             echo "Staged ORT config for action at '$TARGET'."
           fi
