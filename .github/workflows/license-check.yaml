@@ -47,12 +47,12 @@ on:
         description: "Optional ORT config repo (global policy, rules)"
         required: false
         type: string
-        default: ""
+        default: "https://github.com/oss-review-toolkit/ort-config"
       ort_config_revision:
         description: "Optional ref/commit for ORT config repo"
         required: false
         type: string
-        default: ""
+        default: "34c5d317e44e86505d0d257f2c1076deda35d9df"
       ort_config_source:
         description: "Source path for ORT config files (relative to workspace, or absolute; job fails if missing)"
         required: false
@@ -70,6 +70,11 @@ on:
         default: "violations"
       ort_cli_args:
         description: "Optional extra ORT CLI args (e.g. -P flags)"
+        required: false
+        type: string
+        default: ""
+      ort_yml_path:
+        description: "Optional ORT .yml configuration file path"
         required: false
         type: string
         default: ""
@@ -248,6 +253,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
+          ort-yml-path: ${{ inputs.ort_yml_path }}
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
       - name: Download ORT artifacts
