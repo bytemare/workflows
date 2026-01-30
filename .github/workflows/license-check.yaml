@@ -277,10 +277,12 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "## ORT rule violations (top 50)"
+            echo "## ORT policy findings (top 50)"
             echo
-            echo "| Severity | Rule | Package/Project | License | Disposition | Message |"
-            echo "|---|---|---|---|---|---|"
+            echo "_Status meanings: **Compatible by design** (no rule violations), **Accepted** (non-compatible but explicitly accepted by policy), **Violation** (non-compatible and not accepted), **Unknown** (missing or ambiguous data). Rule severity reflects the rule default; Status indicates the policy outcome._"
+            echo
+            echo "| Policy status | Reason | Rule | License | Package/Project | Rule severity | Message |"
+            echo "|---|---|---|---|---|---|---|"
             # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
             jq -r '
               def to_list:
@@ -298,28 +300,36 @@ jobs:
                 | (.violations? // .rule_violations? // .ruleViolations? // empty)
                 | to_list as $violations
               | if ($violations | length) == 0 then
-                  "OK||||Compatible|No rule violations found."
+                  "Compatible by design|No rule violations found.|||||"
                 else
                   $violations[] | . as $v
                   | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
                   | ($matches[0]) as $res
                   | {
+                      status: (
+                        if $res != null then
+                          "Accepted"
+                        elif ($v.message // "") == "" and ($v.rule // "") == "" then
+                          "Unknown"
+                        else
+                          "Violation"
+                        end
+                      ),
+                      reason: (
+                        if $res != null then
+                          (($res.reason // "policy exception")
+                            + (if ($res.comment // "") != "" then ": " + ($res.comment // "") else "" end))
+                        else
+                          ""
+                        end
+                      ),
                       sev: ($v.severity // $v.level // ""),
                       rule: (if ($v.rule | type) == "object" then ($v.rule.name // $v.rule.id // "") else ($v.rule // "") end),
                       pkg: (if ($v.pkg | type) == "object" then ($v.pkg.id // "") else ($v.pkg // "") end),
                       lic: (if ($v.license | type) == "object" then ($v.license.id // "") else ($v.license // "") end),
-                      msg: ($v.message // $v.description // ""),
-                      disp: (
-                        if $res != null then
-                          "Accepted (" + ($res.reason // "resolution") + ")"
-                        elif ($v.message // "") == "" and ($v.rule // "") == "" then
-                          "Unknown"
-                        else
-                          "Not accepted"
-                        end
-                      )
+                      msg: ($v.message // $v.description // "")
                     }
-                  | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.disp)|\(.msg)"
+                  | "\(.status)|\(.reason)|\(.rule)|\(.lic)|\(.pkg)|\(.sev)|\(.msg)"
                 end
             ' -- "${EVAL_JSON}" 2>/dev/null \
             | head -n 50 \
@@ -356,7 +366,9 @@ jobs:
               | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
               | ($matches[0]) as $res
               | if $res != null then
-                  {sev: "NOTICE", msg: ("Accepted: " + ($v.message // "ORT violation") + " (" + ($res.reason // "resolution") + ")")}
+                  {sev: "NOTICE", msg: ("Accepted: " + ($v.message // "ORT violation") + " (" + ($res.reason // "policy exception") + ") " + ($res.comment // ""))}
+                elif ($v.message // "") == "" and ($v.rule // "") == "" then
+                  {sev: "WARNING", msg: "Unknown ORT finding: missing rule/message fields."}
                 else
                   {sev: ($v.severity // "ERROR"), msg: ($v.message // "ORT violation")}
                 end
