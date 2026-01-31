@@ -259,28 +259,6 @@ jobs:
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
-      - name: Download ORT artifacts
-        # Results are needed for summary/annotations; keep even if ORT failed.
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          path: ort-artifacts
-          merge-multiple: true
-      # Use the local action in this repo so PRs can test changes before a release.
-      - name: ORT report (local)
-        if: ${{ always() && github.repository == 'bytemare/workflows' }}
-        uses: ./.github/actions/ort-report
-        with:
-          artifact_dir: ort-artifacts
-          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
-
-      # Consumers should pin a release tag for reproducible behavior.
-      - name: ORT report (pinned)
-        if: ${{ always() && github.repository != 'bytemare/workflows' }}
-        # Pin this to a release tag for consumers.
-        uses: bytemare/workflows/.github/actions/ort-report@main
-        with:
-          artifact_dir: ort-artifacts
-          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
 
       - name: Fail if ORT run failed
         # ORT runs with continue-on-error so we can emit summaries/annotations first.
@@ -289,3 +267,46 @@ jobs:
         shell: bash
         run: |
           exit 1
+
+
+  ort-report-local:
+    name: ORT Report (within bytemare/workflows)
+    needs: [ort-high-assurance]
+    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' && github.repository == 'bytemare/workflows' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - name: Download ORT artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          path: ort-artifacts
+          merge-multiple: true
+      # Use the local action in this repo so PRs can test changes before a release.
+      - name: ORT report (local)
+        uses: ./.github/actions/ort-report
+        with:
+          artifact_dir: ort-artifacts
+          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
+  ort-report-pinned:
+    name: ORT Report (for bytemare/workflows consumers)
+    needs: [ort-high-assurance]
+    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' && github.repository != 'bytemare/workflows' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Download ORT artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          path: ort-artifacts
+          merge-multiple: true
+      # Consumers should pin a release tag for reproducible behavior.
+      - name: ORT report (pinned)
+        uses: bytemare/workflows/.github/actions/ort-report@main
+        with:
+          artifact_dir: ort-artifacts
+          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
