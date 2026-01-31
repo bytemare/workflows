@@ -332,6 +332,8 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path], ort_fa
         section = rows_for(category)
         if not section:
             return
+        lines.append("***")
+        lines.append("")
         lines.append(f"### {title}")
         lines.append("")
         lines.append(description)
