@@ -1,0 +1,6 @@
+---
+excludes:
+  paths:
+    - pattern: ".github/CODE_OF_CONDUCT.md"
+      reason: "DOCUMENTATION_OF_PROJECT"
+      comment: "Not part of release artifacts."

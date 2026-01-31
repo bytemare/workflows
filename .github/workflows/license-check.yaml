@@ -292,7 +292,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "##ORT License Policy Findings"
+            echo "## ORT License Policy Findings"
             echo
             # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
             rows="$(jq -r '
@@ -381,9 +381,8 @@ jobs:
             if [[ -z "${rows}" ]]; then
               echo "Everything looks good — no policy findings were detected."
             else
-              echo "_Status meanings: **Compatible by design** (no rule violations), **Accepted** (non-compatible but explicitly accepted by policy), **Violation** (non-compatible and not accepted), **Unknown** (missing or ambiguous data). Rule severity reflects the rule default; Policy status indicates the outcome._"
               echo
-
+          
               print_section() {
                 local section="$1"
                 local description="$2"
