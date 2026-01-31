@@ -395,6 +395,19 @@ jobs:
                 | tostring);
               def is_unknown_license($lic):
                 ($lic | test("^(LicenseRef-|NOASSERTION$)"; "i"));
+              def prov_key($p):
+                ($p.vcs_info.type // "") + "|" + ($p.vcs_info.url // "") + "|" + ($p.vcs_info.revision // "") + "|" + ($p.vcs_info.path // "") + "|" + ($p.resolved_revision // "");
+              def files_for($pkg; $lic; $scan_by_prov; $pkg_to_prov):
+                ($pkg_to_prov[$pkg] // null) as $prov
+                | if $prov == null then []
+                  else
+                    ($scan_by_prov[prov_key($prov)] // [])
+                    | map(select((.license // "") | tostring | contains($lic)))
+                    | map(.location)
+                    | map(select((.path // "") | tostring | test("^\\.github/ort/") | not))
+                    | map(if (.start_line? and .end_line?) then "\(.path):\(.start_line)-\(.end_line)" else .path end)
+                    | unique
+                  end;
               def matches_resolution($v; $r):
                 ((($r.rule? // "") | tostring) as $rr | ($rr == "" or ($v.rule // "" | tostring) == $rr))
                 and ((($r.pkg? // "") | tostring) as $rp | ($rp == "" or ($v.pkg // "" | tostring) == $rp))
@@ -404,6 +417,10 @@ jobs:
               | ($root.resolved_configuration?.resolutions?.rule_violations
                   // $root.resolvedConfiguration?.resolutions?.ruleViolations
                   // []) | to_list as $resolutions
+              | ($root.scanner?.scan_results // []) as $scan_results
+              | ($root.scanner?.provenances // []) as $provenances
+              | (reduce $scan_results[] as $sr ({}; .[prov_key($sr.provenance)] = ((.[prov_key($sr.provenance)] // []) + ($sr.summary.licenses // [])))) as $scan_by_prov
+              | (reduce $provenances[] as $p ({}; .[$p.id] = ($p.package_provenance))) as $pkg_to_prov
               | ($root.evaluator? // $root.evaluation? // $root.evaluatorResult? // empty)
                 | (.violations? // .rule_violations? // .ruleViolations? // empty)
                 | to_list as $violations
@@ -414,6 +431,9 @@ jobs:
                   | ($matches[0]) as $res
                   | (license_id($v)) as $lic
                   | (is_unknown_license($lic)) as $lic_unknown
+                  | (files_for($v.pkg; $lic; $scan_by_prov; $pkg_to_prov)) as $files
+                  | ($files | length) as $file_count
+                  | ($files[0:5] | join("<br>")) as $file_list
                   | {
                       category: (
                         if $res != null then
@@ -441,14 +461,25 @@ jobs:
                         if $res != null then
                           (($res.reason // "policy exception")
                             + (if ($res.comment // "") != "" then ": " + ($res.comment // "") else "" end))
+                        elif $lic_unknown then
+                          "License not covered by policy"
+                        elif ($v.message // "") == "" and ($v.rule // "") == "" then
+                          "Missing rule or message"
                         else
-                          ""
+                          "Not accepted by policy"
                         end
                       ),
                       sev: ($v.severity // $v.level // ""),
                       rule: (if ($v.rule | type) == "object" then ($v.rule.name // $v.rule.id // "") else ($v.rule // "") end),
                       pkg: (if ($v.pkg | type) == "object" then ($v.pkg.id // "") else ($v.pkg // "") end),
                       lic: ($lic | tostring),
+                      files: (
+                        if $file_count == 0 then
+                          "n/a"
+                        else
+                          ($file_list + (if $file_count > 5 then "<br>… (+" + (($file_count - 5) | tostring) + ")" else "" end))
+                        end
+                      ),
                       msg: ($v.message // $v.description // "")
                     }
                   | [
@@ -458,6 +489,7 @@ jobs:
                       (.rule | clean),
                       (.lic | clean),
                       (.pkg | clean),
+                      (.files | clean),
                       (.sev | clean),
                       (.msg | clean)
                     ]
@@ -475,14 +507,14 @@ jobs:
                 local description="$2"
                 local key="$3"
                 local section_rows
-                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k {print "| " $2 " | " $3 " | " $4 " | " $5 " | " $6 " | " $7 " | " $8 " |"}')"
+                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k {print "| " $2 " | " $3 " | " $4 " | " $5 " | " $6 " | " $7 " | " $8 " | " $9 " |"}')"
                 if [[ -n "${section_rows}" ]]; then
                   echo "### ${section}"
                   echo
                   echo "${description}"
                   echo
-                  echo "| Status | Reason | Rule | License | Package/Project | Rule severity | Message |"
-                  echo "|---|---|---|---|---|---|---|"
+                  echo "| Status | Reason | Rule | License | Package/Project | Files | Rule severity | Message |"
+                  echo "|---|---|---|---|---|---|---|---|"
                   printf '%s\n' "${section_rows}" | head -n 50
                   echo
                 fi
