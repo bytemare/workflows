@@ -1,5 +1,2 @@
 ---
-rule_violations:
-  - message: ".*The ScanCode 'copyleft-limited' categorized license CC-BY-SA-4.0 was detected in project 'GoMod::github.com/bytemare/workflows:.*'.*"
-    reason: "NOT_MODIFIED_EXCEPTION"
-    comment: "Demo fixture: tests/ort-fixtures/accepted-cc-by-sa-4.0.txt"
+rule_violations: []

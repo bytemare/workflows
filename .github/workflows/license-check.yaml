@@ -136,6 +136,9 @@ jobs:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       # ORT + ScanCode
+      # Notes:
+      # - We stage config into the path ORT expects (by default ~/.ort/config).
+      # - The ORT step is allowed to fail so we can still summarize and annotate findings.
       - name: Stage ORT config
         id: stage_ort_config
         shell: bash
@@ -240,81 +243,9 @@ jobs:
 
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
 
-      - name: Verify ORT resolutions staging
-        if: ${{ steps.stage_ort_config.outputs.target != '' }}
-        shell: bash
-        env:
-          ORT_CONFIG_PATH: ${{ steps.stage_ort_config.outputs.target }}
-          ORT_CONFIG_SOURCE: ${{ inputs.ort_config_source }}
-          WORKSPACE: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          SOURCE_RAW="${ORT_CONFIG_SOURCE:-}"
-          WORKSPACE_PATH="${WORKSPACE:-$PWD}"
-          HOME_PATH="${HOME:-$WORKSPACE_PATH}"
-
-          resolve_path() {
-            local p="$1"
-            if [[ $p == \~ ]]; then
-              printf '%s\n' "$HOME_PATH"
-              return 0
-            fi
-            if [[ $p == \~/* ]]; then
-              printf '%s\n' "$HOME_PATH/${p#\~/}"
-              return 0
-            fi
-            if [[ $p == \~* ]]; then
-              echo "::error::Only '~' or '~/' are supported in ORT config paths: $p"
-              exit 1
-            fi
-            if [[ "$p" == /* ]]; then
-              printf '%s\n' "$p"
-              return 0
-            fi
-            printf '%s\n' "$WORKSPACE_PATH/$p"
-          }
-
-          if [ ! -d "${ORT_CONFIG_PATH}" ]; then
-            echo "::error::ORT config path does not exist: ${ORT_CONFIG_PATH}"
-            exit 1
-          fi
-          if [ ! -f "${ORT_CONFIG_PATH}/resolutions.yml" ]; then
-            echo "::error::ORT resolutions.yml not found at: ${ORT_CONFIG_PATH}/resolutions.yml"
-            exit 1
-          fi
-          echo "ORT config files staged in: ${ORT_CONFIG_PATH}"
-          ls -la "${ORT_CONFIG_PATH}"
-          echo "::group::resolutions.yml (head)"
-          sed -n '1,200p' "${ORT_CONFIG_PATH}/resolutions.yml"
-          echo "::endgroup::"
-
-          if [ -z "${SOURCE_RAW}" ]; then
-            echo "ORT config source not provided; overlay check skipped."
-            exit 0
-          fi
-
-          SOURCE_PATH="$(resolve_path "${SOURCE_RAW}")"
-          if [ ! -d "${SOURCE_PATH}" ]; then
-            echo "::error::ORT config source path does not exist or is not a directory: ${SOURCE_PATH}"
-            exit 1
-          fi
-
-          if [ -f "${SOURCE_PATH}/resolutions.yml" ]; then
-            if ! cmp -s -- "${SOURCE_PATH}/resolutions.yml" "${ORT_CONFIG_PATH}/resolutions.yml"; then
-              echo "::error::ORT resolutions.yml from source was not applied to target."
-              echo "::group::source resolutions.yml (head)"
-              sed -n '1,200p' "${SOURCE_PATH}/resolutions.yml"
-              echo "::endgroup::"
-              exit 1
-            fi
-            echo "Verified: source resolutions.yml matches target."
-          else
-            echo "ORT config source has no resolutions.yml; overlay check skipped."
-          fi
-
       - name: Run ORT (policy-driven)
         id: ort_run
-        continue-on-error: true
+        continue-on-error: true # keep summary/annotations even when ORT reports violations
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
@@ -328,14 +259,14 @@ jobs:
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
-
       - name: Download ORT artifacts
+        # Results are needed for summary/annotations; keep even if ORT failed.
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           path: ort-artifacts
           merge-multiple: true
-
       - name: Locate ORT evaluation result
+        # Prefer evaluation-result.json (contains resolutions); fall back to evaluated-model.json.
         id: find-eval
         if: ${{ always() }}
         shell: bash
@@ -362,9 +293,6 @@ jobs:
             done
           fi
           if [ -z "${eval_path}" ]; then
-            eval_path="$(find "$HOME" "/home/ort" -maxdepth 6 -type f -name 'evaluation-result.json' -print | head -n1 || true)"
-          fi
-          if [ -z "${eval_path}" ]; then
             echo "::warning::ORT evaluation result not found in artifacts or common ORT paths."
           else
             echo "Using ORT evaluation result at: ${eval_path}"
@@ -372,6 +300,7 @@ jobs:
           echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
 
       - name: Summarize ORT rule violations in Job Summary
+        # Human-friendly summary for the GitHub job summary.
         if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
         shell: bash
         env:
@@ -488,7 +417,6 @@ jobs:
                       (.reason | clean),
                       (.rule | clean),
                       (.lic | clean),
-                      (.pkg | clean),
                       (.files | clean),
                       (.sev | clean),
                       (.msg | clean)
@@ -507,14 +435,14 @@ jobs:
                 local description="$2"
                 local key="$3"
                 local section_rows
-                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k {print "| " $2 " | " $3 " | " $4 " | " $5 " | " $6 " | " $7 " | " $8 " | " $9 " |"}')"
+                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k {print "| " $2 " | " $3 " | " $4 " | " $5 " | " $6 " | " $7 " | " $8 " |"}')"
                 if [[ -n "${section_rows}" ]]; then
                   echo "### ${section}"
                   echo
                   echo "${description}"
                   echo
-                  echo "| Status | Reason | Rule | License | Package/Project | Files | Rule severity | Message |"
-                  echo "|---|---|---|---|---|---|---|---|"
+                  echo "| Status | Reason | Rule | License | Files | Rule severity | Message |"
+                  echo "|---|---|---|---|---|---|---|"
                   printf '%s\n' "${section_rows}" | head -n 50
                   echo
                 fi
@@ -527,6 +455,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Emit lightweight GitHub annotations
+        # Annotations show up in the Checks UI (lightweight, not a full report).
         if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
         shell: bash
         env:
@@ -587,12 +516,15 @@ jobs:
           done
 
       - name: Emit ORT failure annotation when evaluation is missing
+        # If ORT failed before producing results, still emit a single visible error.
         if: ${{ always() && steps.ort_run.outcome == 'failure' && steps.find-eval.outputs.eval_json == '' }}
         shell: bash
         run: |
           echo "::error::ORT run failed and evaluation-result.json was not found. Check ORT logs for details."
 
       - name: Fail if ORT run failed
+        # ORT runs with continue-on-error so we can emit summaries/annotations first.
+        # This step restores failure status for the job when ORT failed.
         if: ${{ always() && steps.ort_run.outcome == 'failure' }}
         shell: bash
         run: |
