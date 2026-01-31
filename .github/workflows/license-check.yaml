@@ -350,12 +350,24 @@ jobs:
             fi
           fi
           if [ -z "${eval_path}" ]; then
-            for candidate in "$HOME/.ort/ort-results/evaluation-result.json" "$HOME/.ort/ort-results/evaluated-model.json"; do
+            for candidate in \
+              "$HOME/.ort/ort-results/evaluation-result.json" \
+              "$HOME/.ort/ort-results/evaluated-model.json" \
+              "/home/ort/.ort/ort-results/evaluation-result.json" \
+              "/home/ort/.ort/ort-results/evaluated-model.json"; do
               if [ -f "${candidate}" ]; then
                 eval_path="${candidate}"
                 break
               fi
             done
+          fi
+          if [ -z "${eval_path}" ]; then
+            eval_path="$(find "$HOME" "/home/ort" -maxdepth 6 -type f -name 'evaluation-result.json' -print | head -n1 || true)"
+          fi
+          if [ -z "${eval_path}" ]; then
+            echo "::warning::ORT evaluation result not found in artifacts or common ORT paths."
+          else
+            echo "Using ORT evaluation result at: ${eval_path}"
           fi
           echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
 
@@ -541,6 +553,12 @@ jobs:
           ' -- "${EVAL_JSON}" 2>/dev/null | while IFS= read -r line; do
             echo "$line"
           done
+
+      - name: Emit ORT failure annotation when evaluation is missing
+        if: ${{ always() && steps.ort_run.outcome == 'failure' && steps.find-eval.outputs.eval_json == '' }}
+        shell: bash
+        run: |
+          echo "::error::ORT run failed and evaluation-result.json was not found. Check ORT logs for details."
 
       - name: Fail if ORT run failed
         if: ${{ always() && steps.ort_run.outcome == 'failure' }}
