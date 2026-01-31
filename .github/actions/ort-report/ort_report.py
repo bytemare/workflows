@@ -295,7 +295,7 @@ def collect_violations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return [v for v in to_list(violations) if isinstance(v, dict)]
 
 
-def render_summary(findings: List[Finding], summary_path: Optional[Path]) -> None:
+def render_summary(findings: List[Finding], summary_path: Optional[Path], ort_failed: bool) -> None:
     """Render the GitHub job summary with only sections that have findings."""
     lines: List[str] = [SUMMARY_HEADER, ""]
 
@@ -306,6 +306,27 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path]) -> Non
 
     def rows_for(category: str) -> List[Finding]:
         return [f for f in findings if f.category == category]
+
+    violations = rows_for("violation")
+    unknowns = rows_for("unknown")
+    accepted = rows_for("accepted")
+
+    # Make the overall outcome explicit for humans scanning the summary.
+    if ort_failed and (violations or unknowns):
+        lines.append(
+            f"Status: ❌ Failed - policy violations detected "
+            f"({len(violations)} violation(s), {len(unknowns)} unknown(s))."
+        )
+        lines.append("")
+    elif violations or unknowns:
+        lines.append(
+            f"Status: ⚠️ Findings detected "
+            f"({len(violations)} violation(s), {len(unknowns)} unknown(s))."
+        )
+        lines.append("")
+    else:
+        lines.append("Status: ✅ Passed - all findings are accepted by policy.")
+        lines.append("")
 
     def print_section(title: str, description: str, category: str) -> None:
         section = rows_for(category)
@@ -335,9 +356,10 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path]) -> Non
             )
         lines.append("")
 
-    print_section("Accepted", "Non-compatible but explicitly accepted by policy", "accepted")
-    print_section("Violation", "Non-compatible and not accepted", "violation")
-    print_section("Unknown", "Missing or ambiguous data", "unknown")
+    # Order: Violations, Unknowns, Accepted.
+    print_section("❌ Violation", "Non-compatible and not accepted", "violation")
+    print_section("❓ Unknown", "Missing or ambiguous data", "unknown")
+    print_section("✅ Accepted", "Non-compatible but explicitly accepted by policy", "accepted")
 
     _write_summary(summary_path, "\n".join(lines) + "\n")
 
@@ -351,8 +373,18 @@ def _write_summary(path: Optional[Path], content: str) -> None:
         handle.write(content)
 
 
-def emit_annotations(findings: List[Finding]) -> None:
+def emit_annotations(findings: List[Finding], ort_failed: bool) -> None:
     """Emit lightweight annotations for the Checks UI."""
+    # Emit a high-level failure annotation so the reason for failure is obvious.
+    violations = [f for f in findings if f.category == "violation"]
+    unknowns = [f for f in findings if f.category == "unknown"]
+    if ort_failed and (violations or unknowns):
+        msg = (
+            f"❌ ORT policy check failed: {len(violations)} violation(s), "
+            f"{len(unknowns)} unknown(s). See job summary for details."
+        )
+        print(f"::error::{cmd_escape(msg)}")
+
     for finding in findings:
         msg = cmd_escape(finding.annotation_message)
         if finding.annotation_severity == "error":
@@ -428,17 +460,17 @@ def build_findings(data: Dict[str, Any]) -> List[Finding]:
 
         if res is not None:
             annotation_msg = (
-                f"Accepted: {message or 'ORT violation'} ({res.reason}) {res.comment}".strip()
+                f"✅ Accepted: {message or 'ORT violation'} ({res.reason}) {res.comment}".strip()
             )
             annotation_sev = "notice"
         elif lic_unknown:
-            annotation_msg = f"Unknown license: {message or 'ORT finding'}"
+            annotation_msg = f"❓ Unknown license: {message or 'ORT finding'}"
             annotation_sev = "warning"
         elif not has_rule and not has_message:
-            annotation_msg = "Unknown ORT finding: missing rule/message fields."
+            annotation_msg = "❓ Unknown ORT finding: missing rule/message fields."
             annotation_sev = "warning"
         else:
-            annotation_msg = message or "ORT violation"
+            annotation_msg = f"❌ {message or 'ORT violation'}"
             sev_upper = str(severity).upper()
             if sev_upper == "ERROR":
                 annotation_sev = "error"
@@ -483,8 +515,8 @@ def main() -> int:
 
     findings = build_findings(data)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    render_summary(findings, Path(summary_path) if summary_path else None)
-    emit_annotations(findings)
+    render_summary(findings, Path(summary_path) if summary_path else None, ort_failed)
+    emit_annotations(findings, ort_failed)
     return 0
 
 
