@@ -240,6 +240,27 @@ jobs:
 
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify ORT resolutions staging
+        if: ${{ steps.stage_ort_config.outputs.target != '' }}
+        shell: bash
+        env:
+          ORT_CONFIG_PATH: ${{ steps.stage_ort_config.outputs.target }}
+        run: |
+          set -euo pipefail
+          if [ ! -d "${ORT_CONFIG_PATH}" ]; then
+            echo "::error::ORT config path does not exist: ${ORT_CONFIG_PATH}"
+            exit 1
+          fi
+          if [ ! -f "${ORT_CONFIG_PATH}/resolutions.yml" ]; then
+            echo "::error::ORT resolutions.yml not found at: ${ORT_CONFIG_PATH}/resolutions.yml"
+            exit 1
+          fi
+          echo "ORT config files staged in: ${ORT_CONFIG_PATH}"
+          ls -la "${ORT_CONFIG_PATH}"
+          echo "::group::resolutions.yml (head)"
+          sed -n '1,200p' "${ORT_CONFIG_PATH}/resolutions.yml"
+          echo "::endgroup::"
+
       - name: Run ORT (policy-driven)
         id: ort_run
         continue-on-error: true
@@ -272,7 +293,10 @@ jobs:
           ART_DIR="ort-artifacts"
           eval_path=""
           if [ -d "${ART_DIR}" ]; then
-            eval_path="$(find "${ART_DIR}" -type f \( -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' \) -print | head -n1 || true)"
+            eval_path="$(find "${ART_DIR}" -type f -name '*evaluation-result*.json' -print | head -n1 || true)"
+            if [ -z "${eval_path}" ]; then
+              eval_path="$(find "${ART_DIR}" -type f -name '*evaluated-model*.json' -print | head -n1 || true)"
+            fi
           fi
           if [ -z "${eval_path}" ]; then
             for candidate in "$HOME/.ort/ort-results/evaluation-result.json" "$HOME/.ort/ort-results/evaluated-model.json"; do
@@ -388,7 +412,7 @@ jobs:
                 local description="$2"
                 local key="$3"
                 local section_rows
-                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k { $1=""; sub(/^\t/, ""); print }')"
+                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k {print "| " $2 " | " $3 " | " $4 " | " $5 " | " $6 " | " $7 " | " $8 " |"}')"
                 if [[ -n "${section_rows}" ]]; then
                   echo "### ${section}"
                   echo
@@ -396,10 +420,7 @@ jobs:
                   echo
                   echo "| Status | Reason | Rule | License | Package/Project | Rule severity | Message |"
                   echo "|---|---|---|---|---|---|---|"
-                  printf '%s\n' "${section_rows}" \
-                    | head -n 50 \
-                    | sed 's/\t/ | /g' \
-                    | sed 's/^/| /; s/$/ |/'
+                  printf '%s\n' "${section_rows}" | head -n 50
                   echo
                 fi
               }
