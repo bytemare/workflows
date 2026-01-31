@@ -241,6 +241,8 @@ jobs:
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
 
       - name: Run ORT (policy-driven)
+        id: ort_run
+        continue-on-error: true
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
@@ -272,6 +274,14 @@ jobs:
           if [ -d "${ART_DIR}" ]; then
             eval_path="$(find "${ART_DIR}" -type f \( -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' \) -print | head -n1 || true)"
           fi
+          if [ -z "${eval_path}" ]; then
+            for candidate in "$HOME/.ort/ort-results/evaluation-result.json" "$HOME/.ort/ort-results/evaluated-model.json"; do
+              if [ -f "${candidate}" ]; then
+                eval_path="${candidate}"
+                break
+              fi
+            done
+          fi
           echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
 
       - name: Summarize ORT rule violations in Job Summary
@@ -282,16 +292,22 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "## ORT policy findings (top 50)"
+            echo "##ORT License Policy Findings"
             echo
-            echo "_Status meanings: **Compatible by design** (no rule violations), **Accepted** (non-compatible but explicitly accepted by policy), **Violation** (non-compatible and not accepted), **Unknown** (missing or ambiguous data). Rule severity reflects the rule default; Status indicates the policy outcome._"
-            echo
-            echo "| Policy status | Reason | Rule | License | Package/Project | Rule severity | Message |"
-            echo "|---|---|---|---|---|---|---|"
             # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
-            jq -r '
+            rows="$(jq -r '
               def to_list:
                 if type == "array" then . else [.] end;
+              def clean:
+                tostring
+                | gsub("\\|"; "¦")
+                | gsub("[\\r\\n]+"; " ");
+              def license_id($v):
+                ((($v.license // "") as $l
+                  | if ($l | type) == "object" then ($l.id // "") else $l end)
+                | tostring);
+              def is_unknown_license($lic):
+                ($lic | test("^(LicenseRef-|NOASSERTION$)"; "i"));
               def matches_resolution($v; $r):
                 ((($r.rule? // "") | tostring) as $rr | ($rr == "" or ($v.rule // "" | tostring) == $rr))
                 and ((($r.pkg? // "") | tostring) as $rp | ($rp == "" or ($v.pkg // "" | tostring) == $rp))
@@ -304,16 +320,30 @@ jobs:
               | ($root.evaluator? // $root.evaluation? // $root.evaluatorResult? // empty)
                 | (.violations? // .rule_violations? // .ruleViolations? // empty)
                 | to_list as $violations
-              | if ($violations | length) == 0 then
-                  "Compatible by design|No rule violations found.|||||"
+              | if ($violations | length) == 0 then empty
                 else
                   $violations[] | . as $v
                   | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
                   | ($matches[0]) as $res
+                  | (license_id($v)) as $lic
+                  | (is_unknown_license($lic)) as $lic_unknown
                   | {
+                      category: (
+                        if $res != null then
+                          "accepted"
+                        elif $lic_unknown then
+                          "unknown"
+                        elif ($v.message // "") == "" and ($v.rule // "") == "" then
+                          "unknown"
+                        else
+                          "violation"
+                        end
+                      ),
                       status: (
                         if $res != null then
                           "Accepted"
+                        elif $lic_unknown then
+                          "Unknown"
                         elif ($v.message // "") == "" and ($v.rule // "") == "" then
                           "Unknown"
                         else
@@ -331,17 +361,54 @@ jobs:
                       sev: ($v.severity // $v.level // ""),
                       rule: (if ($v.rule | type) == "object" then ($v.rule.name // $v.rule.id // "") else ($v.rule // "") end),
                       pkg: (if ($v.pkg | type) == "object" then ($v.pkg.id // "") else ($v.pkg // "") end),
-                      lic: (if ($v.license | type) == "object" then ($v.license.id // "") else ($v.license // "") end),
+                      lic: ($lic | tostring),
                       msg: ($v.message // $v.description // "")
                     }
-                  | "\(.status)|\(.reason)|\(.rule)|\(.lic)|\(.pkg)|\(.sev)|\(.msg)"
+                  | [
+                      .category,
+                      (.status | clean),
+                      (.reason | clean),
+                      (.rule | clean),
+                      (.lic | clean),
+                      (.pkg | clean),
+                      (.sev | clean),
+                      (.msg | clean)
+                    ]
+                  | @tsv
                 end
-            ' -- "${EVAL_JSON}" 2>/dev/null \
-            | head -n 50 \
-            | sed 's/|/ | /g' \
-            | sed 's/^/| /; s/$/ |/'
-            echo
-            echo "_Full evidence remains in the artifact Web App if you need deep dive._"
+            ' -- "${EVAL_JSON}" 2>/dev/null || true)"
+
+            if [[ -z "${rows}" ]]; then
+              echo "Everything looks good — no policy findings were detected."
+            else
+              echo "_Status meanings: **Compatible by design** (no rule violations), **Accepted** (non-compatible but explicitly accepted by policy), **Violation** (non-compatible and not accepted), **Unknown** (missing or ambiguous data). Rule severity reflects the rule default; Policy status indicates the outcome._"
+              echo
+
+              print_section() {
+                local section="$1"
+                local description="$2"
+                local key="$3"
+                local section_rows
+                section_rows="$(printf '%s\n' "${rows}" | awk -F $'\t' -v k="${key}" '$1==k { $1=""; sub(/^\t/, ""); print }')"
+                if [[ -n "${section_rows}" ]]; then
+                  echo "### ${section}"
+                  echo
+                  echo "${description}"
+                  echo
+                  echo "| Status | Reason | Rule | License | Package/Project | Rule severity | Message |"
+                  echo "|---|---|---|---|---|---|---|"
+                  printf '%s\n' "${section_rows}" \
+                    | head -n 50 \
+                    | sed 's/\t/ | /g' \
+                    | sed 's/^/| /; s/$/ |/'
+                  echo
+                fi
+              }
+
+              print_section "Accepted" "Non-compatible but explicitly accepted by policy" "accepted"
+              print_section "Violation" "Non-compatible and not accepted" "violation"
+              print_section "Unknown" "Missing or ambiguous data" "unknown"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Emit lightweight GitHub annotations
@@ -354,6 +421,17 @@ jobs:
           jq -r '
             def to_list:
               if type == "array" then . else [.] end;
+            def license_id($v):
+              ((($v.license // "") as $l
+                | if ($l | type) == "object" then ($l.id // "") else $l end)
+              | tostring);
+            def is_unknown_license($lic):
+              ($lic | test("^(LicenseRef-|NOASSERTION$)"; "i"));
+            def cmd_escape:
+              tostring
+              | gsub("%"; "%25")
+              | gsub("\\r"; "%0D")
+              | gsub("\\n"; "%0A");
             def matches_resolution($v; $r):
               ((($r.rule? // "") | tostring) as $rr | ($rr == "" or ($v.rule // "" | tostring) == $rr))
               and ((($r.pkg? // "") | tostring) as $rp | ($rp == "" or ($v.pkg // "" | tostring) == $rp))
@@ -366,17 +444,22 @@ jobs:
             | ($root.evaluator? // $root.evaluation? // $root.evaluatorResult? // empty)
               | (.violations? // .rule_violations? // .ruleViolations? // empty)
               | to_list as $violations
-            | if ($violations | length) == 0 then empty
+              | if ($violations | length) == 0 then empty
               else $violations[] | . as $v
               | ($resolutions | map(select(matches_resolution($v; .)))) as $matches
               | ($matches[0]) as $res
+              | (license_id($v)) as $lic
+              | (is_unknown_license($lic)) as $lic_unknown
               | if $res != null then
                   {sev: "NOTICE", msg: ("Accepted: " + ($v.message // "ORT violation") + " (" + ($res.reason // "policy exception") + ") " + ($res.comment // ""))}
+                elif $lic_unknown then
+                  {sev: "WARNING", msg: ("Unknown license: " + ($v.message // "ORT finding"))}
                 elif ($v.message // "") == "" and ($v.rule // "") == "" then
                   {sev: "WARNING", msg: "Unknown ORT finding: missing rule/message fields."}
                 else
                   {sev: ($v.severity // "ERROR"), msg: ($v.message // "ORT violation")}
                 end
+              | .msg |= cmd_escape
               | "::" + (
                   if (.sev|ascii_upcase) == "ERROR" then "error"
                   elif (.sev|ascii_upcase) == "WARNING" then "warning"
@@ -387,3 +470,9 @@ jobs:
           ' -- "${EVAL_JSON}" 2>/dev/null | while IFS= read -r line; do
             echo "$line"
           done
+
+      - name: Fail if ORT run failed
+        if: ${{ always() && steps.ort_run.outcome == 'failure' }}
+        shell: bash
+        run: |
+          exit 1

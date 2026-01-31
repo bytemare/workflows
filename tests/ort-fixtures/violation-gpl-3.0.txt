@@ -1,0 +1,3 @@
+SPDX-License-Identifier: GPL-3.0-only
+
+This file exists to trigger an ORT "Violation" demo finding.
