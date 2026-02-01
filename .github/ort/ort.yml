@@ -2,5 +2,5 @@
 excludes:
   paths:
     - pattern: ".github/CODE_OF_CONDUCT.md"
-      reason: "DOCUMENTATION_OF_PROJECT"
-      comment: "Not part of release artifacts."
+      reason: "DOCUMENTATION_OF"
+      comment: "Project OSS code of conduct. Not part of release artifacts."
