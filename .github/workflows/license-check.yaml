@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      dependency_review_config_file:
+        description: "Path to the Dependency Review configuration file"
+        required: false
+        type: string
       warn_only:
         description: "Report but do not fail PRs"
         required: false
@@ -113,7 +117,7 @@ jobs:
         if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
         uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
         with:
-          config-file: .github/dependency-review-config.yml
+          config-file: ${{ inputs.dependency_review_config_file }}
           comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
 
       - name: Dependency Review (inline defaults)

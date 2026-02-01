@@ -1,3 +1,4 @@
+---
 name: ORT Report
 description: Summarize ORT evaluation results and emit GitHub annotations.
 inputs:
