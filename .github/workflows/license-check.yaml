@@ -261,7 +261,7 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
-          ort-yml-path: "/home/runner/.ort/config/ort.yml"
+          ort-yml-path: "/home/ort/.ort/config/ort.yml"
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
       - name: Fail if ORT run failed
