@@ -262,7 +262,7 @@ jobs:
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-yml-path: ${{ inputs.ort_yml_path }}
-          ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
+          ort-config-path: ".ort/config/"
 
       - name: Fail if ORT run failed
         # ORT runs with continue-on-error so we can emit summaries/annotations first.
