@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      dependency_review_config_file:
+        description: "Path to the Dependency Review configuration file"
+        required: false
+        type: string
       warn_only:
         description: "Report but do not fail PRs"
         required: false
@@ -47,12 +51,22 @@ on:
         description: "Optional ORT config repo (global policy, rules)"
         required: false
         type: string
-        default: ""
+        default: "https://github.com/oss-review-toolkit/ort-config"
       ort_config_revision:
         description: "Optional ref/commit for ORT config repo"
         required: false
         type: string
+        default: "34c5d317e44e86505d0d257f2c1076deda35d9df"
+      ort_config_source:
+        description: "Source path for ORT config files (relative to workspace, or absolute. Job fails if provided and missing)"
+        required: false
+        type: string
         default: ""
+      ort_config_target:
+        description: "Target directory for ORT config files (supports ~ for HOME. Must not exist)"
+        required: false
+        type: string
+        default: "~/.ort/config"
       ort_fail_on:
         description: "Fail-on mode for ORT (violations|issues|never)"
         required: false
@@ -98,7 +112,7 @@ jobs:
         if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
         uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
         with:
-          config-file: .github/dependency-review-config.yml
+          config-file: ${{ inputs.dependency_review_config_file }}
           comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
 
       - name: Dependency Review (inline defaults)
@@ -111,8 +125,8 @@ jobs:
 
   # High-assurance: ORT end-to-end (Analyzer→Scanner→Evaluator→Reporter)
   ort-high-assurance:
-    name: ORT License Compliance (High Assurance)
-    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) && inputs.ort_config_repository != '' }}
+    name: OSS Review Toolkit (ORT) License Compliance Check
+    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,84 +135,171 @@ jobs:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       # ORT + ScanCode
-      - name: Run ORT (policy-driven)
+      # Notes:
+      # - We stage config into the path ORT expects (by default ~/.ort/config).
+      # - The ORT step is allowed to fail so we can still summarize and annotate findings.
+      - name: Stage ORT config
+        id: stage_ort_config
+        shell: bash
+        env:
+          ORT_CONFIG_SOURCE: ${{ inputs.ort_config_source }}
+          ORT_CONFIG_TARGET: ${{ inputs.ort_config_target }}
+          ORT_CONFIG_REPO: ${{ inputs.ort_config_repository }}
+          ORT_CONFIG_REVISION: ${{ inputs.ort_config_revision }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+          SOURCE_RAW="$ORT_CONFIG_SOURCE"
+          TARGET_RAW="$ORT_CONFIG_TARGET"
+          REPO_RAW="$ORT_CONFIG_REPO"
+          REV_RAW="$ORT_CONFIG_REVISION"
+          WORKSPACE_PATH="${WORKSPACE:-$PWD}"
+          HOME_PATH="${HOME:-$WORKSPACE_PATH}"
+          output_lines=()
+
+          reject_control_chars() {
+            local value="$1"
+            local label="$2"
+            if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+              echo "::error::${label} contains a newline, which is not allowed."
+              exit 1
+            fi
+          }
+
+          resolve_path() {
+            local p="$1"
+            if [[ $p == \~ ]]; then
+              printf '%s\n' "$HOME_PATH"
+              return 0
+            fi
+            if [[ $p == \~/* ]]; then
+              printf '%s\n' "$HOME_PATH/${p#\~/}"
+              return 0
+            fi
+            if [[ $p == \~* ]]; then
+              echo "::error::Only '~' or '~/' are supported in ORT config paths: $p"
+              exit 1
+            fi
+            if [[ "$p" == /* ]]; then
+              printf '%s\n' "$p"
+              return 0
+            fi
+            printf '%s\n' "$WORKSPACE_PATH/$p"
+          }
+
+          if [[ -z "$TARGET_RAW" ]]; then
+            echo "Skipping ORT config staging because ort_config_target is empty."
+            output_lines+=("target=")
+          else
+            if [[ -n "$SOURCE_RAW" ]]; then
+              reject_control_chars "$SOURCE_RAW" "ort_config_source"
+            fi
+            reject_control_chars "$TARGET_RAW" "ort_config_target"
+            if [[ -n "$REPO_RAW" ]]; then
+              reject_control_chars "$REPO_RAW" "ort_config_repository"
+            fi
+            if [[ -n "$REV_RAW" ]]; then
+              reject_control_chars "$REV_RAW" "ort_config_revision"
+            fi
+
+            TARGET="$(resolve_path "$TARGET_RAW")"
+
+            if [[ -e "$TARGET" ]]; then
+              echo "::error::ORT config target already exists. Refusing to overwrite: $TARGET"
+              exit 1
+            fi
+
+            if [[ -n "$REPO_RAW" ]]; then
+              if [[ -n "$REV_RAW" ]]; then
+                git init -q "$TARGET"
+                git -C "$TARGET" remote add origin "$REPO_RAW"
+                git -C "$TARGET" fetch -q --depth 1 origin "$REV_RAW"
+                git -C "$TARGET" checkout -q FETCH_HEAD
+              else
+                git clone -q --depth 1 -- "$REPO_RAW" "$TARGET"
+              fi
+            else
+              mkdir -p -- "$TARGET"
+            fi
+
+            if [[ -n "$SOURCE_RAW" ]]; then
+              SOURCE="$(resolve_path "$SOURCE_RAW")"
+              if [[ -d "$SOURCE" ]]; then
+                echo "Staging ORT config overlay from '$SOURCE' to '$TARGET'."
+                cp -a -- "$SOURCE"/. "$TARGET"/
+          
+                # Copy .ort.yml to root, if it exists
+                if [[ -f "$SOURCE/.ort.yml" ]]; then
+                  echo "Also copying .ort.yml to root workspace."
+                  cp -f "$SOURCE/.ort.yml" "${{ github.workspace }}/.ort.yml"
+                fi
+              else
+                echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
+                exit 1
+              fi
+            else
+              echo "ORT config source not provided; continuing without overlay."
+            fi
+
+            output_lines+=("target=$TARGET")
+            echo "Staged ORT config for action at '$TARGET'."
+          fi
+
+          printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
+
+      - name: Run ORT
+        id: ort_run
+        continue-on-error: true # keep summary/annotations even when ORT reports violations
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
         uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
+          log-level: 'debug'
           # Fail on policy violations (configurable in ORT config)
           fail-on: ${{ inputs.ort_fail_on }}
           # Run full pipeline
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
+          ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
+      - name: Fail if ORT run failed
+        # ORT runs with continue-on-error so we can emit summaries/annotations first.
+        # This step restores failure status for the job when ORT failed.
+        if: ${{ always() && steps.ort_run.outcome == 'failure' }}
+        shell: bash
+        run: |
+          echo "::error:: ORT reported violations/issues as per the configured fail-on mode. Check the job annotations for details."
+          exit 1
+
+  ort-report:
+    name: Compiling summary for OSS Review Toolkit (ORT)
+    needs: [ort-high-assurance]
+    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: Download ORT artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           path: ort-artifacts
           merge-multiple: true
-
-      - name: Locate ORT evaluation result
-        id: find-eval
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          ART_DIR="ort-artifacts"
-          eval_path=""
-          if [ -d "${ART_DIR}" ]; then
-            eval_path="$(find "${ART_DIR}" -type f \( -name '*evaluation-result*.json' -o -name '*evaluated-model*.json' \) -print | head -n1 || true)"
-          fi
-          echo "eval_json=${eval_path}" >> "$GITHUB_OUTPUT"
-
-      - name: Summarize ORT rule violations in Job Summary
-        if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
-          {
-            echo "## ORT rule violations (top 50)"
-            echo
-            echo "| Severity | Rule | Package/Project | License | Message |"
-            echo "|---|---|---|---|---|"
-            # The structure can vary slightly across ORT versions; this jq pulls common fields robustly.
-            jq -r '
-              .. | objects
-              | select(has("violations") or has("rule_violations") or has("ruleViolations"))
-              | (.violations // .rule_violations // .ruleViolations)
-              | .[]
-              | {
-                  sev: (.severity // .level // ""),
-                  rule: (.rule?.name // .rule?.id // .rule // ""),
-                  pkg: (.pkg?.id // .package?.id // .project?.id // .id // ""),
-                  lic: (.license?.id // .license // .licenseFinding?.license // ""),
-                  msg: (.message // .description // "")
-                }
-              | "\(.sev)|\(.rule)|\(.pkg)|\(.lic)|\(.msg)"
-            ' -- "${EVAL_JSON}" \
-            | head -n 50 \
-            | sed 's/|/ | /g' \
-            | sed 's/^/| /; s/$/ |/'
-            echo
-            echo "_Full evidence remains in the artifact Web App if you need deep dive._"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Emit lightweight GitHub annotations
-        if: ${{ always() && steps.find-eval.outputs.eval_json != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          EVAL_JSON="${{ steps.find-eval.outputs.eval_json }}"
-          jq -r '
-            .. | objects
-            | select(has("violations") or has("rule_violations") or has("ruleViolations"))
-            | (.violations // .rule_violations // .ruleViolations)
-            | .[]
-            | {sev: (.severity // "ERROR"), msg: (.message // "ORT violation")}
-            | "::" + (if (.sev|ascii_upcase) == "ERROR" then "error" else "warning" end) + "::" + .msg
-          ' -- "${EVAL_JSON}" | while IFS= read -r line; do
-            echo "$line"
-          done
+      # Use the local action in this repo so PRs can test changes before a release.
+      - name: Compiling report and posting results (in bytemare/workflows)
+        if: ${{ github.repository == 'bytemare/workflows' }}
+        uses: ./.github/actions/ort-report
+        with:
+          artifact_dir: ort-artifacts
+          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
+      # Use a pinned version for third-party consumers
+      - name: Compiling report and posting results
+        if: ${{ github.repository != 'bytemare/workflows' }}
+        uses: bytemare/workflows/.github/actions/ort-report@1466ba17a1610d9b1c1bad52ba6eb19cbbfd6ebd
+        with:
+          artifact_dir: ort-artifacts
+          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}

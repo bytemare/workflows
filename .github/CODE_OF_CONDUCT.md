@@ -14,7 +14,8 @@ accordance with this Covenant.
 
 ## Encouraged Behaviors
 
-While acknowledging differences in social norms, we all strive to meet our community’s expectations for positive behavior. We also understand that our words and actions may be interpreted differently than we intend based on culture, background, or native language.
+While acknowledging differences in social norms, we all strive to meet our community’s expectations for positive behavior. We also understand that our
+words and actions may be interpreted differently than we intend based on culture, background, or native language.
 
 With these considerations in mind, we agree to behave mindfully toward each other and act in ways that center our shared values, including:
 
@@ -48,11 +49,12 @@ We agree to restrict the following behaviors in our community. Instances, threat
 
 ## Reporting an Issue
 
-Tensions can occur between community members even when they are trying their best to collaborate. Not every conflict represents a code of conduct violation, and this Code of Conduct reinforces encouraged behaviors and norms that can help avoid conflicts and minimize harm.
+Tensions can occur between community members even when they are trying their best to collaborate. Not every conflict represents a code
+of conduct violation, and this Code of Conduct reinforces encouraged behaviors and norms that can help avoid conflicts and minimize harm.
 
 When an incident does occur, it is important to report it promptly. To report a Code of
 Conduct violation, open a private discussion with the maintainer via
-[GitHub Discussions](https://github.com/bytemare/workflows/discussions) (select "New discussion"
+[GitHub Discussions](https://github.com/bytemare/hash/discussions) (select "New discussion"
 and choose a private category if available) or email the maintainer directly. For
 **security vulnerabilities**, use the separate process in [SECURITY.md](SECURITY.md).
 
@@ -66,7 +68,9 @@ to the whole community may be part of a mutually agreed upon resolution.
 
 ## Addressing and Repairing Harm
 
-If an investigation by the Community Moderators finds that this Code of Conduct has been violated, the following enforcement ladder may be used to determine how best to repair harm, based on the incident’s impact on the individuals involved and the community as a whole. Depending on the severity of a violation, lower rungs on the ladder may be skipped.
+If an investigation by the Community Moderators finds that this Code of Conduct has been violated, the following enforcement ladder may be used to
+determine how best to repair harm, based on the incident’s impact on the individuals involved and the community as a whole. Depending on the severity
+of a violation, lower rungs on the ladder may be skipped.
 
 ### Warning
 
@@ -96,7 +100,8 @@ This enforcement ladder is intended as a guideline. It does not limit the abilit
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public or other spaces. Examples of representing our community include using an official email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
+This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public or other spaces.
+Examples of representing our community include using an official email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
 
 ## Attribution
 

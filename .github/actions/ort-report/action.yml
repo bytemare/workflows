@@ -1,0 +1,33 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: ORT Report
+description: Summarize ORT evaluation results and emit GitHub annotations.
+inputs:
+  artifact_dir:
+    description: "Path to the directory containing ORT artifacts"
+    required: false
+    default: "ort-artifacts"
+  ort_failed:
+    description: "Whether the ORT run failed (true/false)"
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - name: Generate ORT summary and annotations
+      shell: bash
+      env:
+        ARTIFACT_DIR: ${{ inputs.artifact_dir }}
+        ORT_FAILED: ${{ inputs.ort_failed }}
+      run: |
+        python3 "${{ github.action_path }}/ort_report.py"
