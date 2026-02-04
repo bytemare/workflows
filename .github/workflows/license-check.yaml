@@ -231,12 +231,12 @@ jobs:
           
                 # Copy .ort.yml to root, if it exists
                 ls -al "$SOURCE/.ort.yml"
-                if [[ -d "$SOURCE/.ort.yml" ]]; then
+                if [[ -f "$SOURCE/.ort.yml" ]]; then
                   cp -f "$SOURCE/.ort.yml" "${{ github.workspace }}/.ort.yml"
-                  pwd
-                  echo "${{ github.workspace }}"
-                  ls -al "${{ github.workspace }}/"
                 fi
+                pwd
+                echo "${{ github.workspace }}"
+                ls -al "${{ github.workspace }}/"
               else
                 echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
                 exit 1
