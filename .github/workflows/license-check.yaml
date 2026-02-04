@@ -125,7 +125,7 @@ jobs:
 
   # High-assurance: ORT end-to-end (Analyzer→Scanner→Evaluator→Reporter)
   ort-high-assurance:
-    name: ORT License Compliance (High Assurance)
+    name: OSS Review Toolkit (ORT) License Compliance Check
     if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
     runs-on: ubuntu-latest
     permissions:
@@ -248,7 +248,7 @@ jobs:
 
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
 
-      - name: Run ORT (policy-driven)
+      - name: Run ORT
         id: ort_run
         continue-on-error: true # keep summary/annotations even when ORT reports violations
         env:
@@ -275,7 +275,7 @@ jobs:
           exit 1
 
   ort-report:
-    name: OSS Review Toolkit
+    name: Compiling summary for OSS Review Toolkit (ORT)
     needs: [ort-high-assurance]
     if: ${{ always() && needs.ort-high-assurance.result != 'skipped' }}
     runs-on: ubuntu-latest
