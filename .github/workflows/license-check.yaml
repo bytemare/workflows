@@ -231,7 +231,7 @@ jobs:
           
                 # Copy .ort.yml to root, if it exists
                 if [[ -d "$SOURCE/.ort.yml" ]]; then
-                  cp "$SOURCE/.ort.yml" ~
+                  cp "$SOURCE/.ort.yml" /
                 fi
               else
                 echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
