@@ -245,6 +245,7 @@ jobs:
             echo "Staged ORT config for action at '$TARGET'."
             ls -la -- "$TARGET"
             ls -la -- ~
+            ls -la -- /
           fi
 
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
