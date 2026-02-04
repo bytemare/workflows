@@ -255,6 +255,7 @@ jobs:
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
         uses: oss-review-toolkit/ort-ci-github-action@3a5037ba7b646cc7665bc669410234d126da4723
         with:
+          log-level: 'debug'
           # Fail on policy violations (configurable in ORT config)
           fail-on: ${{ inputs.ort_fail_on }}
           # Run full pipeline
