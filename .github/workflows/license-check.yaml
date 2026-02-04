@@ -230,13 +230,10 @@ jobs:
                 cp -a -- "$SOURCE"/. "$TARGET"/
           
                 # Copy .ort.yml to root, if it exists
-                ls -al "$SOURCE/.ort.yml"
                 if [[ -f "$SOURCE/.ort.yml" ]]; then
+                  echo "Also copying .ort.yml to root workspace."
                   cp -f "$SOURCE/.ort.yml" "${{ github.workspace }}/.ort.yml"
                 fi
-                pwd
-                echo "${{ github.workspace }}"
-                ls -al "${{ github.workspace }}/"
               else
                 echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
                 exit 1
@@ -247,9 +244,6 @@ jobs:
 
             output_lines+=("target=$TARGET")
             echo "Staged ORT config for action at '$TARGET'."
-            ls -la -- "$TARGET"
-            ls -la -- ~
-            ls -la -- /
           fi
 
           printf '%s\n' "${output_lines[@]}" >> "$GITHUB_OUTPUT"
