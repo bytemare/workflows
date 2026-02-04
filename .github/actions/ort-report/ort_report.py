@@ -34,7 +34,7 @@ import os
 import re
 import sys
 
-SUMMARY_HEADER = "## ORT License Policy Findings"
+SUMMARY_HEADER = "![OSS Review Toolkit Logo](https://raw.githubusercontent.com/oss-review-toolkit/ort/refs/heads/main/logos/ort.png)"
 SUMMARY_OK = "Everything looks good - no policy violations were detected."
 
 # Keep the summary compact for job UI readability.

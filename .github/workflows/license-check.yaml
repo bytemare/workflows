@@ -274,11 +274,10 @@ jobs:
           echo "::error:: ORT reported violations/issues as per the configured fail-on mode. Check the job annotations for details."
           exit 1
 
-
-  ort-report-local:
-    name: ORT Report (within bytemare/workflows)
+  ort-report:
+    name: OSS Review Toolkit
     needs: [ort-high-assurance]
-    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' && github.repository == 'bytemare/workflows' }}
+    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -291,28 +290,16 @@ jobs:
           path: ort-artifacts
           merge-multiple: true
       # Use the local action in this repo so PRs can test changes before a release.
-      - name: ORT report (local)
+      - name: Compiling report and posting results (in bytemare/workflows)
+        if: ${{ github.repository == 'bytemare/workflows' }}
         uses: ./.github/actions/ort-report
         with:
           artifact_dir: ort-artifacts
           ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
-  ort-report-pinned:
-    name: ORT Report (for bytemare/workflows consumers)
-    needs: [ort-high-assurance]
-    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' && github.repository != 'bytemare/workflows' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      - name: Download ORT artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          path: ort-artifacts
-          merge-multiple: true
-      # Consumers should pin a release tag for reproducible behavior.
-      - name: ORT report (pinned)
-        uses: bytemare/workflows/.github/actions/ort-report@main
+      # Use a pinned version for third-party consumers
+      - name: Compiling report and posting results
+        if: ${{ github.repository != 'bytemare/workflows' }}
+        uses: bytemare/workflows/.github/actions/ort-report@6b6b2069083d1ce7d0b2b61636f5bf6c784b5b43
         with:
           artifact_dir: ort-artifacts
           ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
