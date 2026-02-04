@@ -24,7 +24,7 @@ import re
 import sys
 
 SUMMARY_HEADER = "## ORT License Policy Findings"
-SUMMARY_OK = "Everything looks good - no policy findings were detected."
+SUMMARY_OK = "Everything looks good - no policy violations were detected."
 
 # Keep the summary compact for job UI readability.
 MAX_FILES_PER_FINDING = 5

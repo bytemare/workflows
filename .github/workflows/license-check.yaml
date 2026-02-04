@@ -77,11 +77,6 @@ on:
         required: false
         type: string
         default: ""
-      ort_yml_path:
-        description: "Optional ORT .yml configuration file path"
-        required: false
-        type: string
-        default: ""
 
 permissions: {}
 
@@ -233,6 +228,11 @@ jobs:
               if [[ -d "$SOURCE" ]]; then
                 echo "Staging ORT config overlay from '$SOURCE' to '$TARGET'."
                 cp -a -- "$SOURCE"/. "$TARGET"/
+          
+                # Copy .ort.yml to root, if it exists
+                if [[ -d "$SOURCE/.ort.yml" ]]; then
+                  cp "$SOURCE/.ort.yml" ~
+                fi
               else
                 echo "::error::ORT config source path does not exist or is not a directory: $SOURCE"
                 exit 1
@@ -263,7 +263,6 @@ jobs:
           run: cache-dependencies,analyzer,scanner,evaluator,reporter,upload-results
           # Extra CLI args
           ort-cli-args: ${{ inputs.ort_cli_args }}
-          ort-yml-path: ${{ inputs.ort_yml_path }}
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
       - name: Fail if ORT run failed
