@@ -88,4 +88,6 @@ jobs:
       statuses: write
     uses: ./.github/workflows/super-linter.yaml
     with:
+      validate-all-codebase: ${{ inputs['super-linter-validate-all-codebase'] }}
       enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
+      linter-rules-path: ${{ inputs['super-linter-rules-path'] }}

@@ -41,7 +41,7 @@ on:
         type: boolean
         default: true
 
-      # ORT + ScanCode (High-assurance mode)
+      # ORT
       assurance:
         description: "low | standard | high (runs ORT when 'high' or on v* tags)"
         required: false
@@ -134,7 +134,7 @@ jobs:
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
-      # ORT + ScanCode
+      # ORT
       # Notes:
       # - We stage config into the path ORT expects (by default ~/.ort/config).
       # - The ORT step is allowed to fail so we can still summarize and annotate findings.

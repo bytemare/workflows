@@ -9,36 +9,32 @@ You're welcome to use them, though they primarily target my own projects and I w
 
 All workflows enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
+- [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
 - [Workflow Suites](#workflow-suites)
-  - [SAST Suite](#sast-suite)
+  - [Code Scan Suite](#code-scan-suite)
   - [Lint Suite](#lint-suite)
   - [Governance Suite](#governance-suite)
   - [Test Suite](#test-suite)
-- [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
-- [Security Workflows](#security-workflows)
+- [Workflows](#workflows)
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
   - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
   - [License Check](#license-check)
-- [Quality Workflows](#quality-workflows)
   - [Do not submit](#do-not-submit)
-  - [GolangCI Lint](#golangci-lint)
   - [SonarQube](#sonarqube)
   - [Codecov](#codecov)
-- [Build & Release Workflows](#build--release-workflows)
-  - [Tests](#tests)
+  - [Go Tests](#go-tests)
 - [Release Integrity (SLSA Level 3)](#release-integrity-slsa-level-3)
 
 ---
 
 ## Ready-to-use bundled workflows (recommended)
 
-The three `wf-*.yaml` files in `.github/workflows/` call all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak:
+The `wf-*.yaml` files in `.github/workflows/` call all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak:
 
-- **`wf-tests.yaml`** - Automated testing on pull requests and main branch for Go code
-- **`wf-analysis.yaml`** - Security and quality analysis (e.g. linting, CodeQL, OpenSSF Scorecard)
+- **`wf-analysis.yaml`** - Code scanning, SAST, linting, governance, etc., assembling all available workflows in this repo
 - **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
 
 Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
@@ -49,47 +45,74 @@ Copy these files to your `.github/workflows/` directory and flip the booleans or
 
 Five orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
 
-### SAST Suite
+### Code scan suite
 
-Security scanners such as Semgrep, CodeQL, SonarQube, and Govulncheck. Enable a tool by setting its boolean input to `true` and supply optional tokens inline when required.
+Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, and Codecov. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
 
 ```yaml
 jobs:
-  sast:
-    uses: bytemare/workflows/.github/workflows/sast.yaml@[pinned sha]
+  CodeScan:
+    uses: bytemare/workflows/.github/workflows/codescan.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     with:
+      # Semgrep
       semgrep: true
-      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      # CodeQL
       codeql: true
-      codeql-language: go,python,javascript-typescript
+      codeql-language: go # comma-separated list supported
+      # SonarQube
       sonarqube: true
-      sonarqube-token: ${{ secrets.SONAR_TOKEN }}
       sonarqube-configuration: .github/sonar-project.properties
-      sonarqube-coverage: false
-      sonarqube-coverage-command: "pytest --cov=."
-      sonarqube-coverage-setup-go: false
+      sonarqube-coverage: true
+      sonarqube-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      sonarqube-coverage-setup-go: true
+      # Codecov upload
+      codecov: true
+      codecov-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      codecov-coverage-setup-go: true # set to true when using Go
+      # Govulncheck
       govulncheck: true
+      # Gitleaks
+      gitleaks: true
+    secrets:
+      # Semgrep token
+      semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+      # SonarQube token
+      sonarqube: ${{ secrets.SONAR_TOKEN }}
+      # Codecov token
+      codecov: ${{ secrets.CODECOV_TOKEN }}
 ```
 
-Tokens are optional. If you enable Semgrep or SonarQube without providing one, the suite fails fast with a clear message. For bash, rely on Semgrep (CodeQL does not support it).
+Tokens are optional. If you enable Semgrep, SonarQube, or Codecov without providing one, the suite fails fast with a clear message. For bash, rely on Semgrep (CodeQL does not support it).
 
 ### Lint Suite
 
-`lint.yaml` covers formatting and content/style linters across languages (Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
+`lint.yaml` covers formatting and content/style linters across multiple languages (e.g. Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
 
 ```yaml
 jobs:
-  lint:
-    uses: bytemare/workflows/.github/workflows/lint.yaml@[pinned sha]
+  Lint:
+    uses: bytemare/workflows/.github/workflows/lint.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     with:
+      # gofmt
       gofmt: true
+      # Super-Linter
       super-linter: true
-      super-linter-enabled-linters: BASH,GITHUB_ACTIONS,GO,GOLANGCI_LINT,MARKDOWN,YAML,PYTHON,SPELL
-      super-linter-go-config: .github/.golangci.yml
-      super-linter-yaml-config: .github/.yamllint
-```
+      super-linter-validate-all-codebase: true # optional: defaults to true
+      super-linter-enabled-linters: |
+        BASH,BASH_EXEC,VALIDATE_EDITORCONFIG,ENV,GITHUB_ACTIONS,GO_MODULES,MARKDOWN,PYTHON,YAML
+      super-linter-rules-path: .github  # optional: defaults to .github
+ ```
 
-Defaults keep configuration short. You only need to override items like `super-linter-go-config`, `super-linter-enabled-linters`, or supply additional config files (Markdown, YAML, Python) when diverging from the standard settings. Use `super-linter-disabled-linters` to opt out of specific validators when the defaults are too noisy.
+Set `super-linter-rules-path` if you have linter configurations.
+Set `super-linter-enabled-linters` to activate specific validators.
 
 ### Governance Suite
 
@@ -98,16 +121,14 @@ Defaults keep configuration short. You only need to override items like `super-l
 ```yaml
 jobs:
   governance:
-    uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned sha]
+    uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned commit SHA]
     with:
       dependency-review: true
       license-check: true
       do-not-submit: true
       scorecard: true
-      codecov: true
     secrets:
       scorecard_token: ${{ secrets.SCORECARD_TOKEN }}
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
 ```
 
 ### Test Suite
@@ -118,14 +139,14 @@ It runs `go test -v -race -vet=all ./...` and enforces egress filtering through 
 ```yaml
 jobs:
   tests:
-    uses: bytemare/workflows/.github/workflows/tests.yaml@[pinned sha]
+    uses: bytemare/workflows/.github/workflows/tests.yaml@[pinned commit SHA]
     with:
       go-versions: '["1.25", "1.24", "1.23"]'
 ```
 
 All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
 
-## Security Workflows
+## Workflows
 
 ### [CodeQL](https://github.com/github/codeql-action)
 
@@ -135,7 +156,7 @@ Advanced semantic code analysis to find security vulnerabilities in Go code.
 
 ```yaml
 jobs:
-    uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned sha]
+    uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned commit SHA]
     with:
       language: go
     permissions:
@@ -217,13 +238,9 @@ jobs:
     secrets:
       token: ${{ secrets.SCORECARD_TOKEN }}
     permissions:
-      # Needed to upload the results to code-scanning dashboard.
       security-events: write
-      # Needed for GitHub OIDC token if publish_results is true.
       id-token: write
-      # Needed for nested workflow
       actions: read
-      # To detect SAST tools
       checks: read
       attestations: read
       contents: read
@@ -236,6 +253,7 @@ jobs:
       repository-projects: read
       statuses: read
       models: read
+      artifact-metadata: read # permissions:disable-line
 ```
 
 ---
@@ -246,7 +264,7 @@ End-to-end dependency due diligence that works for any language:
 
 - Dependency graph submission on pull requests so GitHub understands PR-only dependencies.
 - Dependency Review with a strict SPDX allow-list (`allow_spdx`) plus optional warn-only and PR summary comment modes.
-- Optional high-assurance tier (`assurance: high` or `v*` tags) that runs ORT + ScanCode and surfaces rule violations directly in the job summary and annotations. Provide a git URL for your ORT policy repo via `ort_config_repository` to enable the job (it is skipped otherwise).
+- Optional high-assurance ORT analysis (`assurance: high`) that surfaces rule violations.
 
 **Configuration:**
 
@@ -259,7 +277,7 @@ jobs:
       warn_only: false
       use_pr_comment: true
       run_component_detection: true
-      assurance: standard # switch to "high" (or use v* tags) for ORT + ScanCode
+      assurance: standard # switch to "high" (or use v* tags) for ORT
       ort_config_repository: https://github.com/your-org/ort-config.git # required for ORT
       ort_config_revision: main # optional pin
       ort_fail_on: violations
@@ -271,26 +289,17 @@ jobs:
 
 ---
 
-## Quality Workflows
+### [GitLeaks](https://github.com/gitleaks/gitleaks-action)
 
-### [GolangCI Lint](https://github.com/golangci/golangci-lint-action)
-
-Comprehensive Go code linting with 50+ linters in parallel.
-
-**Note:** It's recommended to provide an adapted `.golangci.yml` configuration file to customize the linting rules.
-
-**Configuration:**
+Detect hardcoded secrets.
 
 ```yaml
 jobs:
-  golangci-lint:
-    name: GolangCI Lint
-    uses: bytemare/workflows/.github/workflows/golangci-lint.yaml@[pinned commit SHA]
-    with:
-      config-path: ".github/.golangci.yml"
-      scope: "./..."
+  Gitleaks:
     permissions:
       contents: read
+      security-events: write
+    uses: bytemare/workflows/.github/workflows/gitleaks.yaml@[pinned commit SHA]
 ```
 
 ---
@@ -358,9 +367,7 @@ jobs:
 
 ---
 
-## Build & Release Workflows
-
-### Tests
+### Go Tests
 
 Run your Go test suite with ```go test -v -vet=all ./...```.
 
