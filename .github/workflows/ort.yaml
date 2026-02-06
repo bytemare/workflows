@@ -56,6 +56,23 @@ jobs:
       contents: read
       actions: read
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          #allowed-endpoints: >
+          #  api.github.com:443
+          #  github.com:443
+          #  ghcr.io:443
+          #  golang.org:443
+          #  objects.githubusercontent.com:443
+          #  proxy.golang.org:443
+          #  registry-1.docker.io:443
+          #  release-assets.githubusercontent.com:443
+          #  storage.googleapis.com:443
+          #  sum.golang.org:443
+
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       # - We stage config into the path ORT expects (by default ~/.ort/config).
