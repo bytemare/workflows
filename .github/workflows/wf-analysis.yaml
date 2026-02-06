@@ -27,7 +27,7 @@ permissions: {}
 
 jobs:
   Lint:
-    uses: ./.github/workflows/lint.yaml
+    uses: ./.github/workflows/suite-lint.yaml
     permissions:
       contents: read
       packages: read
@@ -43,7 +43,7 @@ jobs:
       super-linter-rules-path: .github
 
   Governance:
-    uses: ./.github/workflows/governance.yaml
+    uses: ./.github/workflows/suite-governance.yaml
     permissions:
       contents: read
       security-events: write
@@ -84,7 +84,7 @@ jobs:
       scorecard: ${{ secrets.SCORECARD_TOKEN }}
 
   CodeScan:
-    uses: ./.github/workflows/codescan.yaml
+    uses: ./.github/workflows/suite-codescan.yaml
     permissions:
       contents: read
       security-events: write

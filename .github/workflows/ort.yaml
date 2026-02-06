@@ -49,9 +49,8 @@ on:
         default: ""
 
 jobs:
-  ort-high-assurance:
+  ort:
     name: License Compliance Check
-    if: ${{ (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
