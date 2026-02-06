@@ -56,7 +56,7 @@ on:
         description: 'Coverage command executed before SonarQube scan'
         required: false
         type: string
-      sonarqube-coverage-setup-go:
+      sonarqube-setup-go:
         description: 'Run Go setup before coverage command'
         required: false
         type: boolean
@@ -90,7 +90,7 @@ on:
         required: false
         type: string
         default: 'coverage.out'
-      codecov-coverage-setup-go:
+      codecov-setup-go:
         description: 'Run Go setup before coverage command'
         required: false
         type: boolean
@@ -139,7 +139,7 @@ jobs:
       configuration: ${{ inputs['sonarqube-configuration'] }}
       coverage: ${{ inputs['sonarqube-coverage'] }}
       coverage-command: ${{ inputs['sonarqube-coverage-command'] }}
-      coverage-setup-go: ${{ inputs['sonarqube-coverage-setup-go'] }}
+      setup-go: ${{ inputs['sonarqube-setup-go'] }}
     secrets:
       sonar: ${{ secrets.sonarqube }}
       github: ${{ secrets.github }}
@@ -153,7 +153,7 @@ jobs:
       disable_search: ${{ inputs['codecov-disable-search'] }}
       coverage-command: ${{ inputs['codecov-coverage-command'] }}
       coverage-file: ${{ inputs['codecov-coverage-file'] }}
-      coverage-setup-go: ${{ inputs['codecov-coverage-setup-go'] }}
+      setup-go: ${{ inputs['codecov-setup-go'] }}
     secrets:
       token: ${{ secrets.codecov }}
 

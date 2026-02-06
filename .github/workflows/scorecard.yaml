@@ -55,7 +55,7 @@ jobs:
 
       - name: "Verify token is set"
         env:
-          token: ${{ secrets.scorecard }}
+          token: ${{ secrets.token }}
         run: |
           if [ -z "$token" ]; then
             echo "Scorecard requires a PAT when enabled." >&2

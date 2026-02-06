@@ -64,8 +64,12 @@ jobs:
     with:
       # OpenSSF Scorecard
       scorecard: true
+      # Dependency Review
+      dependency-review: true
+      # OSS Review Toolkit (ORT)
+      ort: true
       # ---- Baseline PR gate (fast, GitHub-native) ----
-      dependency_review_config_file: ".github/dependency-review-config.yml"
+      dependency_review_config_file: ".github/dependency-review-config.yaml"
       allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
       warn_only: false              # set true for a gentle rollout
       use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
