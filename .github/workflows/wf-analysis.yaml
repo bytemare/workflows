@@ -45,9 +45,9 @@ jobs:
   Governance:
     uses: ./.github/workflows/suite-governance.yaml
     permissions:
-      contents: read
+      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph
+      id-token: write   # Required for OIDC
       security-events: write
-      id-token: write
       actions: read
       checks: read
       attestations: read
