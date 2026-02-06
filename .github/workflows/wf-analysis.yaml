@@ -104,7 +104,7 @@ jobs:
       sonarqube-configuration: .github/sonar-project.properties
       sonarqube-coverage: true
       sonarqube-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      sonarqube-coverage-setup-go: true
+      sonarqube-setup-go: true
       # Govulncheck
       govulncheck: true
       # Gitleaks
@@ -112,7 +112,7 @@ jobs:
       # Codecov upload
       codecov: true
       codecov-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      codecov-coverage-setup-go: true
+      codecov-setup-go: true
     secrets:
       # Semgrep token
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
