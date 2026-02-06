@@ -62,8 +62,6 @@ jobs:
       models: read # permissions:disable-line
       artifact-metadata: read # permissions:disable-line
     with:
-      # Do Not Submit
-      do-not-submit: true
       # OpenSSF Scorecard
       scorecard: true
       # ---- Baseline PR gate (fast, GitHub-native) ----

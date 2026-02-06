@@ -25,6 +25,10 @@ on:
         required: false
         type: boolean
         default: false
+      do-not-submit:
+
+        # Do Not Submit
+        do-not-submit: true
       ort:
         description: 'Run OSS Review Toolkit (ORT) license compliance checks'
         required: false
