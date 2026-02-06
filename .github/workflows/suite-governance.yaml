@@ -104,6 +104,7 @@ jobs:
     permissions:
       contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph
       id-token: write   # Required by the action (OIDC)
+      pull-requests: write   # needed when posting the summary
     uses: ./.github/workflows/dependency-review.yaml
     with:
       allow_spdx: ${{ inputs.allow_spdx }}

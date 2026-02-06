@@ -56,7 +56,7 @@ jobs:
       discussions: read
       packages: read
       pages: read
-      pull-requests: write
+      pull-requests: write  # needed when posting the summary
       repository-projects: read
       statuses: read
       models: read # permissions:disable-line
