@@ -7,7 +7,7 @@ A collection of hardened, reusable GitHub Workflows for Go projects with high as
 They don't reinvent the wheel but combine tools and best practices into easy-to-use, modular workflows.
 You're welcome to use them, though they primarily target my own projects and I will adapt them accordingly.
 
-All workflows enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
+All reusable workflows that execute code enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
 - [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
 - [Workflow Suites](#workflow-suites)
@@ -19,9 +19,9 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
+  - [OSS Review Toolkit (ORT)](#oss-review-toolkit-ort)
   - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
-  - [License Check](#license-check)
   - [Do not submit](#do-not-submit)
   - [SonarQube](#sonarqube)
   - [Codecov](#codecov)
@@ -34,7 +34,7 @@ All workflows enforce egress filtering using [Harden-Runner](https://github.com/
 
 The `wf-*.yaml` files in `.github/workflows/` call all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak:
 
-- **`wf-analysis.yaml`** - Code scanning, SAST, linting, governance, etc., assembling all available workflows in this repo
+- **`wf-analysis.yaml`** - Code scanning, SAST, linting, governance and license scans, etc., assembling all available workflows in this repo
 - **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
 
 Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
@@ -43,11 +43,11 @@ Copy these files to your `.github/workflows/` directory and flip the booleans or
 
 ## Workflow Suites
 
-Five orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
+Four orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
 
 ### Code scan suite
 
-Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, and Codecov. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
+Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, Codecov, and DoNotSubmet. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
 
 ```yaml
 jobs:
@@ -58,6 +58,8 @@ jobs:
       security-events: write
       actions: read
     with:
+      # DoNotSubmit
+      do-not-submit: true
       # Semgrep
       semgrep: true
       # CodeQL
@@ -68,10 +70,11 @@ jobs:
       sonarqube-configuration: .github/sonar-project.properties
       sonarqube-coverage: true
       sonarqube-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      sonarqube-coverage-setup-go: true
+      sonarqube-coverage-setup-go: true # set to true when using Go
       # Codecov upload
       codecov: true
       codecov-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      codecov-coverage-file: coverage.out # optional: defaults to coverage.out
       codecov-coverage-setup-go: true # set to true when using Go
       # Govulncheck
       govulncheck: true
@@ -116,37 +119,94 @@ Set `super-linter-enabled-linters` to activate specific validators.
 
 ### Governance Suite
 
-`governance.yaml` bundles project hygiene, compliance, and reporting jobs (dependency review, license audit, Do Not Submit, Scorecard, Codecov). Tokens are passed through the workflow `secrets` block when enabled.
+`governance.yaml` bundles project hygiene, compliance, and reporting jobs (dependency review, license audit, Do Not Submit, OpenSSF Scorecard). Tokens are passed through the workflow `secrets` block when enabled.
 
 ```yaml
 jobs:
-  governance:
-    uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned commit SHA]
-    with:
-      dependency-review: true
-      license-check: true
-      do-not-submit: true
-      scorecard: true
-    secrets:
-      scorecard_token: ${{ secrets.SCORECARD_TOKEN }}
+  Governance:
+  uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned commit SHA]
+  permissions:
+    contents: read
+    security-events: write
+    id-token: write
+    actions: read
+    checks: read
+    attestations: read
+    deployments: read
+    issues: read
+    discussions: read
+    packages: read
+    pages: read
+    pull-requests: write
+    repository-projects: read
+    statuses: read
+    models: read # permissions:disable-line
+    artifact-metadata: read # permissions:disable-line
+  with:
+    # Do Not Submit
+    do-not-submit: true
+    # OpenSSF Scorecard
+    scorecard: true
+    # ---- Baseline PR gate (fast, GitHub-native) ----
+    dependency_review_config_file: ".github/dependency-review-config.yml"
+    allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+    warn_only: false              # set true for a gentle rollout
+    use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
+    run_component_detection: true # submits PR dependency graph for polyglot repos
+
+    # ---- High assurance gate ORT ----
+    ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df"     # optional: pin for a specific policy version of the policy repository
+    ort_config_source: ".github/ort" # optional: additional repo specific configuration directory to use. If you have an .ort.yml config file put it there.
+    ort_config_target: "~/.ort/config" # optional: target directory to stage the policy configuration to, defaults to ~/.ort/config, because that's where ORT looks for it
+    ort_fail_on: "violations"   # fail mode: violations|issues|never
+    ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
+  secrets:
+    # OpenSSF Scorecard token
+    scorecard: ${{ secrets.SCORECARD_TOKEN }}
 ```
+
+When enabling OpenSSF Scorecard ensure the caller job grants the required permissions (see their sections for details).
 
 ### Test Suite
 
-`test-go.yaml` wraps provides Go testing with version matrixing.
+`test-go.yaml` provides Go testing for a single version. Use a matrix in your caller for multiple versions (see Go Tests below).
 It runs `go test -v -race -vet=all ./...` and enforces egress filtering through Harden-Runner.
 
 ```yaml
 jobs:
   tests:
-    uses: bytemare/workflows/.github/workflows/tests.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
     with:
-      go-versions: '["1.25", "1.24", "1.23"]'
+      version: '1.25'
 ```
 
 All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
 
 ## Workflows
+
+### [Codecov](https://github.com/codecov/codecov-action)
+
+Test coverage reporting and tracking with trend analysis.
+
+**Note:** Requires Codecov setup and `CODECOV_TOKEN` repository secret. The default coverage file path is `coverage.out`.
+
+**Configuration:**
+
+```yaml
+jobs:
+  codecov:
+    uses: bytemare/workflows/.github/workflows/codecov.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+    with:
+      coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      coverage-file: coverage.out # optional; defaults to coverage.out
+      coverage-setup-go: true # set to true if you're using Go
+    secrets:
+      token: ${{ secrets.CODECOV_TOKEN }}
+```
+
+---
 
 ### [CodeQL](https://github.com/github/codeql-action)
 
@@ -156,6 +216,7 @@ Advanced semantic code analysis to find security vulnerabilities in Go code.
 
 ```yaml
 jobs:
+  codeql:
     uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned commit SHA]
     with:
       language: go
@@ -163,6 +224,57 @@ jobs:
       actions: read
       contents: read
       security-events: write
+```
+
+---
+
+### [Dependency Review](https://github.com/actions/dependency-review-action)
+
+Prevent introduction of vulnerable or malicious dependencies in pull requests + rapid license check.
+
+**Configuration:**
+
+```yaml
+jobs:
+  dependency-review:
+    uses: bytemare/workflows/.github/workflows/dependency-review.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+    with:
+      allow_spdx: MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0
+      warn_only: false
+      use_pr_comment: true
+      run_component_detection: true
+```
+
+---
+
+### [Do not submit](https://github.com/chainguard-dev/actions/tree/main/donotsubmit)
+
+Reminds you to not submit source that has the string "do not submit" (but in all uppercase letters) in it.
+
+**Configuration:**
+
+```yaml
+jobs:
+  DoNotSubmit:
+    name: Do Not Submit
+    uses: bytemare/workflows/.github/workflows/do-not-submit.yaml@[pinned commit SHA]
+```
+
+---
+
+### [Gitleaks](https://github.com/gitleaks/gitleaks-action)
+
+Detect hardcoded secrets.
+
+```yaml
+jobs:
+  Gitleaks:
+    permissions:
+      contents: read
+      security-events: write
+    uses: bytemare/workflows/.github/workflows/gitleaks.yaml@[pinned commit SHA]
 ```
 
 ---
@@ -185,40 +297,26 @@ jobs:
 
 ---
 
-### [Dependency Review](https://github.com/actions/dependency-review-action)
+### [OSS Review Toolkit (ORT)](https://github.com/oss-review-toolkit/ort)
 
-Prevent introduction of vulnerable or malicious dependencies in pull requests.
+High-assurance license scan to detect license and policy violations.
 
 **Configuration:**
 
 ```yaml
 jobs:
-  dependency-review:
-    uses: bytemare/workflows/.github/workflows/dependency-review.yaml@[pinned commit SHA]
+  ort:
+    uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
+    with:
+      ort_config_repository: https://github.com/your-org/ort-config.git # optional; set it to use your custom ORT policy
+      ort_config_revision: main # optional pin of that policy
+      ort_fail_on: violations
+      ort_cli_args: ""
     permissions:
-      contents: read
-```
-
----
-
-### [Semgrep](https://semgrep.dev/docs/semgrep-ci/sample-ci-configs#sample-github-actions-configuration-file)
-
-Static code analysis tool that finds bugs, detects vulnerabilities, and enforces code standards using customizable rules.
-
-**Note:** Requires Semgrep setup and `SEMGREP_APP_TOKEN` repository secret.
-
-**Configuration:**
-
-```yaml
-jobs:
-  Semgrep:
-  permissions:
-    contents: read
-    # Needed to upload the results to code-scanning dashboard.
-    security-events: write
-  uses: bytemare/workflows/.github/workflows/semgrep.yaml@[pinned commit SHA]
-  secrets:
-    semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
+      contents: write
+      pull-requests: write # required when posting PR comments
+      id-token: write # required for dependency submission
+      actions: read # required for ORT job
 ```
 
 ---
@@ -256,65 +354,30 @@ jobs:
       artifact-metadata: read # permissions:disable-line
 ```
 
+**Note:** OpenSSF Scorecard requires read access to many repository resources to perform comprehensive security analysis. All permissions are read-only except `security-events: write` (for uploading results) and `id-token: write` (for OIDC attestation).
+
 ---
 
-### [License Check](https://github.com/google/golicense)
+---
 
-End-to-end dependency due diligence that works for any language:
+### [Semgrep](https://semgrep.dev/docs/semgrep-ci/sample-ci-configs#sample-github-actions-configuration-file)
 
-- Dependency graph submission on pull requests so GitHub understands PR-only dependencies.
-- Dependency Review with a strict SPDX allow-list (`allow_spdx`) plus optional warn-only and PR summary comment modes.
-- Optional high-assurance ORT analysis (`assurance: high`) that surfaces rule violations.
+Static code analysis tool that finds bugs, detects vulnerabilities, and enforces code standards using customizable rules.
+
+**Note:** Requires Semgrep setup and `SEMGREP_APP_TOKEN` repository secret.
 
 **Configuration:**
 
 ```yaml
 jobs:
-  license-check:
-    uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
-    with:
-      allow_spdx: MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0
-      warn_only: false
-      use_pr_comment: true
-      run_component_detection: true
-      assurance: standard # switch to "high" (or use v* tags) for ORT
-      ort_config_repository: https://github.com/your-org/ort-config.git # required for ORT
-      ort_config_revision: main # optional pin
-      ort_fail_on: violations
-      ort_cli_args: ""
+  Semgrep:
     permissions:
       contents: read
-      pull-requests: write # required when posting PR comments
-```
-
----
-
-### [GitLeaks](https://github.com/gitleaks/gitleaks-action)
-
-Detect hardcoded secrets.
-
-```yaml
-jobs:
-  Gitleaks:
-    permissions:
-      contents: read
+      # Needed to upload the results to code-scanning dashboard.
       security-events: write
-    uses: bytemare/workflows/.github/workflows/gitleaks.yaml@[pinned commit SHA]
-```
-
----
-
-### [Do not submit](https://github.com/chainguard-dev/actions/tree/main/donotsubmit)
-
-Reminds you to not submit source that has the string "do not submit" (but in all uppercase letters) in it.
-
-**Configuration:**
-
-```yaml
-jobs:
-  DoNotSubmit:
-    name: Do Not Submit
-    uses: bytemare/workflows/.github/workflows/do-not-submit.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/semgrep.yaml@[pinned commit SHA]
+    secrets:
+      semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
 ```
 
 ---
@@ -324,9 +387,9 @@ jobs:
 Continuous code quality and security inspection with detailed metrics.
 
 **Notes:**
-- Requires SonarQube setup and `SONAR_TOKEN` repository secret.
+- Requires SonarCloud setup and the `SONAR_TOKEN` repository secret.
 - It's recommended to provide an adapted `sonar-project.properties` configuration file.
-- Coverage is optional; disable it or supply a custom command for non-Go repos.
+- Coverage is optional. You can disable it or supply a custom command for non-Go repos.
 
 **Configuration:**
 
@@ -335,10 +398,10 @@ jobs:
   sonarqube:
     uses: bytemare/workflows/.github/workflows/sonarqube.yaml@[pinned commit SHA]
     with:
-      configuration: ${{ inputs.sonar-configuration }}
-      coverage: false
-      coverage-command: "pytest --cov=."
-      coverage-setup-go: false
+      configuration: .github/sonar-project.properties
+      coverage: true
+      coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      coverage-setup-go: true # set to true if you're using Go
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
       sonar: ${{ secrets.SONAR_TOKEN }}
@@ -349,40 +412,30 @@ jobs:
 
 ---
 
-### [Codecov](https://github.com/codecov/codecov-action)
-
-Test coverage reporting and tracking with trend analysis.
-
-**Note:** Requires Codecov setup and `CODECOV_TOKEN` repository secret.
-
-**Configuration:**
-
-```yaml
-jobs:
-  codecov:
-    uses: bytemare/workflows/.github/workflows/codecov.yaml@[pinned commit SHA]
-    secrets:
-      codecov: ${{ secrets.CODECOV_TOKEN }}
-```
-
----
-
 ### Go Tests
 
-Run your Go test suite with ```go test -v -vet=all ./...```.
+Run your Go test suite with `go test -v -race -vet=all ./...`.
+This is equivalent to copying `wf-go-tests.yaml` from this repo.
 
 **Configuration:**
 
 ```yaml
+name: Go Tests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         go: [ '1.25', '1.24', '1.23' ] # Test against multiple Go versions
-      uses: bytemare/workflows/.github/workflows/wf-tests.yaml@[pinned commit SHA]
-      with:
-        version: ${{ matrix.go }}
+    uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
+    with:
+      version: ${{ matrix.go }}
 ```
 
 ---

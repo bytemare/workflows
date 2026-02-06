@@ -10,17 +10,60 @@
 
 ---
 
-name: 'Dependency Review'
-on: workflow_call
+name: Dependency Review
 
-permissions: { }
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      # Dependency Review
+      allow_spdx:
+        description: "Comma-separated SPDX allow-list"
+        required: false
+        type: string
+        default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      dependency_review_config_file:
+        description: "Path to the Dependency Review configuration file"
+        required: false
+        type: string
+      warn_only:
+        description: "Report but do not fail PRs"
+        required: false
+        type: boolean
+        default: false
+      use_pr_comment:
+        description: "Post summary comment on PR (requires pull-requests: write)"
+        required: false
+        type: boolean
+        default: false
+      run_component_detection:
+        description: "Populate Dependency Graph on PR SHAs (recommended)"
+        required: false
+        type: boolean
+        default: true
 
 jobs:
-  DependencyReview:
+  # Populate Dependency Graph
+  component-detection:
+    name: Component Detection (Dependency Graph Population)
+    if: ${{ inputs.run_component_detection && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph
+      id-token: write   # required by the action (OIDC)
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - name: Component Detection (Dependency Submission)
+        uses: advanced-security/component-detection-dependency-submission-action@386aa5c15429f99d6257060dfbaa057da1e71a43
+
+  dependency-review:
     name: Dependency Review
+    needs: [component-detection]
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write   # needed only when posting the summary
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
@@ -33,10 +76,25 @@ jobs:
             api.securityscorecards.dev:443
             github.com:443
 
-      - name: 'Checkout Repository'
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - name: 'Dependency Review'
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      # If a repo config exists, use it, else use inline defaults
+      - name: Dependency Review (repo config)
+        id: review_cfg
+        if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
         uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
         with:
-          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
-          head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          config-file: ${{ inputs.dependency_review_config_file }}
+          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
+          # base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          # head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
+      - name: Dependency Review (inline defaults)
+        if: ${{ steps.review_cfg.outcome == '' }}
+        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
+        with:
+          allow-licenses: ${{ inputs.allow_spdx }}
+          warn-only: ${{ inputs.warn_only }}
+          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
+          # base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          # head-ref: ${{ github.event.pull_request.head.sha || github.ref }}

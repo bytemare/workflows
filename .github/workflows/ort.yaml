@@ -1,7 +1,7 @@
 #
 # SPDX-License-Identifier: MIT
 #
-# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree or at
@@ -10,43 +10,13 @@
 
 ---
 
-name: License and Dependency Compliance Check
+name: OSS Review Toolkit (ORT)
+
+permissions: {}
 
 on:
   workflow_call:
     inputs:
-      # Dependency Review
-      allow_spdx:
-        description: "Comma-separated SPDX allow-list"
-        required: false
-        type: string
-        default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
-      dependency_review_config_file:
-        description: "Path to the Dependency Review configuration file"
-        required: false
-        type: string
-      warn_only:
-        description: "Report but do not fail PRs"
-        required: false
-        type: boolean
-        default: false
-      use_pr_comment:
-        description: "Post summary comment on PR (requires pull-requests: write)"
-        required: false
-        type: boolean
-        default: false
-      run_component_detection:
-        description: "Populate Dependency Graph on PR SHAs (recommended)"
-        required: false
-        type: boolean
-        default: true
-
-      # ORT
-      assurance:
-        description: "low | standard | high (runs ORT when 'high' or on v* tags)"
-        required: false
-        type: string
-        default: "standard"
       ort_config_repository:
         description: "Optional ORT config repo (global policy, rules)"
         required: false
@@ -78,55 +48,10 @@ on:
         type: string
         default: ""
 
-permissions: {}
-
 jobs:
-  # Populate Dependency Graph
-  component-detection:
-    name: Component Detection (Dependency Graph Population)
-    if: ${{ inputs.run_component_detection && github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph - safe: job-scoped, PR-only, official GH action
-      id-token: write   # required by the action (OIDC)
-    steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - name: Component Detection (Dependency Submission)
-        uses: advanced-security/component-detection-dependency-submission-action@386aa5c15429f99d6257060dfbaa057da1e71a43
-
-  # Fast Dependency Review
-  dependency-review:
-    name: Dependency Review
-    needs: [component-detection]
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write   # needed only when posting the summary
-    steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-
-      # If a repo config exists, use it, else use inline defaults
-      - name: Dependency Review (repo config)
-        id: review_cfg
-        if: ${{ hashFiles('.github/dependency-review-config.yml') != '' }}
-        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
-        with:
-          config-file: ${{ inputs.dependency_review_config_file }}
-          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
-
-      - name: Dependency Review (inline defaults)
-        if: ${{ steps.review_cfg.outcome == '' }}
-        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
-        with:
-          allow-licenses: ${{ inputs.allow_spdx }}
-          warn-only: ${{ inputs.warn_only }}
-          comment-summary-in-pr: ${{ inputs.use_pr_comment && 'on-failure' || 'never' }}
-
-  # High-assurance: ORT end-to-end (Analyzer→Scanner→Evaluator→Reporter)
   ort-high-assurance:
-    name: OSS Review Toolkit (ORT) License Compliance Check
-    if: ${{ (inputs.assurance == 'high' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
+    name: License Compliance Check
+    if: ${{ (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -134,10 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
-      # ORT
-      # Notes:
       # - We stage config into the path ORT expects (by default ~/.ort/config).
-      # - The ORT step is allowed to fail so we can still summarize and annotate findings.
       - name: Stage ORT config
         id: stage_ort_config
         shell: bash
@@ -250,7 +172,7 @@ jobs:
 
       - name: Run ORT
         id: ort_run
-        continue-on-error: true # keep summary/annotations even when ORT reports violations
+        continue-on-error: true # allowed to fail so we can still summarize and annotate findings
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
@@ -274,32 +196,18 @@ jobs:
           echo "::error:: ORT reported violations/issues as per the configured fail-on mode. Check the job annotations for details."
           exit 1
 
-  ort-report:
-    name: Compiling summary for OSS Review Toolkit (ORT)
-    needs: [ort-high-assurance]
-    if: ${{ always() && needs.ort-high-assurance.result != 'skipped' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - name: Download ORT artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          path: ort-artifacts
-          merge-multiple: true
       # Use the local action in this repo so PRs can test changes before a release.
-      - name: Compiling report and posting results (in bytemare/workflows)
+      - name: Compiling report and posting results (if in bytemare/workflows)
         if: ${{ github.repository == 'bytemare/workflows' }}
         uses: ./.github/actions/ort-report
         with:
-          artifact_dir: ort-artifacts
-          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
+          artifact_dir: ${{ github.workspace }}/.ort/results
+          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
+
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ github.repository != 'bytemare/workflows' }}
         uses: bytemare/workflows/.github/actions/ort-report@1466ba17a1610d9b1c1bad52ba6eb19cbbfd6ebd
         with:
-          artifact_dir: ort-artifacts
-          ort_failed: ${{ needs.ort-high-assurance.result == 'failure' }}
+          artifact_dir: ${{ github.workspace }}/.ort/results
+          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}

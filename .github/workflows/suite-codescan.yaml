@@ -17,6 +17,11 @@ permissions: { }
 on:
   workflow_call:
     inputs:
+      do-not-submit:
+        description: 'Run Do Not Submit checks'
+        required: false
+        type: boolean
+        default: false
       semgrep:
         description: 'Run Semgrep'
         required: false
@@ -80,6 +85,11 @@ on:
         description: 'Coverage command executed before Codecov scan'
         required: false
         type: string
+      codecov-coverage-file:
+        description: 'Coverage file path uploaded to Codecov'
+        required: false
+        type: string
+        default: 'coverage.out'
       codecov-coverage-setup-go:
         description: 'Run Go setup before coverage command'
         required: false
@@ -142,6 +152,7 @@ jobs:
     with:
       disable_search: ${{ inputs['codecov-disable-search'] }}
       coverage-command: ${{ inputs['codecov-coverage-command'] }}
+      coverage-file: ${{ inputs['codecov-coverage-file'] }}
       coverage-setup-go: ${{ inputs['codecov-coverage-setup-go'] }}
     secrets:
       token: ${{ secrets.codecov }}
@@ -159,3 +170,9 @@ jobs:
       contents: read
       security-events: write
     uses: ./.github/workflows/gitleaks.yaml
+
+  DoNotSubmit:
+    if: ${{ inputs['do-not-submit'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/do-not-submit.yaml

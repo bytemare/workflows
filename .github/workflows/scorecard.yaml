@@ -26,6 +26,8 @@ jobs:
     name: Scorecard Analysis
     runs-on: ubuntu-latest
     permissions:
+      # Scorecard needs broad read access to inspect repository settings and metadata.
+      # Only security-events and id-token are write scopes (SARIF upload + OIDC).
       # Needed if using Code scanning alerts
       security-events: write
       # Needed for GitHub OIDC token if publish_results is true
@@ -50,6 +52,15 @@ jobs:
             rekor.sigstore.dev:443
             tuf-repo-cdn.sigstore.dev:443
             www.bestpractices.dev:443
+
+      - name: "Verify token is set"
+        env:
+          token: ${{ secrets.scorecard }}
+        run: |
+          if [ -z "$token" ]; then
+            echo "Scorecard requires a PAT when enabled." >&2
+            exit 1
+          fi
 
       - name: "Checkout code"
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
