@@ -9,7 +9,7 @@ You're welcome to use them, though they primarily target my own projects and I w
 
 All reusable workflows that execute code enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
-- [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
+- [Ready-to-use bundled workflows](#ready-to-use-bundled-workflows)
   - [A single top-level workflow to use them all (recommended)](#a-single-top-level-workflow-to-use-them-all-recommended)
   - [Workflow Suites](#workflow-suites)
     - [Code Scan Suite](#code-scan-suite)
