@@ -116,10 +116,10 @@ jobs:
   ORT:
     if: ${{ inputs['ort'] }}
     permissions:
-      contents: write
       pull-requests: write
       id-token: write
       actions: read
+      contents: read
     uses: ./.github/workflows/ort.yaml
     with:
       ort_config_repository: ${{ inputs.ort_config_repository }}
@@ -132,22 +132,24 @@ jobs:
   Scorecard:
     if: ${{ inputs['scorecard'] }}
     permissions:
-      security-events: write
+      # Required when publishing results and OIDC
       id-token: write
+      security-events: write
+      # Read permissions needed for Scorecard to inspect repository settings and metadata.
       actions: read
-      checks: read
+      artifact-metadata: read
       attestations: read
+      checks: read
       contents: read
       deployments: read
-      issues: read
       discussions: read
+      issues: read
+      models: read
       packages: read
       pages: read
       pull-requests: read
       repository-projects: read
       statuses: read
-      models: read
-      artifact-metadata: read # permissions:disable-line
     uses: ./.github/workflows/scorecard.yaml
     secrets:
       token: ${{ secrets.scorecard }}

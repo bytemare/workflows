@@ -10,12 +10,13 @@ You're welcome to use them, though they primarily target my own projects and I w
 All reusable workflows that execute code enforce egress filtering using [Harden-Runner](https://github.com/step-security/harden-runner).
 
 - [Ready-to-use bundled workflows (recommended)](#ready-to-use-bundled-workflows-recommended)
-- [Workflow Suites](#workflow-suites)
-  - [Code Scan Suite](#code-scan-suite)
-  - [Lint Suite](#lint-suite)
-  - [Governance Suite](#governance-suite)
-  - [Test Suite](#test-suite)
-- [Workflows](#workflows)
+  - [A single top-level workflow to use them all (recommended)](#a-single-top-level-workflow-to-use-them-all-recommended)
+  - [Workflow Suites](#workflow-suites)
+    - [Code Scan Suite](#code-scan-suite)
+    - [Lint Suite](#lint-suite)
+    - [Governance Suite](#governance-suite)
+    - [Test Suite](#test-suite)
+- [Individual workflows by tool](#individual-workflows-by-tool)
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
@@ -30,29 +31,28 @@ All reusable workflows that execute code enforce egress filtering using [Harden-
 
 ---
 
-## Ready-to-use bundled workflows (recommended)
+## Ready-to-use bundled workflows
 
-The `wf-*.yaml` files in `.github/workflows/` call all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak:
+### A single top-level workflow to use them all (recommended)
 
-- **`wf-analysis.yaml`** - Code scanning, SAST, linting, governance and license scans, etc., assembling all available workflows in this repo
-- **`wf-release.yaml`** - SLSA Level 3 compliant releases with reproducible builds (SLSA Level 4-ready)
+The [wf-analysis.yaml](.github/workflows/wf-analysis.yaml) calls all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak, including code scanning, SAST, linting, governance and license scans, etc.
 
-Copy these files to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
+Copy that file to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
 
 ---
 
-## Workflow Suites
+### Workflow Suites
 
 Four orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
 
 ### Code scan suite
 
-Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, Codecov, and DoNotSubmet. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
+Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, Codecov, and Do Not Submit. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
 
 ```yaml
 jobs:
   CodeScan:
-    uses: bytemare/workflows/.github/workflows/codescan.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/suite-codescan.yaml@[pinned commit SHA]
     permissions:
       contents: read
       security-events: write
@@ -93,12 +93,12 @@ Tokens are optional. If you enable Semgrep, SonarQube, or Codecov without provid
 
 ### Lint Suite
 
-`lint.yaml` covers formatting and content/style linters across multiple languages (e.g. Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
+`suite-lint.yaml` covers formatting and content/style linters across multiple languages (e.g. Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
 
 ```yaml
 jobs:
   Lint:
-    uses: bytemare/workflows/.github/workflows/lint.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/suite-lint.yaml@[pinned commit SHA]
     permissions:
       contents: read
       packages: read
@@ -119,50 +119,52 @@ Set `super-linter-enabled-linters` to activate specific validators.
 
 ### Governance Suite
 
-`governance.yaml` bundles project hygiene, compliance, and reporting jobs (dependency review, license audit, Do Not Submit, OpenSSF Scorecard). Tokens are passed through the workflow `secrets` block when enabled.
+`suite-governance.yaml` bundles project hygiene, compliance, and reporting jobs (dependency review, ORT license audit, OpenSSF Scorecard). Tokens are passed through the workflow `secrets` block when enabled.
 
 ```yaml
 jobs:
   Governance:
-  uses: bytemare/workflows/.github/workflows/governance.yaml@[pinned commit SHA]
-  permissions:
-    contents: read
-    security-events: write
-    id-token: write
-    actions: read
-    checks: read
-    attestations: read
-    deployments: read
-    issues: read
-    discussions: read
-    packages: read
-    pages: read
-    pull-requests: write
-    repository-projects: read
-    statuses: read
-    models: read # permissions:disable-line
-    artifact-metadata: read # permissions:disable-line
-  with:
-    # Do Not Submit
-    do-not-submit: true
-    # OpenSSF Scorecard
-    scorecard: true
-    # ---- Baseline PR gate (fast, GitHub-native) ----
-    dependency_review_config_file: ".github/dependency-review-config.yml"
-    allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
-    warn_only: false              # set true for a gentle rollout
-    use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
-    run_component_detection: true # submits PR dependency graph for polyglot repos
-
-    # ---- High assurance gate ORT ----
-    ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df"     # optional: pin for a specific policy version of the policy repository
-    ort_config_source: ".github/ort" # optional: additional repo specific configuration directory to use. If you have an .ort.yml config file put it there.
-    ort_config_target: "~/.ort/config" # optional: target directory to stage the policy configuration to, defaults to ~/.ort/config, because that's where ORT looks for it
-    ort_fail_on: "violations"   # fail mode: violations|issues|never
-    ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
-  secrets:
-    # OpenSSF Scorecard token
-    scorecard: ${{ secrets.SCORECARD_TOKEN }}
+    uses: bytemare/workflows/.github/workflows/suite-governance.yaml@[pinned commit SHA]
+    permissions:
+      contents: write
+      security-events: write
+      id-token: write
+      actions: read
+      checks: read
+      attestations: read
+      deployments: read
+      issues: read
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: write
+      repository-projects: read
+      statuses: read
+      models: read
+      artifact-metadata: read
+    with:
+      # OpenSSF Scorecard
+      scorecard: true
+      # Dependency Review
+      dependency-review: true
+      # ORT
+      ort: true
+      # ---- Baseline PR gate (fast, GitHub-native) ----
+      dependency_review_config_file: ".github/dependency-review-config.yaml"
+      allow_spdx: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      warn_only: false              # set true for a gentle rollout
+      use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
+      run_component_detection: true # submits PR dependency graph for polyglot repos
+      # ---- High assurance gate ORT ----
+      ort_config_repository: hhttps://github.com/oss-review-toolkit/ort-config # optional: defaults to https://github.com/oss-review-toolkit/ort-config
+      ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df" # optional pin for policy repository
+      ort_config_source: ".github/ort" # optional repo-specific ORT config directory
+      ort_config_target: "~/.ort/config" # optional ORT config target directory
+      ort_fail_on: "violations" # fail mode: violations|issues|never
+      ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
+    secrets:
+      # OpenSSF Scorecard token
+      scorecard: ${{ secrets.SCORECARD_TOKEN }}
 ```
 
 When enabling OpenSSF Scorecard ensure the caller job grants the required permissions (see their sections for details).
@@ -182,7 +184,7 @@ jobs:
 
 All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
 
-## Workflows
+## Individual workflows by tool
 
 ### [Codecov](https://github.com/codecov/codecov-action)
 
@@ -201,7 +203,7 @@ jobs:
     with:
       coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-file: coverage.out # optional; defaults to coverage.out
-      coverage-setup-go: true # set to true if you're using Go
+      setup-go: true # set to true if you're using Go
     secrets:
       token: ${{ secrets.CODECOV_TOKEN }}
 ```
@@ -239,7 +241,9 @@ jobs:
   dependency-review:
     uses: bytemare/workflows/.github/workflows/dependency-review.yaml@[pinned commit SHA]
     permissions:
-      contents: read
+      contents: write
+      id-token: write
+      pull-requests: write
     with:
       allow_spdx: MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0
       warn_only: false
@@ -306,16 +310,14 @@ High-assurance license scan to detect license and policy violations.
 ```yaml
 jobs:
   ort:
-    uses: bytemare/workflows/.github/workflows/license-check.yaml@[pinned commit SHA]
+    uses: bytemare/workflows/.github/workflows/ort.yaml@[pinned commit SHA]
     with:
       ort_config_repository: https://github.com/your-org/ort-config.git # optional; set it to use your custom ORT policy
       ort_config_revision: main # optional pin of that policy
       ort_fail_on: violations
       ort_cli_args: ""
     permissions:
-      contents: write
-      pull-requests: write # required when posting PR comments
-      id-token: write # required for dependency submission
+      contents: read
       actions: read # required for ORT job
 ```
 
@@ -351,12 +353,10 @@ jobs:
       repository-projects: read
       statuses: read
       models: read
-      artifact-metadata: read # permissions:disable-line
+      artifact-metadata: read
 ```
 
 **Note:** OpenSSF Scorecard requires read access to many repository resources to perform comprehensive security analysis. All permissions are read-only except `security-events: write` (for uploading results) and `id-token: write` (for OIDC attestation).
-
----
 
 ---
 
@@ -401,7 +401,7 @@ jobs:
       configuration: .github/sonar-project.properties
       coverage: true
       coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      coverage-setup-go: true # set to true if you're using Go
+      setup-go: true # set to true if you're using Go
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
       sonar: ${{ secrets.SONAR_TOKEN }}

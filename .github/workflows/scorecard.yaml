@@ -26,13 +26,24 @@ jobs:
     name: Scorecard Analysis
     runs-on: ubuntu-latest
     permissions:
-      # Scorecard needs broad read access to inspect repository settings and metadata.
-      # Only security-events and id-token are write scopes (SARIF upload + OIDC).
-      # Needed if using Code scanning alerts
-      security-events: write
-      # Needed for GitHub OIDC token if publish_results is true
+      # Required when publishing results and OIDC
       id-token: write
-      artifact-metadata: read # permissions:disable-line
+      security-events: write
+      # Read permissions needed for Scorecard to inspect repository settings and metadata.
+      actions: read
+      artifact-metadata: read
+      attestations: read
+      checks: read
+      contents: read
+      deployments: read
+      discussions: read
+      issues: read
+      models: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76

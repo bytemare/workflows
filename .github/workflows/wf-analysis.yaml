@@ -46,21 +46,23 @@ jobs:
     uses: ./.github/workflows/suite-governance.yaml
     permissions:
       contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph
-      id-token: write   # Required for OIDC
+      pull-requests: write  # needed when posting the summary
+      # Required when publishing results and OIDC
+      id-token: write
       security-events: write
+      # Read permissions
       actions: read
-      checks: read
+      artifact-metadata: read
       attestations: read
+      checks: read
       deployments: read
-      issues: read
       discussions: read
+      issues: read
+      models: read
       packages: read
       pages: read
-      pull-requests: write  # needed when posting the summary
       repository-projects: read
       statuses: read
-      models: read # permissions:disable-line
-      artifact-metadata: read # permissions:disable-line
     with:
       # OpenSSF Scorecard
       scorecard: true
@@ -76,6 +78,7 @@ jobs:
       run_component_detection: true # submits PR dependency graph for polyglot repos
 
       # ---- High assurance gate ORT ----
+      ort_config_repository: hhttps://github.com/oss-review-toolkit/ort-config # optional: defaults to https://github.com/oss-review-toolkit/ort-config
       ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df"     # optional: pin for a specific policy version of the policy repository
       ort_config_source: ".github/ort" # optional: additional repo specific configuration directory to use. If you have an .ort.yml config file put it there.
       ort_config_target: "~/.ort/config" # optional: target directory to stage the policy configuration to, defaults to ~/.ort/config, because that's where ORT looks for it
