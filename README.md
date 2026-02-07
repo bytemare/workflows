@@ -156,7 +156,7 @@ jobs:
       use_pr_comment: true          # posts summary on PRs (requires pull-requests: write)
       run_component_detection: true # submits PR dependency graph for polyglot repos
       # ---- High assurance gate ORT ----
-      ort_config_repository: hhttps://github.com/oss-review-toolkit/ort-config # optional: defaults to https://github.com/oss-review-toolkit/ort-config
+      ort_config_repository: https://github.com/oss-review-toolkit/ort-config # optional: defaults to https://github.com/oss-review-toolkit/ort-config
       ort_config_revision: "34c5d317e44e86505d0d257f2c1076deda35d9df" # optional pin for policy repository
       ort_config_source: ".github/ort" # optional repo-specific ORT config directory
       ort_config_target: "~/.ort/config" # optional ORT config target directory
