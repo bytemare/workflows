@@ -82,6 +82,7 @@ jobs:
             [[ -z "$item" ]] && continue
             key=$(normalize "$item")
             echo "${key}=true" >> "$GITHUB_ENV"
+            echo "Enable ${key}"
           done
 
       - name: Run super-linter
