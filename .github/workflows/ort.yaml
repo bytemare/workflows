@@ -61,6 +61,7 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
+          allowed-endpoints: >
             ghcr.io:443
             github.com:443
             hosted-compute-watchdog-prod-eus-01.githubapp.com:443
