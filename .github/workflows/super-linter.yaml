@@ -81,7 +81,7 @@ jobs:
           for item in "${enabled[@]}"; do
             [[ -z "$item" ]] && continue
             key=$(normalize "$item")
-            echo "VALIDATE_${key}=true" >> "$GITHUB_ENV"
+            echo "${key}=true" >> "$GITHUB_ENV"
           done
 
       - name: Run super-linter
