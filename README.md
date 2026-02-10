@@ -112,7 +112,6 @@ jobs:
       super-linter-enabled-linters: |
         VALIDATE_BASH,VALIDATE_BASH_EXEC,VALIDATE_EDITORCONFIG,VALIDATE_ENV,VALIDATE_GITHUB_ACTIONS,VALIDATE_GO_MODULES,VALIDATE_MARKDOWN,VALIDATE_PYTHON,VALIDATE_YAML
       super-linter-rules-path: .github  # optional: defaults to .github
-      super-linter-filter-regex-include: '\.github/.*\.py$'  # optional: include .github/**/*.py files
  ```
 
 Set `super-linter-rules-path` if you have linter configurations.

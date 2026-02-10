@@ -22,16 +22,16 @@ This project publishes Reusable GitHub Workflows and SLSA verification tooling f
    make -C .github release tag=vX.Y.Z
    ```
 
-5**Let automation publish artifacts**
+5. **Let automation publish artifacts**
    - Pushing the tag triggers `.github/workflows/wf-release.yaml`.
    - The workflow builds a source archive, generates a CycloneDX SBOM, records checksums, and uploads an SBOM attestation.
    - A reusable SLSA provenance job attaches the provenance bundle to the release.
    - Monitor the workflow run for success. Confirm that the release contains the tarball, SBOM, and provenance `.intoto.jsonl` assets.
 
-6**Publish notes**
+6. **Publish notes**
    - If the automated release does not include human-readable notes, edit the GitHub release, paste the `CHANGELOG.md` entry, and save.
 
-9**Post-release follow-up**
+7. **Post-release follow-up**
    - Announce the release in the relevant issue or discussion.
    - Triage any downstream reports and start planning the next iteration.
 
