@@ -30,4 +30,4 @@ runs:
         ARTIFACT_DIR: ${{ inputs.artifact_dir }}
         ORT_FAILED: ${{ inputs.ort_failed }}
       run: |
-        python3 "${{ github.action_path }}/ort_report.py"
+        python3 "$GITHUB_WORKSPACE/scripts/ort-report/ort_report.py"
