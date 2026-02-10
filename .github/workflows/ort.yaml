@@ -209,7 +209,7 @@ jobs:
       # Use the local action in this repo so PRs can test changes before a release.
       - name: Compiling report and posting results (if in bytemare/workflows)
         if: ${{ github.repository == 'bytemare/workflows' }}
-        uses: ./.github/actions/ort-report
+        uses: ./actions/ort-report
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
@@ -217,7 +217,7 @@ jobs:
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/.github/actions/ort-report@1466ba17a1610d9b1c1bad52ba6eb19cbbfd6ebd
+        uses: bytemare/workflows/actions/ort-report@1466ba17a1610d9b1c1bad52ba6eb19cbbfd6ebd
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}

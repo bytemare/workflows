@@ -31,11 +31,6 @@ on:
         required: false
         type: string
         default: '.github'
-      filter-regex-include:
-        description: 'Regex to explicitly include files for linting (e.g., to include .github/**/*.py)'
-        required: false
-        type: string
-        default: ''
 
 permissions: { }
 
@@ -95,7 +90,6 @@ jobs:
         env:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true
-          FILTER_REGEX_INCLUDE: ${{ inputs.filter-regex-include }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTIONS_COMMAND_ARGS: >-
             -ignore "unknown permission scope \"models\""
