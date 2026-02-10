@@ -34,7 +34,11 @@ import os
 import re
 import sys
 
-SUMMARY_HEADER = "![OSS Review Toolkit Logo](https://raw.githubusercontent.com/oss-review-toolkit/ort/refs/heads/main/logos/ort.png)"
+SUMMARY_HEADER = (
+    "![OSS Review Toolkit Logo]"
+    "(https://raw.githubusercontent.com/oss-review-toolkit/"
+    "ort/refs/heads/main/logos/ort.png)"
+)
 SUMMARY_OK = "Everything looks good - no policy violations were detected."
 
 # Keep the summary compact for job UI readability.
@@ -42,11 +46,16 @@ MAX_FILES_PER_FINDING = 5
 MAX_ROWS_PER_SECTION = 50
 
 # LicenseRef / NOASSERTION are not part of the allow/deny policy set.
-UNKNOWN_LICENSE_RE = re.compile(r"^(LicenseRef-|NOASSERTION$)", re.IGNORECASE)
+UNKNOWN_LICENSE_RE = re.compile(
+    r"^(?:LicenseRef-|NOASSERTION)$", re.IGNORECASE
+)
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class Finding:
+    """Normalized ORT violation finding with annotation metadata."""
+
     category: str
     status: str
     reason: str
@@ -61,11 +70,25 @@ class Finding:
 
 @dataclass(frozen=True)
 class Resolution:
+    """ORT policy resolution (exception) for a rule violation."""
+
     rule: str
     pkg: str
     message_re: Optional[re.Pattern[str]]
     reason: str
     comment: str
+
+
+@dataclass(frozen=True)
+class ViolationContext:
+    """Context for processing a violation into an annotation."""
+
+    resolution: Optional[Resolution]
+    lic_unknown: bool
+    has_rule: bool
+    has_message: bool
+    message: str
+    severity: str
 
 
 def gh_warning(message: str) -> None:
@@ -129,7 +152,12 @@ def prov_key(prov: Dict[str, Any]) -> str:
     )
 
 
-def files_for(pkg: str, lic: str, scan_by_prov: Dict[str, List[Dict[str, Any]]], pkg_to_prov: Dict[str, Dict[str, Any]]) -> List[str]:
+def files_for(
+    pkg: str,
+    lic: str,
+    scan_by_prov: Dict[str, List[Dict[str, Any]]],
+    pkg_to_prov: Dict[str, Dict[str, Any]],
+) -> List[str]:
     """
     Map a violation to files by:
     - resolving its package provenance
@@ -220,8 +248,14 @@ def _find_in_dir(root: Path, name_contains: str) -> Optional[Path]:
 def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
     """Normalize resolution entries and compile message regexes when valid."""
     raw = (
-        ((data.get("resolved_configuration") or {}).get("resolutions") or {}).get("rule_violations")
-        or ((data.get("resolvedConfiguration") or {}).get("resolutions") or {}).get("ruleViolations")
+        (
+            (data.get("resolved_configuration") or {})
+            .get("resolutions") or {}
+        ).get("rule_violations")
+        or (
+            (data.get("resolvedConfiguration") or {})
+            .get("resolutions") or {}
+        ).get("ruleViolations")
         or []
     )
     resolutions: List[Resolution] = []
@@ -231,7 +265,9 @@ def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
             continue
         rule = str(item.get("rule", "") or "")
         pkg = str(item.get("pkg", "") or "")
-        reason = str(item.get("reason", "policy exception") or "policy exception")
+        reason = str(
+            item.get("reason", "policy exception") or "policy exception"
+        )
         comment = str(item.get("comment", "") or "")
         message_re = None
         if item.get("message"):
@@ -240,12 +276,16 @@ def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
             except re.error:
                 # Ignore invalid regex to avoid failing the whole report.
                 message_re = None
-        resolutions.append(Resolution(rule, pkg, message_re, reason, comment))
+        resolutions.append(
+            Resolution(rule, pkg, message_re, reason, comment)
+        )
 
     return resolutions
 
 
-def resolution_for(violation: Dict[str, Any], resolutions: List[Resolution]) -> Optional[Resolution]:
+def resolution_for(
+    violation: Dict[str, Any], resolutions: List[Resolution]
+) -> Optional[Resolution]:
     """
     Find the first resolution that matches the violation.
 
@@ -266,7 +306,11 @@ def resolution_for(violation: Dict[str, Any], resolutions: List[Resolution]) -> 
     return None
 
 
-def build_scan_index(data: Dict[str, Any]) -> tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Dict[str, Any]]]:
+def build_scan_index(
+    data: Dict[str, Any]
+) -> tuple[
+    Dict[str, List[Dict[str, Any]]], Dict[str, Dict[str, Any]]
+]:
     """
     Build indexes to map package IDs to license finding locations.
 
@@ -320,7 +364,8 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path], ort_fa
 
     violations = rows_for("violation")
     unknowns = rows_for("unknown")
-    accepted = rows_for("accepted")
+    # Note: accepted findings are rendered but don't affect status logic
+    # accepted = rows_for("accepted")
 
     # Make the overall outcome explicit for humans scanning the summary.
     if ort_failed and (violations or unknowns):
@@ -388,7 +433,7 @@ def _write_summary(path: Optional[Path], content: str) -> None:
 
 def emit_annotations(findings: List[Finding], ort_failed: bool) -> None:
     """Emit lightweight annotations for the Checks UI."""
-    # Emit a high-level failure annotation so the reason for failure is obvious.
+    # Emit a high-level failure annotation so reasons are obvious.
     violations = [f for f in findings if f.category == "violation"]
     unknowns = [f for f in findings if f.category == "unknown"]
     if ort_failed and (violations or unknowns):
@@ -408,6 +453,141 @@ def emit_annotations(findings: List[Finding], ort_failed: bool) -> None:
             print(f"::notice::{msg}")
 
 
+def _classify_violation(
+    res: Optional[Resolution],
+    lic_unknown: bool,
+    has_rule: bool,
+    has_message: bool,
+) -> tuple[str, str]:
+    """Determine violation category and status."""
+    if res is not None:
+        return "accepted", "Accepted"
+    if lic_unknown or (not has_rule and not has_message):
+        return "unknown", "Unknown"
+    return "violation", "Violation"
+
+
+def _determine_reason(
+    res: Optional[Resolution],
+    lic_unknown: bool,
+    has_rule: bool,
+    has_message: bool,
+) -> str:
+    """Determine the reason text for a violation."""
+    if res is not None:
+        reason = res.reason
+        if res.comment:
+            reason = f"{reason}: {res.comment}"
+        return reason
+    if lic_unknown:
+        return "License not covered by policy"
+    if not has_rule and not has_message:
+        return "Missing rule or message"
+    return "Not accepted by policy"
+
+
+def _extract_field(field: Any, dict_keys: List[str]) -> str:
+    """Extract a field that may be a string or dict with fallback keys."""
+    if isinstance(field, dict):
+        for key in dict_keys:
+            if val := field.get(key):
+                return str(val)
+        return ""
+    return str(field or "")
+
+
+def _format_file_cell(files: List[str]) -> str:
+    """Format file locations into a table cell with overflow indicator."""
+    if not files:
+        return "n/a"
+    file_cell = "<br>".join(files[:MAX_FILES_PER_FINDING])
+    if len(files) > MAX_FILES_PER_FINDING:
+        file_cell += f"<br>... (+{len(files) - MAX_FILES_PER_FINDING})"
+    return file_cell
+
+
+def _build_annotation(ctx: ViolationContext) -> tuple[str, str]:
+    """Build annotation message and severity level."""
+    if ctx.resolution is not None:
+        annotation_msg = (
+            f"✅ Accepted: {ctx.message or 'ORT violation'} "
+            f"({ctx.resolution.reason}) {ctx.resolution.comment}"
+        ).strip()
+        return annotation_msg, "notice"
+
+    if ctx.lic_unknown:
+        return (
+            f"❓ Unknown license: {ctx.message or 'ORT finding'}",
+            "warning",
+        )
+
+    if not ctx.has_rule and not ctx.has_message:
+        return (
+            "❓ Unknown ORT finding: missing rule/message fields.",
+            "warning",
+        )
+
+    annotation_msg = f"❌ {ctx.message or 'ORT violation'}"
+    sev_upper = str(ctx.severity).upper()
+    if sev_upper == "ERROR":
+        return annotation_msg, "error"
+    if sev_upper == "WARNING":
+        return annotation_msg, "warning"
+    return annotation_msg, "notice"
+
+
+def _process_violation(
+    violation: Dict[str, Any],
+    resolutions: List[Resolution],
+    scan_by_prov: Dict[str, Any],
+    pkg_to_prov: Dict[str, str],
+) -> Finding:
+    """Process a single violation into a Finding."""
+    res = resolution_for(violation, resolutions)
+    lic = license_id(violation)
+    lic_unknown = is_unknown_license(lic)
+    has_rule = bool(violation.get("rule"))
+    has_message = bool(violation.get("message"))
+
+    category, status = _classify_violation(
+        res, lic_unknown, has_rule, has_message
+    )
+
+    severity = violation.get("severity") or violation.get("level") or ""
+    message = violation.get("message") or violation.get("description") or ""
+
+    annotation_msg, annotation_sev = _build_annotation(
+        ViolationContext(
+            resolution=res,
+            lic_unknown=lic_unknown,
+            has_rule=has_rule,
+            has_message=has_message,
+            message=message,
+            severity=severity,
+        )
+    )
+
+    return Finding(
+        category=category,
+        status=status,
+        reason=_determine_reason(res, lic_unknown, has_rule, has_message),
+        rule=str(_extract_field(violation.get("rule"), ["name", "id"]) or ""),
+        license=lic,
+        files=_format_file_cell(
+            files_for(
+                str(_extract_field(violation.get("pkg"), ["id"]) or ""),
+                lic,
+                scan_by_prov,
+                pkg_to_prov,
+            )
+        ),
+        severity=str(severity or ""),
+        message=str(message),
+        annotation_message=annotation_msg,
+        annotation_severity=annotation_sev,
+    )
+
+
 def build_findings(data: Dict[str, Any]) -> List[Finding]:
     """
     Convert ORT evaluation data into normalized findings.
@@ -421,114 +601,46 @@ def build_findings(data: Dict[str, Any]) -> List[Finding]:
     scan_by_prov, pkg_to_prov = build_scan_index(data)
     violations = collect_violations(data)
 
-    findings: List[Finding] = []
-
-    for violation in violations:
-        res = resolution_for(violation, resolutions)
-        lic = license_id(violation)
-        lic_unknown = is_unknown_license(lic)
-        has_rule = bool(violation.get("rule"))
-        has_message = bool(violation.get("message"))
-
-        if res is not None:
-            category = "accepted"
-            status = "Accepted"
-        elif lic_unknown or (not has_rule and not has_message):
-            category = "unknown"
-            status = "Unknown"
-        else:
-            category = "violation"
-            status = "Violation"
-
-        if res is not None:
-            reason = res.reason
-            if res.comment:
-                reason = f"{reason}: {res.comment}"
-        elif lic_unknown:
-            reason = "License not covered by policy"
-        elif not has_rule and not has_message:
-            reason = "Missing rule or message"
-        else:
-            reason = "Not accepted by policy"
-
-        rule = violation.get("rule")
-        if isinstance(rule, dict):
-            rule = rule.get("name") or rule.get("id") or ""
-
-        pkg = violation.get("pkg")
-        if isinstance(pkg, dict):
-            pkg = pkg.get("id") or ""
-
-        severity = violation.get("severity") or violation.get("level") or ""
-        # License matching is substring-based; this mirrors how ORT emits license expressions.
-        files = files_for(str(pkg or ""), lic, scan_by_prov, pkg_to_prov)
-        if files:
-            file_cell = "<br>".join(files[:MAX_FILES_PER_FINDING])
-            if len(files) > MAX_FILES_PER_FINDING:
-                file_cell += f"<br>... (+{len(files) - MAX_FILES_PER_FINDING})"
-        else:
-            file_cell = "n/a"
-
-        message = violation.get("message") or violation.get("description") or ""
-
-        if res is not None:
-            annotation_msg = (
-                f"✅ Accepted: {message or 'ORT violation'} ({res.reason}) {res.comment}".strip()
-            )
-            annotation_sev = "notice"
-        elif lic_unknown:
-            annotation_msg = f"❓ Unknown license: {message or 'ORT finding'}"
-            annotation_sev = "warning"
-        elif not has_rule and not has_message:
-            annotation_msg = "❓ Unknown ORT finding: missing rule/message fields."
-            annotation_sev = "warning"
-        else:
-            annotation_msg = f"❌ {message or 'ORT violation'}"
-            sev_upper = str(severity).upper()
-            if sev_upper == "ERROR":
-                annotation_sev = "error"
-            elif sev_upper == "WARNING":
-                annotation_sev = "warning"
-            else:
-                annotation_sev = "notice"
-
-        findings.append(
-            Finding(
-                category=category,
-                status=status,
-                reason=reason,
-                rule=str(rule or ""),
-                license=lic,
-                files=file_cell,
-                severity=str(severity or ""),
-                message=str(message),
-                annotation_message=annotation_msg,
-                annotation_severity=annotation_sev,
-            )
-        )
-
-    return findings
+    return [
+        _process_violation(v, resolutions, scan_by_prov, pkg_to_prov)
+        for v in violations
+    ]
 
 
 def main() -> int:
-    """Entry point for the composite action."""
+    """
+    Entry point for the composite action.
+
+    Returns:
+        0 on success, 1 on critical error (missing files, parse failures).
+    """
     artifact_dir = os.environ.get("ARTIFACT_DIR", "ort-artifacts")
     ort_failed = os.environ.get("ORT_FAILED", "false").lower() == "true"
 
     eval_path = find_eval_json(artifact_dir)
     if not eval_path:
-        gh_warning("ORT evaluation result not found in artifacts or common ORT paths.")
+        msg = (
+            "ORT evaluation result not found in artifacts "
+            "or common ORT paths."
+        )
+        gh_warning(msg)
         if ort_failed:
-            gh_error("ORT run failed and evaluation-result.json was not found. Check ORT logs for details.")
-        return 0
+            gh_error(
+                "ORT run failed and evaluation-result.json was not found. "
+                "Check ORT logs for details."
+            )
+            return 1  # Critical: ORT failed and no results to report
+        return 0  # ORT succeeded but no results file (unusual but not fatal)
 
     data = load_json(eval_path)
     if data is None:
-        return 0
+        return 1  # Critical: Failed to parse evaluation results
 
     findings = build_findings(data)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    render_summary(findings, Path(summary_path) if summary_path else None, ort_failed)
+    render_summary(
+        findings, Path(summary_path) if summary_path else None, ort_failed
+    )
     emit_annotations(findings, ort_failed)
     return 0
 
