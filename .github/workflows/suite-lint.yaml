@@ -39,6 +39,10 @@ on:
         description: 'Path to custom linter rules for Super-Linter'
         required: false
         type: string
+      super-linter-filter-regex-include:
+        description: 'Regex to explicitly include files for linting'
+        required: false
+        type: string
 
 permissions: { }
 
@@ -91,3 +95,4 @@ jobs:
       validate-all-codebase: ${{ inputs['super-linter-validate-all-codebase'] }}
       enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
       linter-rules-path: ${{ inputs['super-linter-rules-path'] }}
+      filter-regex-include: ${{ inputs['super-linter-filter-regex-include'] }}
