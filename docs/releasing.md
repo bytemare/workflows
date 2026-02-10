@@ -17,29 +17,21 @@ This project publishes Reusable GitHub Workflows and SLSA verification tooling f
 
    Run the validation suite as described in [CONTRIBUTING.md §5](../.github/CONTRIBUTING.md#5-quality-checks).
 
-4. **Tag the release**
+4. **Tag and publish a new release**
    ```bash
-   git commit -am "chore: cut X.Y.Z"
-   git tag -s vX.Y.Z
-   ```
-   - If signing keys are unavailable, create a lightweight tag (`git tag vX.Y.Z`).
-
-5. **Push to GitHub**
-   ```bash
-    git push origin main
-    git push origin vX.Y.Z
+   make -C .github release tag=vX.Y.Z
    ```
 
-6. **Let automation publish artifacts**
+5**Let automation publish artifacts**
    - Pushing the tag triggers `.github/workflows/wf-release.yaml`.
    - The workflow builds a source archive, generates a CycloneDX SBOM, records checksums, and uploads an SBOM attestation.
    - A reusable SLSA provenance job attaches the provenance bundle to the release.
    - Monitor the workflow run for success. Confirm that the release contains the tarball, SBOM, and provenance `.intoto.jsonl` assets.
 
-7. **Publish notes**
+6**Publish notes**
    - If the automated release does not include human-readable notes, edit the GitHub release, paste the `CHANGELOG.md` entry, and save.
 
-8. **Post-release follow-up**
+9**Post-release follow-up**
    - Announce the release in the relevant issue or discussion.
    - Triage any downstream reports and start planning the next iteration.
 
