@@ -17,14 +17,14 @@ on:
     tags:
       - '*.*.*'      # run when a semver tag is pushed
       - 'v*.*.*'    # run when a semver tag starting with v (e.g. v1.2.3) is pushed
-  workflow_dispatch: {} # allow manual runs
-  pull_request: {}      # allow running in PR for dry-runs
+  workflow_dispatch: { } # allow manual runs
+  pull_request: { }      # allow running in PR for dry-runs
 
-permissions: {}
+permissions: { }
 
 jobs:
   Release:
-    uses: bytemare/slsa/.github/workflows/slsa.yaml@253d5354213b2ebd0200757a2059d70403e6754d
+    uses: bytemare/slsa/.github/workflows/slsa.yaml@c4408bb5340be24e6b2abb55bc08d526fce03c7a
     with:
       dry_run: ${{ github.event_name == 'pull_request' }}
       create_release: ${{ github.event_name != 'pull_request' }}
