@@ -152,6 +152,33 @@ def prov_key(prov: Dict[str, Any]) -> str:
     )
 
 
+def _extract_file_path(entry: Dict[str, Any], lic: str) -> Optional[str]:
+    """Extract file path from scan entry if it matches the license."""
+    entry_license = str(entry.get("license", "") or "")
+    if lic not in entry_license:
+        return None
+
+    loc = entry.get("location") or {}
+    path = str(loc.get("path", "") or "")
+    if not path or path.startswith(".github/ort/"):
+        return None
+
+    if "start_line" in loc and "end_line" in loc:
+        return f"{path}:{loc['start_line']}-{loc['end_line']}"
+    return path
+
+
+def _deduplicate_preserving_order(items: List[str]) -> List[str]:
+    """Remove duplicates while preserving order."""
+    seen = set()
+    result: List[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
 def files_for(
     pkg: str,
     lic: str,
@@ -171,32 +198,11 @@ def files_for(
         return []
 
     entries = scan_by_prov.get(prov_key(prov), [])
-    matches: List[str] = []
-
-    for entry in entries:
-        entry_license = str(entry.get("license", "") or "")
-        if lic not in entry_license:
-            continue
-        loc = entry.get("location") or {}
-        path = str(loc.get("path", "") or "")
-        if not path:
-            continue
-        # Avoid surfacing config file lines in the report.
-        if path.startswith(".github/ort/"):
-            continue
-        if "start_line" in loc and "end_line" in loc:
-            matches.append(f"{path}:{loc['start_line']}-{loc['end_line']}")
-        else:
-            matches.append(path)
-
-    # Preserve order while removing duplicates.
-    seen = set()
-    uniq: List[str] = []
-    for item in matches:
-        if item not in seen:
-            seen.add(item)
-            uniq.append(item)
-    return uniq
+    matches = [
+        path for entry in entries
+        if (path := _extract_file_path(entry, lic)) is not None
+    ]
+    return _deduplicate_preserving_order(matches)
 
 
 def load_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -245,9 +251,9 @@ def _find_in_dir(root: Path, name_contains: str) -> Optional[Path]:
     return None
 
 
-def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
-    """Normalize resolution entries and compile message regexes when valid."""
-    raw = (
+def _extract_resolutions_raw(data: Dict[str, Any]) -> List[Any]:
+    """Extract raw resolutions list from ORT data structure."""
+    return (
         (
             (data.get("resolved_configuration") or {})
             .get("resolutions") or {}
@@ -258,29 +264,39 @@ def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
         ).get("ruleViolations")
         or []
     )
-    resolutions: List[Resolution] = []
 
-    for item in to_list(raw):
-        if not isinstance(item, dict):
-            continue
-        rule = str(item.get("rule", "") or "")
-        pkg = str(item.get("pkg", "") or "")
-        reason = str(
-            item.get("reason", "policy exception") or "policy exception"
-        )
-        comment = str(item.get("comment", "") or "")
-        message_re = None
-        if item.get("message"):
-            try:
-                message_re = re.compile(str(item["message"]))
-            except re.error:
-                # Ignore invalid regex to avoid failing the whole report.
-                message_re = None
-        resolutions.append(
-            Resolution(rule, pkg, message_re, reason, comment)
-        )
 
-    return resolutions
+def _compile_message_regex(message: Optional[str]) -> Optional[re.Pattern[str]]:
+    """Compile message string to regex, returning None on error."""
+    if not message:
+        return None
+    try:
+        return re.compile(str(message))
+    except re.error:
+        return None
+
+
+def _parse_resolution_item(item: Dict[str, Any]) -> Optional[Resolution]:
+    """Parse a single resolution item from ORT data."""
+    if not isinstance(item, dict):
+        return None
+
+    return Resolution(
+        rule=str(item.get("rule", "") or ""),
+        pkg=str(item.get("pkg", "") or ""),
+        message_re=_compile_message_regex(item.get("message")),
+        reason=str(item.get("reason", "policy exception") or "policy exception"),
+        comment=str(item.get("comment", "") or ""),
+    )
+
+
+def normalize_resolutions(data: Dict[str, Any]) -> List[Resolution]:
+    """Normalize resolution entries and compile message regexes when valid."""
+    raw = _extract_resolutions_raw(data)
+    return [
+        res for item in to_list(raw)
+        if (res := _parse_resolution_item(item)) is not None
+    ]
 
 
 def resolution_for(
@@ -306,6 +322,27 @@ def resolution_for(
     return None
 
 
+def _index_scan_results(scan_results: List[Any]) -> Dict[str, List[Dict[str, Any]]]:
+    """Build provenance key to licenses mapping."""
+    scan_by_prov: Dict[str, List[Dict[str, Any]]] = {}
+    for sr in scan_results:
+        if not isinstance(sr, dict):
+            continue
+        key = prov_key(sr.get("provenance", {}) or {})
+        licenses = ((sr.get("summary") or {}).get("licenses")) or []
+        scan_by_prov.setdefault(key, []).extend(to_list(licenses))
+    return scan_by_prov
+
+
+def _index_provenances(provenances: List[Any]) -> Dict[str, Dict[str, Any]]:
+    """Build package ID to provenance mapping."""
+    pkg_to_prov: Dict[str, Dict[str, Any]] = {}
+    for prov in provenances:
+        if isinstance(prov, dict) and (pkg_id := prov.get("id")):
+            pkg_to_prov[str(pkg_id)] = prov.get("package_provenance") or {}
+    return pkg_to_prov
+
+
 def build_scan_index(
     data: Dict[str, Any]
 ) -> tuple[
@@ -316,26 +353,11 @@ def build_scan_index(
 
     This uses ORT scanner summary data, which is best-effort and may be incomplete.
     """
-    scan_results = ((data.get("scanner") or {}).get("scan_results")) or []
-    provenances = ((data.get("scanner") or {}).get("provenances")) or []
+    scanner = data.get("scanner") or {}
+    scan_results = scanner.get("scan_results") or []
+    provenances = scanner.get("provenances") or []
 
-    scan_by_prov: Dict[str, List[Dict[str, Any]]] = {}
-    for sr in scan_results:
-        if not isinstance(sr, dict):
-            continue
-        key = prov_key(sr.get("provenance", {}) or {})
-        licenses = ((sr.get("summary") or {}).get("licenses")) or []
-        scan_by_prov.setdefault(key, []).extend(to_list(licenses))
-
-    pkg_to_prov: Dict[str, Dict[str, Any]] = {}
-    for prov in provenances:
-        if not isinstance(prov, dict):
-            continue
-        pkg_id = prov.get("id")
-        if pkg_id:
-            pkg_to_prov[str(pkg_id)] = prov.get("package_provenance") or {}
-
-    return scan_by_prov, pkg_to_prov
+    return _index_scan_results(scan_results), _index_provenances(provenances)
 
 
 def collect_violations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
