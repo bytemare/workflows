@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    uses: bytemare/slsa/.github/workflows/verify.yaml@c4408bb5340be24e6b2abb55bc08d526fce03c7a
+    uses: bytemare/slsa/.github/workflows/verify.yaml@1fc2c7bc6958013627d4630122f83d09819cd083
     with:
       repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
