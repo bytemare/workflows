@@ -1,4 +1,5 @@
-.PHONY: release
+.PHONY: release coverage
+
 release:
 	@echo "Creating a new release ..."\
 	@tag=$${tag:-};\
@@ -12,3 +13,26 @@ release:
 		exit 1;\
 	fi;\
 	git push origin "$$tag"
+
+# Generate coverage reports for Go and Python code
+coverage:
+	@echo "Generating Go coverage..."
+	@cd .. && go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+	@echo ""
+	@echo "Generating Python coverage..."
+	@cd .. && \
+		if [ ! -d ".venv" ]; then \
+			python3 -m venv .venv; \
+		fi && \
+		. .venv/bin/activate && \
+		pip install --quiet -r tests/requirements-test.txt && \
+		pytest tests/test_ort_report.py \
+			--cov=scripts/ort-report \
+			--cov-report=xml \
+			--cov-report=term \
+			--quiet && \
+		deactivate
+	@echo ""
+	@echo "Coverage reports generated:"
+	@echo "  - coverage.out (Go)"
+	@echo "  - coverage.xml (Python)"

@@ -47,7 +47,7 @@ MAX_ROWS_PER_SECTION = 50
 
 # LicenseRef / NOASSERTION are not part of the allow/deny policy set.
 UNKNOWN_LICENSE_RE = re.compile(
-    r"^(?:LicenseRef-|NOASSERTION)$", re.IGNORECASE
+    r"^(?:LicenseRef-.*|NOASSERTION)$", re.IGNORECASE
 )
 
 

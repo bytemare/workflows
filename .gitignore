@@ -14,4 +14,19 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.pytest_cache/
+coverage.xml
+.coverage
+htmlcov/
+.venv/
+
+# IDE
 .idea
+
+# Logs
+logs.txt

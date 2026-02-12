@@ -21,7 +21,7 @@ on:
       mode:
         description: 'Verification mode ("quick", "full", or "full,reproduce")'
         required: false
-        default: full,reproduce
+        default: full
       emit_vsa:
         description: 'Emit VSA during verification (true/false)'
         type: boolean
@@ -34,12 +34,12 @@ jobs:
   verify:
     name: Verify release
     permissions:
-      contents: write
+      contents: read
       id-token: write
-    uses: bytemare/slsa/.github/workflows/verify.yaml@c4408bb5340be24e6b2abb55bc08d526fce03c7a
+    uses: bytemare/slsa/.github/workflows/slsa.yaml@a638ca51c91992a56c556a86e3d48a7b07a855b6
     with:
+      workflow_ref: a638ca51c91992a56c556a86e3d48a7b07a855b6
       repo: ${{ github.repository }}
       tag: ${{ github.event.inputs.tag }}
       mode: ${{ github.event.inputs.mode || 'full' }}
       emit_vsa: ${{ github.event.inputs.emit_vsa }}
-      workflow_ref: ${{ github.sha }}

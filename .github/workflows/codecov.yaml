@@ -73,6 +73,8 @@ jobs:
               cli.codecov.io:443
               ingest.codecov.io:443
               o26192.ingest.us.sentry.io:443
+              files.pythonhosted.org:443
+              pypi.org:443
 
       - name: Checkout repository
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
