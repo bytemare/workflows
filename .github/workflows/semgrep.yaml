@@ -35,6 +35,8 @@ jobs:
         uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
           egress-policy: block
+          allowed-endpoints: >
+            semgrep.dev:443
 
       - name: Ensure Semgrep token is available
         env:
