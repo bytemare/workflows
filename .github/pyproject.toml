@@ -1,5 +1,5 @@
 [tool.pytest.ini_options]
-testpaths = ["../tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -10,7 +10,8 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["../scripts/ort-report"]
+source = ["scripts/ort-report"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
@@ -22,4 +23,5 @@ show_missing = true
 skip_covered = false
 
 [tool.coverage.xml]
-output = "../coverage.xml"
+output = "coverage.xml"
+
