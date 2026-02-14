@@ -197,6 +197,22 @@ jobs:
           ort-cli-args: ${{ inputs.ort_cli_args }}
           ort-config-path: ${{ steps.stage_ort_config.outputs.target }}
 
+      # Use the local action in this repo so PRs can test changes before a release.
+      - name: Compiling report and posting results (if in bytemare/workflows)
+        if: ${{ always() && github.repository == 'bytemare/workflows' }}
+        uses: ./actions/ort-report
+        with:
+          artifact_dir: ${{ github.workspace }}/.ort/results
+          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
+
+      # Use a pinned version for third-party consumers
+      - name: Compiling report and posting results
+        if: ${{ always() && github.repository != 'bytemare/workflows' }}
+        uses: bytemare/workflows/actions/ort-report@f59fbc62c9788357c171183d6e08973b7d2d4eda
+        with:
+          artifact_dir: ${{ github.workspace }}/.ort/results
+          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
+
       - name: Fail if ORT run failed
         # ORT runs with continue-on-error so we can emit summaries/annotations first.
         # This step restores failure status for the job when ORT failed.
@@ -205,19 +221,3 @@ jobs:
         run: |
           echo "::error:: ORT reported violations/issues as per the configured fail-on mode. Check the job annotations for details."
           exit 1
-
-      # Use the local action in this repo so PRs can test changes before a release.
-      - name: Compiling report and posting results (if in bytemare/workflows)
-        if: ${{ github.repository == 'bytemare/workflows' }}
-        uses: ./actions/ort-report
-        with:
-          artifact_dir: ${{ github.workspace }}/.ort/results
-          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
-
-      # Use a pinned version for third-party consumers
-      - name: Compiling report and posting results
-        if: ${{ github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/actions/ort-report@f59fbc62c9788357c171183d6e08973b7d2d4eda
-        with:
-          artifact_dir: ${{ github.workspace }}/.ort/results
-          ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
