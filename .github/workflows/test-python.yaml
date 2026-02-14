@@ -55,7 +55,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/test_ort_report.py \
+          pytest -c .github/pyproject.toml tests/test_ort_report.py \
             --cov=scripts/ort-report \
             --cov-report=xml \
             --cov-report=term \
