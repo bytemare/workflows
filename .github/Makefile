@@ -17,7 +17,7 @@ release:
 # Generate coverage reports for Go and Python code
 coverage:
 	@echo "Generating Go coverage..."
-	@cd .. && go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+	@go test -v -race -covermode=atomic -coverpkg=../... -coverprofile=coverage.out ../
 	@echo ""
 	@echo "Generating Python coverage..."
 	@cd .. && \
@@ -26,7 +26,7 @@ coverage:
 		fi && \
 		. .venv/bin/activate && \
 		pip install --quiet -r tests/requirements-test.txt && \
-		pytest tests/test_ort_report.py \
+		pytest -c .github/pyproject.toml tests/test_ort_report.py \
 			--cov=scripts/ort-report \
 			--cov-report=xml \
 			--cov-report=term \
