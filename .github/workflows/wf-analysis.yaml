@@ -106,7 +106,7 @@ jobs:
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
       sonarqube-coverage: true
-      sonarqube-coverage-command: "make -C .github coverage"
+      sonarqube-coverage-command: "make -C .github go-coverage python-coverage"
       sonarqube-setup-go: true
       # Govulncheck
       govulncheck: true
@@ -114,7 +114,7 @@ jobs:
       gitleaks: true
       # Codecov upload
       codecov: true
-      codecov-coverage-command: "make -C .github coverage"
+      codecov-coverage-command: "make -C .github go-coverage python-coverage"
       codecov-setup-go: true
     secrets:
       # Semgrep token
