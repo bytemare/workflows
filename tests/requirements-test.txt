@@ -1,3 +1,26 @@
-# Python testing dependencies
-pytest>=8.0.0
-pytest-cov>=4.1.0
+# Python testing dependencies with cryptographic hashes for supply chain security
+# Install with: pip install --require-hashes --only-binary :all: -r requirements-test.txt
+# To update: download new wheels, generate hashes with `pip hash`, and update this file
+
+# Renovate may update these dependencies, but will not update the hashes.
+# We could add a workflow to automatically update the hashes when dependencies are updated, but for now we will update them manually when needed.
+
+# Direct dependencies
+pytest==9.0.2 \
+    --hash=sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b
+pytest-cov==7.0.0 \
+    --hash=sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861
+
+# Transitive dependencies (required when using --require-hashes)
+coverage==7.13.4 \
+    --hash=sha256:8e264226ec98e01a8e1054314af91ee6cde0eacac4f465cc93b03dbe0bce2fd7 \
+    --hash=sha256:29e3220258d682b6226a9b0925bc563ed9a1ebcff3cad30f043eceea7eaf2689 \
+    --hash=sha256:d490ba50c3f35dd7c17953c68f3270e7ccd1c6642e2d2afe2d8e720b98f5a053
+iniconfig==2.3.0 \
+    --hash=sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12
+packaging==26.0 \
+    --hash=sha256:b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529
+pluggy==1.6.0 \
+    --hash=sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746
+pygments==2.19.2 \
+    --hash=sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b
