@@ -38,15 +38,6 @@ jobs:
           allowed-endpoints: >
             semgrep.dev:443
 
-      - name: Ensure Semgrep token is available
-        env:
-          token: ${{ secrets.semgrep }}
-        run: |
-          if [ -z "$token" ]; then
-            echo "Semgrep requires SEMGREP_APP_TOKEN when enabled." >&2
-            exit 1
-          fi
-
       - name: Checkout repo
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 

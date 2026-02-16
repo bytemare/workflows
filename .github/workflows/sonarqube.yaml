@@ -51,15 +51,6 @@ jobs:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
     steps:
-      - name: Ensure SonarQube token is available
-        env:
-          token: ${{ secrets.sonar }}
-        run: |
-          if [ -z "$token" ]; then
-            echo "SonarQube token is required when running this job." >&2
-            exit 1
-          fi
-
       - name: Harden Runner
         uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
         with:
