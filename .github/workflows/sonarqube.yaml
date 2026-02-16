@@ -28,7 +28,7 @@ on:
         description: "Command used to generate coverage data"
         type: string
         required: false
-      coverage-setup-go:
+      setup-go:
         description: "Run Go toolchain setup before coverage command"
         type: boolean
         required: false
@@ -77,6 +77,8 @@ jobs:
               ea6ne4j2sb.execute-api.eu-central-1.amazonaws.com:443
               scanner.sonarcloud.io:443
               sonarcloud.io:443
+              files.pythonhosted.org:443
+              pypi.org:443
 
       - name: Validate coverage config
         if: ${{ inputs.coverage }}
@@ -91,8 +93,8 @@ jobs:
           fi
 
       - name: Init go
-        if: ${{ inputs.coverage && inputs['coverage-setup-go'] }}
-        uses: bytemare/actions/init-go@632e91df0441cb63611b4909d8e33550cf0b5835
+        if: ${{ inputs.coverage && inputs['setup-go'] }}
+        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
         with:
           go-version: '1.25'
           go-mod: 'go.mod'

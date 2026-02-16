@@ -1,0 +1,155 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2025 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Governance Suite
+
+on:
+  workflow_call:
+    inputs:
+      scorecard:
+        description: 'Run OpenSSF Scorecard'
+        required: false
+        type: boolean
+        default: false
+      dependency-review:
+        description: 'Run Dependency Review'
+        required: false
+        type: boolean
+        default: false
+      ort:
+        description: 'Run OSS Review Toolkit (ORT) license compliance checks'
+        required: false
+        type: boolean
+        default: false
+      # License check passthrough inputs
+      allow_spdx:
+        description: "Comma-separated SPDX allow-list"
+        required: false
+        type: string
+        default: "MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense,CC0-1.0"
+      dependency_review_config_file:
+        description: "Path to the Dependency Review configuration file"
+        required: false
+        type: string
+      warn_only:
+        description: "Report but do not fail PRs"
+        required: false
+        type: boolean
+        default: false
+      use_pr_comment:
+        description: "Post summary comment on PR (requires pull-requests: write)"
+        required: false
+        type: boolean
+        default: false
+      run_component_detection:
+        description: "Populate Dependency Graph on PR SHAs (recommended)"
+        required: false
+        type: boolean
+        default: true
+      assurance:
+        description: "low | standard | high (runs ORT when 'high' or on v* tags)"
+        required: false
+        type: string
+        default: "standard"
+      ort_config_repository:
+        description: "Optional ORT config repo (global policy, rules)"
+        required: false
+        type: string
+        default: "https://github.com/oss-review-toolkit/ort-config"
+      ort_config_revision:
+        description: "Optional ref/commit for ORT config repo"
+        required: false
+        type: string
+        default: "34c5d317e44e86505d0d257f2c1076deda35d9df"
+      ort_config_source:
+        description: "Source path for ORT config files (relative to workspace, or absolute. Job fails if provided and missing)"
+        required: false
+        type: string
+        default: ""
+      ort_config_target:
+        description: "Target directory for ORT config files (supports ~ for HOME. Must not exist)"
+        required: false
+        type: string
+        default: "~/.ort/config"
+      ort_fail_on:
+        description: "Fail-on mode for ORT (violations|issues|never)"
+        required: false
+        type: string
+        default: "violations"
+      ort_cli_args:
+        description: "Optional extra ORT CLI args (e.g. -P flags)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      # OpenSSF Scorecard token
+      scorecard:
+        required: false
+        description: 'PAT used by Scorecard when enabled'
+
+permissions: { }
+
+jobs:
+  DependencyReview:
+    if: ${{ inputs['dependency-review'] }}
+    permissions:
+      contents: write   # GitHub Dependency Submission API requirement to submit dependencies to the graph
+      id-token: write   # Required by the action (OIDC)
+      pull-requests: write   # needed when posting the summary
+    uses: ./.github/workflows/dependency-review.yaml
+    with:
+      allow_spdx: ${{ inputs.allow_spdx }}
+      dependency_review_config_file: ${{ inputs.dependency_review_config_file }}
+      warn_only: ${{ inputs.warn_only }}
+      use_pr_comment: ${{ inputs.use_pr_comment }}
+      run_component_detection: ${{ inputs.run_component_detection }}
+
+  ORT:
+    if: ${{ inputs['ort'] }}
+    permissions:
+      pull-requests: write
+      id-token: write
+      actions: read
+      contents: read
+    uses: ./.github/workflows/ort.yaml
+    with:
+      ort_config_repository: ${{ inputs.ort_config_repository }}
+      ort_config_revision: ${{ inputs.ort_config_revision }}
+      ort_config_source: ${{ inputs.ort_config_source }}
+      ort_config_target: ${{ inputs.ort_config_target }}
+      ort_fail_on: ${{ inputs.ort_fail_on }}
+      ort_cli_args: ${{ inputs.ort_cli_args }}
+
+  Scorecard:
+    if: ${{ inputs['scorecard'] }}
+    permissions:
+      # Required when publishing results and OIDC
+      id-token: write
+      security-events: write
+      # Read permissions needed for Scorecard to inspect repository settings and metadata.
+      actions: read
+      artifact-metadata: read
+      attestations: read
+      checks: read
+      contents: read
+      deployments: read
+      discussions: read
+      issues: read
+      models: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: read
+      statuses: read
+    uses: ./.github/workflows/scorecard.yaml
+    secrets:
+      token: ${{ secrets.scorecard }}

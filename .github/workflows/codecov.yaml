@@ -22,11 +22,16 @@ on:
         required: false
         type: string
         default: 'true'
+      coverage-file:
+        description: "Coverage file path to upload"
+        type: string
+        required: false
+        default: "coverage.out"
       coverage-command:
         description: "Command used to generate coverage data"
         type: string
         required: false
-      coverage-setup-go:
+      setup-go:
         description: "Run Go toolchain setup before coverage command"
         type: boolean
         required: false
@@ -68,6 +73,11 @@ jobs:
               cli.codecov.io:443
               ingest.codecov.io:443
               o26192.ingest.us.sentry.io:443
+              files.pythonhosted.org:443
+              pypi.org:443
+
+      - name: Checkout repository
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - name: Validate coverage config
         shell: bash
@@ -81,8 +91,8 @@ jobs:
           fi
 
       - name: Init go
-        if: ${{ inputs['coverage-setup-go'] }}
-        uses: bytemare/actions/init-go@632e91df0441cb63611b4909d8e33550cf0b5835
+        if: ${{ inputs['setup-go'] }}
+        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
         with:
           go-version: '1.25'
           go-mod: 'go.mod'
@@ -97,5 +107,5 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.token }}
         with:
-          files: coverage.out
+          files: ${{ inputs['coverage-file'] }}
           disable_search: ${{ inputs.disable_search }}

@@ -10,11 +10,18 @@
 
 ---
 
-name: SAST Suite
+name: Code Scan Suite
+
+permissions: { }
 
 on:
   workflow_call:
     inputs:
+      do-not-submit:
+        description: 'Run Do Not Submit checks'
+        required: false
+        type: boolean
+        default: false
       semgrep:
         description: 'Run Semgrep'
         required: false
@@ -49,7 +56,7 @@ on:
         description: 'Coverage command executed before SonarQube scan'
         required: false
         type: string
-      sonarqube-coverage-setup-go:
+      sonarqube-setup-go:
         description: 'Run Go setup before coverage command'
         required: false
         type: boolean
@@ -64,6 +71,30 @@ on:
         required: false
         type: boolean
         default: false
+      codecov:
+        description: 'Upload coverage to Codecov'
+        required: false
+        type: boolean
+        default: false
+      codecov-disable-search:
+        description: 'Forwarded to the Codecov reusable workflow'
+        required: false
+        type: string
+        default: 'true'
+      codecov-coverage-command:
+        description: 'Coverage command executed before Codecov scan'
+        required: false
+        type: string
+      codecov-coverage-file:
+        description: 'Coverage file path uploaded to Codecov'
+        required: false
+        type: string
+        default: 'coverage.out'
+      codecov-setup-go:
+        description: 'Run Go setup before coverage command'
+        required: false
+        type: boolean
+        default: false
     secrets:
       github:
         description: 'GitHub token used by SonarQube (defaults to GITHUB_TOKEN)'
@@ -74,8 +105,9 @@ on:
       sonarqube:
         description: 'SonarQube token when SonarQube scan is enabled'
         required: false
-
-permissions: { }
+      codecov:
+        required: false
+        description: 'Codecov token when coverage upload is enabled'
 
 jobs:
   Semgrep:
@@ -107,10 +139,23 @@ jobs:
       configuration: ${{ inputs['sonarqube-configuration'] }}
       coverage: ${{ inputs['sonarqube-coverage'] }}
       coverage-command: ${{ inputs['sonarqube-coverage-command'] }}
-      coverage-setup-go: ${{ inputs['sonarqube-coverage-setup-go'] }}
+      setup-go: ${{ inputs['sonarqube-setup-go'] }}
     secrets:
       sonar: ${{ secrets.sonarqube }}
       github: ${{ secrets.github }}
+
+  Codecov:
+    if: ${{ inputs.codecov }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/codecov.yaml
+    with:
+      disable_search: ${{ inputs['codecov-disable-search'] }}
+      coverage-command: ${{ inputs['codecov-coverage-command'] }}
+      coverage-file: ${{ inputs['codecov-coverage-file'] }}
+      setup-go: ${{ inputs['codecov-setup-go'] }}
+    secrets:
+      token: ${{ secrets.codecov }}
 
   Govulncheck:
     if: ${{ inputs.govulncheck }}
@@ -125,3 +170,9 @@ jobs:
       contents: read
       security-events: write
     uses: ./.github/workflows/gitleaks.yaml
+
+  DoNotSubmit:
+    if: ${{ inputs['do-not-submit'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/do-not-submit.yaml

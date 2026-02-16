@@ -70,7 +70,7 @@ jobs:
           fetch-depth: 0
 
       - name: Init go
-        uses: bytemare/actions/init-go@632e91df0441cb63611b4909d8e33550cf0b5835
+        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
 
       - name: Check formatting
         run: |
@@ -88,4 +88,6 @@ jobs:
       statuses: write
     uses: ./.github/workflows/super-linter.yaml
     with:
+      validate-all-codebase: ${{ inputs['super-linter-validate-all-codebase'] }}
       enabled_linters: ${{ inputs['super-linter-enabled-linters'] }}
+      linter-rules-path: ${{ inputs['super-linter-rules-path'] }}

@@ -16,3 +16,9 @@ allow-licenses:
   - ISC
   - Unlicense
   - CC0-1.0
+
+# Allow first-party GitHub Actions where license detection may fail
+# GitHub Actions don't have standardized license metadata in their manifests,
+# so we explicitly allow actions from namespaces we control and know are MIT licensed.
+allow-dependencies-licenses:
+  - pkg:githubactions/bytemare/*
