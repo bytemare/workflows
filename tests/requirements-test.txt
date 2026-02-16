@@ -1,10 +1,5 @@
 # Python testing dependencies with cryptographic hashes for supply chain security
 # Install with: pip install --require-hashes --only-binary :all: -r requirements-test.txt
-# To update: ./scripts/update-pip-hashes.sh (once implemented) or download wheels manually
-#
-# Security flags explained:
-# --require-hashes: Verifies downloaded packages match expected SHA256 (prevents MITM/registry compromise)
-# --only-binary :all:: Prevents arbitrary code execution during install (no setup.py execution)
 #
 # Supported platforms:
 # - Linux x86_64 (Python 3.11, 3.12) - GitHub Actions runners
