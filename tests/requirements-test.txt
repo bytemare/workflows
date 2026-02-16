@@ -2,9 +2,8 @@
 # Install with: pip install --require-hashes --only-binary :all: -r requirements-test.txt
 #
 # Supported platforms:
-# - Linux x86_64 (Python 3.11, 3.12) - GitHub Actions runners
+# - Linux x86_64 (Python 3.12) - GitHub Actions runners
 # - macOS ARM64 (Python 3.14) - Apple Silicon development
-# - macOS Intel (Python 3.11) - Intel Mac development
 
 # Direct dependencies
 pytest==9.0.2 \
@@ -14,10 +13,8 @@ pytest-cov==7.0.0 \
 
 # Transitive dependencies (required when using --require-hashes)
 coverage==7.13.4 \
-    --hash=sha256:8e264226ec98e01a8e1054314af91ee6cde0eacac4f465cc93b03dbe0bce2fd7 \
     --hash=sha256:2c048ea43875fbf8b45d476ad79f179809c590ec7b79e2035c662e7afa3192e3 \
-    --hash=sha256:29e3220258d682b6226a9b0925bc563ed9a1ebcff3cad30f043eceea7eaf2689 \
-    --hash=sha256:d490ba50c3f35dd7c17953c68f3270e7ccd1c6642e2d2afe2d8e720b98f5a053
+    --hash=sha256:29e3220258d682b6226a9b0925bc563ed9a1ebcff3cad30f043eceea7eaf2689
 iniconfig==2.3.0 \
     --hash=sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12
 packaging==26.0 \
