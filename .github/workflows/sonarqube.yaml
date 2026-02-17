@@ -83,13 +83,6 @@ jobs:
             exit 1
           fi
 
-      - name: Init go
-        if: ${{ inputs.coverage && inputs['setup-go'] }}
-        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
-        with:
-          go-version: '1.25'
-          go-mod: 'go.mod'
-
       - name: Code Coverage
         if: ${{ inputs.coverage }}
         shell: bash
