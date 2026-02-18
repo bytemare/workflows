@@ -105,17 +105,22 @@ jobs:
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
-      sonarqube-coverage: true
-      sonarqube-coverage-command: "make -C .github go-coverage python-coverage"
-      sonarqube-setup-go: true
+      # Shared coverage generation (one-time, consumed by SonarQube and Codecov)
+      coverage-enabled: true
+      coverage-go-enabled: true
+      coverage-go-command: "make -C .github go-coverage"
+      coverage-python-enabled: true
+      coverage-python-version: "3.13"
+      coverage-python-command: "make -C .github python-coverage"
+      coverage-artifact-name: "coverage-reports"
+      coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck
       govulncheck: true
       # Gitleaks
       gitleaks: true
       # Codecov upload
       codecov: true
-      codecov-coverage-command: "make -C .github go-coverage python-coverage"
-      codecov-setup-go: true
+      codecov-disable-search: "true"
     secrets:
       # Semgrep token
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}

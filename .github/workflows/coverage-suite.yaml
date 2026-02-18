@@ -1,0 +1,232 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Coverage Suite
+
+permissions: { }
+
+on:
+  workflow_call:
+    inputs:
+      coverage-enabled:
+        description: 'Enable shared coverage generation and artifact handoff'
+        required: false
+        type: boolean
+        default: false
+      coverage-go-enabled:
+        description: 'Generate Go coverage report'
+        required: false
+        type: boolean
+        default: true
+      coverage-go-command:
+        description: 'Go coverage command. Must produce coverage-go-report-path.'
+        required: false
+        type: string
+        default: 'go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...'
+      coverage-go-report-path:
+        description: 'Go coverage report path produced by coverage-go-command'
+        required: false
+        type: string
+        default: 'coverage.out'
+      coverage-python-enabled:
+        description: 'Generate Python coverage report'
+        required: false
+        type: boolean
+        default: false
+      coverage-python-version:
+        description: 'Python version used when generating Python coverage'
+        required: false
+        type: string
+        default: '3.13'
+      coverage-python-command:
+        description: 'Python coverage command. Must produce coverage-python-report-path.'
+        required: false
+        type: string
+        default: 'pytest --cov=. --cov-report=xml --cov-report=term --quiet'
+      coverage-python-report-path:
+        description: 'Python coverage report path produced by coverage-python-command'
+        required: false
+        type: string
+        default: 'coverage.xml'
+      coverage-artifact-name:
+        description: 'Unified artifact name containing coverage reports and manifest'
+        required: false
+        type: string
+        default: 'coverage-reports'
+      coverage-manifest-path:
+        description: 'Manifest path inside the unified coverage artifact'
+        required: false
+        type: string
+        default: 'coverage/manifest.json'
+    outputs:
+      coverage_artifact_name:
+        description: 'Coverage artifact name to consume downstream'
+        value: ${{ jobs.CoverageBundle.outputs.coverage_artifact_name }}
+      coverage_manifest_path:
+        description: 'Coverage manifest path to consume downstream'
+        value: ${{ jobs.CoverageBundle.outputs.coverage_manifest_path }}
+
+jobs:
+  CoverageGo:
+    if: ${{ inputs['coverage-enabled'] && inputs['coverage-go-enabled'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/coverage-go.yaml
+    with:
+      coverage-go-command: ${{ inputs['coverage-go-command'] }}
+      coverage-go-report-path: ${{ inputs['coverage-go-report-path'] }}
+
+  CoveragePython:
+    if: ${{ inputs['coverage-enabled'] && inputs['coverage-python-enabled'] }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/coverage-python.yaml
+    with:
+      coverage-python-version: ${{ inputs['coverage-python-version'] }}
+      coverage-python-command: ${{ inputs['coverage-python-command'] }}
+      coverage-python-report-path: ${{ inputs['coverage-python-report-path'] }}
+
+  CoverageBundle:
+    if: >-
+      ${{
+        always() &&
+        (needs.CoverageGo.result == 'success' || needs.CoverageGo.result == 'skipped') &&
+        (needs.CoveragePython.result == 'success' || needs.CoveragePython.result == 'skipped')
+      }}
+    needs:
+      - CoverageGo
+      - CoveragePython
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      coverage_artifact_name: ${{ steps.set_outputs.outputs.coverage_artifact_name }}
+      coverage_manifest_path: ${{ steps.set_outputs.outputs.coverage_manifest_path }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            uploads.github.com:443
+
+      - name: Download Go coverage artifact
+        if: ${{ inputs['coverage-enabled'] && needs.CoverageGo.result == 'success' }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: coverage-go-part
+          path: .
+
+      - name: Download Python coverage artifact
+        if: ${{ inputs['coverage-enabled'] && needs.CoveragePython.result == 'success' }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: coverage-python-part
+          path: .
+
+      - name: Validate coverage bundle config
+        if: ${{ inputs['coverage-enabled'] }}
+        shell: bash
+        env:
+          ARTIFACT_NAME: ${{ inputs['coverage-artifact-name'] }}
+          MANIFEST_PATH: ${{ inputs['coverage-manifest-path'] }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ARTIFACT_NAME" ]; then
+            echo "coverage-artifact-name must be set when coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$MANIFEST_PATH" ]; then
+            echo "coverage-manifest-path must be set when coverage is enabled." >&2
+            exit 1
+          fi
+
+      - name: Build coverage manifest
+        if: ${{ inputs['coverage-enabled'] }}
+        shell: bash
+        env:
+          MANIFEST_PATH: ${{ inputs['coverage-manifest-path'] }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          manifest_path = os.environ["MANIFEST_PATH"]
+          if pathlib.Path(manifest_path).is_absolute():
+              raise SystemExit(f"coverage-manifest-path must be relative, got '{manifest_path}'.")
+          if manifest_path.startswith("../") or "/../" in manifest_path:
+              raise SystemExit(f"coverage-manifest-path must not escape workspace, got '{manifest_path}'.")
+          if not manifest_path.startswith("coverage/"):
+              raise SystemExit("coverage-manifest-path must be under the coverage/ directory.")
+
+          reports = []
+          if pathlib.Path("coverage/go/coverage.out").is_file():
+              reports.append(
+                  {
+                      "language": "go",
+                      "path": "coverage/go/coverage.out",
+                      "sonar_property": "sonar.go.coverage.reportPaths",
+                      "codecov": True,
+                  }
+              )
+
+          if pathlib.Path("coverage/python/coverage.xml").is_file():
+              reports.append(
+                  {
+                      "language": "python",
+                      "path": "coverage/python/coverage.xml",
+                      "sonar_property": "sonar.python.coverage.reportPaths",
+                      "codecov": True,
+                  }
+              )
+
+          if not reports:
+              raise SystemExit("coverage-enabled is true, but no coverage reports were produced by enabled coverage jobs.")
+
+          payload = {"version": "1", "reports": reports}
+          manifest_file = pathlib.Path(manifest_path)
+          manifest_file.parent.mkdir(parents=True, exist_ok=True)
+          manifest_file.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(f"Wrote manifest to {manifest_path}")
+          PY
+
+      - name: Upload bundled coverage artifact
+        if: ${{ inputs['coverage-enabled'] }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ${{ inputs['coverage-artifact-name'] }}
+          path: coverage/
+          if-no-files-found: error
+
+      - name: Set coverage outputs
+        id: set_outputs
+        shell: bash
+        env:
+          COVERAGE_ENABLED: ${{ inputs['coverage-enabled'] }}
+          ARTIFACT_NAME: ${{ inputs['coverage-artifact-name'] }}
+          MANIFEST_PATH: ${{ inputs['coverage-manifest-path'] }}
+        run: |
+          set -euo pipefail
+          if [ "$COVERAGE_ENABLED" = "true" ]; then
+            echo "coverage_artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+            echo "coverage_manifest_path=$MANIFEST_PATH" >> "$GITHUB_OUTPUT"
+          else
+            echo "coverage_artifact_name=" >> "$GITHUB_OUTPUT"
+            echo "coverage_manifest_path=" >> "$GITHUB_OUTPUT"
+          fi

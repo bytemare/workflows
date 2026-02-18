@@ -47,20 +47,56 @@ on:
         required: false
         type: string
         default: .github/sonar-project.properties
-      sonarqube-coverage:
-        description: 'Run coverage command before SonarQube scan'
+      coverage-enabled:
+        description: 'Enable shared coverage generation and artifact handoff'
         required: false
         type: boolean
         default: false
-      sonarqube-coverage-command:
-        description: 'Coverage command executed before SonarQube scan'
+      coverage-go-enabled:
+        description: 'Generate Go coverage report'
+        required: false
+        type: boolean
+        default: true
+      coverage-go-command:
+        description: 'Go coverage command. Must produce coverage-go-report-path.'
         required: false
         type: string
-      sonarqube-setup-go:
-        description: 'Run Go setup before coverage command'
+        default: 'go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...'
+      coverage-go-report-path:
+        description: 'Go coverage report path produced by coverage-go-command'
+        required: false
+        type: string
+        default: 'coverage.out'
+      coverage-python-enabled:
+        description: 'Generate Python coverage report'
         required: false
         type: boolean
         default: false
+      coverage-python-version:
+        description: 'Python version used when generating Python coverage'
+        required: false
+        type: string
+        default: '3.13'
+      coverage-python-command:
+        description: 'Python coverage command. Must produce coverage-python-report-path.'
+        required: false
+        type: string
+        default: 'pytest --cov=. --cov-report=xml --cov-report=term --quiet'
+      coverage-python-report-path:
+        description: 'Python coverage report path produced by coverage-python-command'
+        required: false
+        type: string
+        default: 'coverage.xml'
+      coverage-artifact-name:
+        description: 'Unified artifact name containing coverage reports and manifest'
+        required: false
+        type: string
+        default: 'coverage-reports'
+      coverage-manifest-path:
+        description: 'Manifest path inside the unified coverage artifact'
+        required: false
+        type: string
+        default: 'coverage/manifest.json'
       govulncheck:
         description: 'Run Govulncheck'
         required: false
@@ -81,20 +117,6 @@ on:
         required: false
         type: string
         default: 'true'
-      codecov-coverage-command:
-        description: 'Coverage command executed before Codecov scan'
-        required: false
-        type: string
-      codecov-coverage-file:
-        description: 'Coverage file path uploaded to Codecov'
-        required: false
-        type: string
-        default: 'coverage.out'
-      codecov-setup-go:
-        description: 'Run Go setup before coverage command'
-        required: false
-        type: boolean
-        default: false
     secrets:
       github:
         description: 'GitHub token used by SonarQube (defaults to GITHUB_TOKEN)'
@@ -129,31 +151,75 @@ jobs:
     with:
       language: ${{ inputs['codeql-language'] }}
 
+  Coverage:
+    if: ${{ inputs.sonarqube || inputs.codecov }}
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/coverage-suite.yaml
+    with:
+      coverage-enabled: ${{ inputs['coverage-enabled'] }}
+      coverage-go-enabled: ${{ inputs['coverage-go-enabled'] }}
+      coverage-go-command: ${{ inputs['coverage-go-command'] }}
+      coverage-go-report-path: ${{ inputs['coverage-go-report-path'] }}
+      coverage-python-enabled: ${{ inputs['coverage-python-enabled'] }}
+      coverage-python-version: ${{ inputs['coverage-python-version'] }}
+      coverage-python-command: ${{ inputs['coverage-python-command'] }}
+      coverage-python-report-path: ${{ inputs['coverage-python-report-path'] }}
+      coverage-artifact-name: ${{ inputs['coverage-artifact-name'] }}
+      coverage-manifest-path: ${{ inputs['coverage-manifest-path'] }}
+
+  ValidateCodecovCoverage:
+    if: ${{ inputs.codecov && !inputs['coverage-enabled'] }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Codecov requires coverage-enabled=true in the artifact-based coverage model." >&2
+          exit 1
+
   SonarQube:
     if: ${{ inputs.sonarqube }}
+    needs:
+      - Coverage
     permissions:
       contents: read
       security-events: write
+      actions: read
     uses: ./.github/workflows/sonarqube.yaml
     with:
       configuration: ${{ inputs['sonarqube-configuration'] }}
-      coverage: ${{ inputs['sonarqube-coverage'] }}
-      coverage-command: ${{ inputs['sonarqube-coverage-command'] }}
-      setup-go: ${{ inputs['sonarqube-setup-go'] }}
+      coverage-artifact-name: ${{ needs.Coverage.outputs.coverage_artifact_name }}
+      coverage-manifest-path: ${{ needs.Coverage.outputs.coverage_manifest_path }}
     secrets:
       sonar: ${{ secrets.sonarqube }}
       github: ${{ secrets.github }}
 
   Codecov:
-    if: ${{ inputs.codecov }}
+    if: ${{ inputs.codecov && inputs['coverage-enabled'] }}
+    needs:
+      - Coverage
     permissions:
       contents: read
+      actions: read
     uses: ./.github/workflows/codecov.yaml
     with:
       disable_search: ${{ inputs['codecov-disable-search'] }}
-      coverage-command: ${{ inputs['codecov-coverage-command'] }}
-      coverage-file: ${{ inputs['codecov-coverage-file'] }}
-      setup-go: ${{ inputs['codecov-setup-go'] }}
+      coverage-artifact-name: ${{ needs.Coverage.outputs.coverage_artifact_name }}
+      coverage-manifest-path: ${{ needs.Coverage.outputs.coverage_manifest_path }}
     secrets:
       token: ${{ secrets.codecov }}
 
