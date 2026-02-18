@@ -120,7 +120,7 @@ jobs:
       gitleaks: true
       # Codecov upload
       codecov: true
-      codecov-disable-search: "true"
+      codecov-disable-search: 'true'
     secrets:
       # Semgrep token
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
