@@ -115,8 +115,8 @@ on:
       codecov-disable-search:
         description: 'Forwarded to the Codecov reusable workflow'
         required: false
-        type: string
-        default: 'true'
+        type: boolean
+        default: true
     secrets:
       github:
         description: 'GitHub token used by SonarQube (defaults to GITHUB_TOKEN)'

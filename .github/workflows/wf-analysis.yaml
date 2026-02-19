@@ -109,8 +109,9 @@ jobs:
       coverage-enabled: true
       coverage-go-enabled: true
       coverage-go-command: "make -C .github go-coverage"
+      coverage-go-report-path: ".github/coverage.out"
       coverage-python-enabled: true
-      coverage-python-version: "3.13"
+      coverage-python-version: "3.12"
       coverage-python-command: "make -C .github python-coverage"
       coverage-artifact-name: "coverage-reports"
       coverage-manifest-path: "coverage/manifest.json"
@@ -120,7 +121,7 @@ jobs:
       gitleaks: true
       # Codecov upload
       codecov: true
-      codecov-disable-search: 'true'
+      codecov-disable-search: true
     secrets:
       # Semgrep token
       semgrep: ${{ secrets.SEMGREP_APP_TOKEN }}
