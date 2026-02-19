@@ -170,20 +170,12 @@ jobs:
       coverage-manifest-path: ${{ inputs['coverage-manifest-path'] }}
 
   ValidateCodecovCoverage:
+    # This job validates that if Codecov upload is enabled, then coverage generation is also enabled to ensure Codecov has the necessary data to upload.
+    # This prevents silent misconfigurations where Codecov runs but doesn't find any coverage data to upload.
+    # We're running this here so to keep the Coverage job focused on generation and artifact handling, while this validation is a separate concern.
     if: ${{ inputs.codecov && !inputs['coverage-enabled'] }}
     runs-on: ubuntu-latest
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
-        with:
-          disable-sudo: true
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            github.com:443
-            objects.githubusercontent.com:443
-            release-assets.githubusercontent.com:443
-
       - name: Validate configuration
         shell: bash
         run: |
