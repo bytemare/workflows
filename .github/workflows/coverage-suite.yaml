@@ -263,6 +263,14 @@ jobs:
                       "codecov": include_in_codecov,
                   }
 
+                  language_version = report.get("language_version")
+                  if language_version is not None:
+                      if not isinstance(language_version, str) or not language_version.strip():
+                          raise SystemExit(
+                              f"Invalid language_version for report '{source}' in '{metadata_file}'."
+                          )
+                      entry["language_version"] = language_version.strip()
+
                   sonar_property = report.get("sonar_property")
                   if sonar_property is not None:
                       if not isinstance(sonar_property, str) or not sonar_property:

@@ -62,10 +62,15 @@ jobs:
       - name: Validate coverage config
         shell: bash
         env:
+          PYTHON_VERSION: ${{ inputs['coverage-python-version'] }}
           COVERAGE_CMD: ${{ inputs['coverage-python-command'] }}
           REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
         run: |
           set -euo pipefail
+          if [ -z "$PYTHON_VERSION" ]; then
+            echo "coverage-python-version is empty while Python coverage is enabled." >&2
+            exit 1
+          fi
           if [ -z "$COVERAGE_CMD" ]; then
             echo "coverage-python-command is empty while Python coverage is enabled." >&2
             exit 1
@@ -98,6 +103,7 @@ jobs:
       - name: Write Python coverage metadata
         shell: bash
         env:
+          PYTHON_VERSION: ${{ inputs['coverage-python-version'] }}
           REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
         run: |
           set -euo pipefail
@@ -108,6 +114,7 @@ jobs:
             "reports": [
               {
                 "language": "python",
+                "language_version": "$PYTHON_VERSION",
                 "path": "reports/$report_name",
                 "sonar_property": "sonar.python.coverage.reportPaths",
                 "codecov": true

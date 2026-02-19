@@ -102,18 +102,38 @@ jobs:
               raise SystemExit("Coverage manifest has no reports.")
 
           args = []
+          python_versions = set()
           for report in reports:
               path = report.get("path")
+              language = report.get("language")
+              language_version = report.get("language_version")
               sonar_property = report.get("sonar_property")
               if not path:
                   raise SystemExit(f"Invalid manifest entry: {report!r}")
               if not pathlib.Path(path).is_file():
                   raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")
+              if language is not None and not isinstance(language, str):
+                  raise SystemExit(f"Invalid language in manifest entry: {report!r}")
+              if language_version is not None and (
+                  not isinstance(language_version, str) or not language_version.strip()
+              ):
+                  raise SystemExit(f"Invalid language_version in manifest entry: {report!r}")
+              if language == "python":
+                  if language_version is None:
+                      print(
+                          f"::warning::Python report '{path}' does not define language_version; "
+                          "sonar.python.version will not be set from this report."
+                      )
+                  else:
+                      python_versions.add(language_version.strip())
               if sonar_property is None:
                   continue
               if not isinstance(sonar_property, str) or not sonar_property:
                   raise SystemExit(f"Invalid sonar_property in manifest entry: {report!r}")
               args.append(f"-D{sonar_property}={path}")
+
+          if python_versions:
+              args.append(f"-Dsonar.python.version={','.join(sorted(python_versions))}")
 
           payload = " ".join(args)
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
