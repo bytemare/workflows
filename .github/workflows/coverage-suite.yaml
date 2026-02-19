@@ -138,6 +138,24 @@ jobs:
           name: coverage-python-part
           path: .
 
+      - name: Normalize downloaded coverage artifacts
+        if: ${{ inputs['coverage-enabled'] }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p coverage/go coverage/python
+
+          go_report="$(find . -type f -path '*/coverage/go/coverage.out' | head -n 1 || true)"
+          if [ -n "$go_report" ]; then
+            cp "$go_report" coverage/go/coverage.out
+          fi
+
+          python_report="$(find . -type f -path '*/coverage/python/coverage.xml' | head -n 1 || true)"
+          if [ -n "$python_report" ]; then
+            cp "$python_report" coverage/python/coverage.xml
+          fi
+
       - name: Validate coverage bundle config
         if: ${{ inputs['coverage-enabled'] }}
         shell: bash
