@@ -87,12 +87,34 @@ jobs:
             echo "Expected Go coverage report '$REPORT_PATH' was not found." >&2
             exit 1
           fi
-          mkdir -p coverage/go
-          cp "$REPORT_PATH" coverage/go/coverage.out
+          report_name="$(basename "$REPORT_PATH")"
+          mkdir -p coverage/reports
+          cp "$REPORT_PATH" "coverage/reports/$report_name"
+
+      - name: Write Go coverage metadata
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-go-report-path'] }}
+        run: |
+          set -euo pipefail
+          report_name="$(basename "$REPORT_PATH")"
+          cat > coverage/coverage-metadata.json <<EOF
+          {
+            "version": "1",
+            "reports": [
+              {
+                "language": "go",
+                "path": "reports/$report_name",
+                "sonar_property": "sonar.go.coverage.reportPaths",
+                "codecov": true
+              }
+            ]
+          }
+          EOF
 
       - name: Upload Go coverage artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: coverage-go-part
-          path: coverage/go/coverage.out
+          name: coverage-report-go
+          path: coverage/
           if-no-files-found: error

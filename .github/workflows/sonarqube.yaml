@@ -98,10 +98,14 @@ jobs:
           for report in reports:
               path = report.get("path")
               sonar_property = report.get("sonar_property")
-              if not path or not sonar_property:
+              if not path:
                   raise SystemExit(f"Invalid manifest entry: {report!r}")
               if not pathlib.Path(path).is_file():
                   raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")
+              if sonar_property is None:
+                  continue
+              if not isinstance(sonar_property, str) or not sonar_property:
+                  raise SystemExit(f"Invalid sonar_property in manifest entry: {report!r}")
               args.append(f"-D{sonar_property}={path}")
 
           payload = " ".join(args)

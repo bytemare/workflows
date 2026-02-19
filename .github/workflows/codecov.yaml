@@ -109,6 +109,8 @@ jobs:
               include_in_codecov = report.get("codecov", True)
               if not path:
                   raise SystemExit(f"Invalid manifest entry: {report!r}")
+              if not isinstance(include_in_codecov, bool):
+                  raise SystemExit(f"Invalid codecov flag in manifest entry: {report!r}")
               if include_in_codecov:
                   if not pathlib.Path(path).is_file():
                       raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")

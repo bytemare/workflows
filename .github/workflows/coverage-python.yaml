@@ -91,12 +91,34 @@ jobs:
             echo "Expected Python coverage report '$REPORT_PATH' was not found." >&2
             exit 1
           fi
-          mkdir -p coverage/python
-          cp "$REPORT_PATH" coverage/python/coverage.xml
+          report_name="$(basename "$REPORT_PATH")"
+          mkdir -p coverage/reports
+          cp "$REPORT_PATH" "coverage/reports/$report_name"
+
+      - name: Write Python coverage metadata
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
+        run: |
+          set -euo pipefail
+          report_name="$(basename "$REPORT_PATH")"
+          cat > coverage/coverage-metadata.json <<EOF
+          {
+            "version": "1",
+            "reports": [
+              {
+                "language": "python",
+                "path": "reports/$report_name",
+                "sonar_property": "sonar.python.coverage.reportPaths",
+                "codecov": true
+              }
+            ]
+          }
+          EOF
 
       - name: Upload Python coverage artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: coverage-python-part
-          path: coverage/python/coverage.xml
+          name: coverage-report-python
+          path: coverage/
           if-no-files-found: error

@@ -113,7 +113,7 @@ jobs:
       coverage-python-enabled: true
       coverage-python-version: "3.12"
       coverage-python-command: "make -C .github python-coverage"
-      coverage-artifact-name: "coverage-reports"
+      coverage-artifact-name: "coverage-report-all"
       coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck
       govulncheck: true

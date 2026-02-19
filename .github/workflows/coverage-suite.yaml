@@ -61,7 +61,7 @@ on:
         description: 'Unified artifact name containing coverage reports and manifest'
         required: false
         type: string
-        default: 'coverage-reports'
+        default: 'coverage-report-all'
       coverage-manifest-path:
         description: 'Manifest path inside the unified coverage artifact'
         required: false
@@ -124,37 +124,27 @@ jobs:
             objects.githubusercontent.com:443
             uploads.github.com:443
 
-      - name: Download Go coverage artifact
-        if: ${{ inputs['coverage-enabled'] && needs.CoverageGo.result == 'success' }}
+      - name: Download coverage report artifacts
+        if: >-
+          ${{
+            inputs['coverage-enabled'] &&
+            (needs.CoverageGo.result == 'success' || needs.CoveragePython.result == 'success')
+          }}
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
-          name: coverage-go-part
-          path: .
+          pattern: coverage-report-*
+          path: .coverage-artifacts
+          merge-multiple: false
 
-      - name: Download Python coverage artifact
-        if: ${{ inputs['coverage-enabled'] && needs.CoveragePython.result == 'success' }}
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          name: coverage-python-part
-          path: .
-
-      - name: Normalize downloaded coverage artifacts
+      - name: Debug coverage file locations
         if: ${{ inputs['coverage-enabled'] }}
         shell: bash
         run: |
           set -euo pipefail
-
-          mkdir -p coverage/go coverage/python
-
-          go_report="$(find . -type f -path '*/coverage/go/coverage.out' | head -n 1 || true)"
-          if [ -n "$go_report" ]; then
-            cp "$go_report" coverage/go/coverage.out
-          fi
-
-          python_report="$(find . -type f -path '*/coverage/python/coverage.xml' | head -n 1 || true)"
-          if [ -n "$python_report" ]; then
-            cp "$python_report" coverage/python/coverage.xml
-          fi
+          echo "Downloaded coverage artifacts:"
+          find .coverage-artifacts -maxdepth 6 -type f | sort || true
+          echo "Canonical coverage files:"
+          find coverage -maxdepth 4 -type f | sort || true
 
       - name: Validate coverage bundle config
         if: ${{ inputs['coverage-enabled'] }}
@@ -184,6 +174,8 @@ jobs:
           import json
           import os
           import pathlib
+          import re
+          import shutil
 
           manifest_path = os.environ["MANIFEST_PATH"]
           if pathlib.Path(manifest_path).is_absolute():
@@ -193,26 +185,93 @@ jobs:
           if not manifest_path.startswith("coverage/"):
               raise SystemExit("coverage-manifest-path must be under the coverage/ directory.")
 
-          reports = []
-          if pathlib.Path("coverage/go/coverage.out").is_file():
-              reports.append(
-                  {
-                      "language": "go",
-                      "path": "coverage/go/coverage.out",
-                      "sonar_property": "sonar.go.coverage.reportPaths",
-                      "codecov": True,
-                  }
+          artifacts_root = pathlib.Path(".coverage-artifacts")
+          if not artifacts_root.is_dir():
+              raise SystemExit(
+                  "No downloaded coverage artifacts found. Ensure coverage producers uploaded artifacts."
               )
 
-          if pathlib.Path("coverage/python/coverage.xml").is_file():
-              reports.append(
-                  {
-                      "language": "python",
-                      "path": "coverage/python/coverage.xml",
-                      "sonar_property": "sonar.python.coverage.reportPaths",
-                      "codecov": True,
-                  }
+          metadata_files = sorted(artifacts_root.rglob("coverage-metadata.json"))
+          if not metadata_files:
+              raise SystemExit(
+                  "No coverage metadata files were found. Ensure each coverage producer uploads coverage-metadata.json."
               )
+
+          reports = []
+          for metadata_file in metadata_files:
+              try:
+                  data = json.loads(metadata_file.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as exc:
+                  raise SystemExit(f"Invalid JSON in '{metadata_file}': {exc}") from exc
+
+              producer_reports = data.get("reports")
+              if not isinstance(producer_reports, list) or not producer_reports:
+                  raise SystemExit(f"Metadata file '{metadata_file}' does not declare any reports.")
+
+              producer_root = metadata_file.parent.resolve()
+              for report in producer_reports:
+                  if not isinstance(report, dict):
+                      raise SystemExit(f"Invalid report entry in '{metadata_file}': {report!r}")
+
+                  language = report.get("language")
+                  source = report.get("path")
+                  if not isinstance(language, str) or not language.strip():
+                      raise SystemExit(f"Report in '{metadata_file}' is missing a language.")
+                  if not isinstance(source, str) or not source:
+                      raise SystemExit(f"Report in '{metadata_file}' is missing a path.")
+
+                  source_path = pathlib.PurePosixPath(source)
+                  if source_path.is_absolute() or ".." in source_path.parts:
+                      raise SystemExit(f"Invalid report path '{source}' in '{metadata_file}'.")
+
+                  absolute_source = (producer_root / pathlib.Path(*source_path.parts)).resolve()
+                  try:
+                      absolute_source.relative_to(producer_root)
+                  except ValueError as exc:
+                      raise SystemExit(
+                          f"Report path '{source}' in '{metadata_file}' escapes the artifact root."
+                      ) from exc
+
+                  if not absolute_source.is_file():
+                      raise SystemExit(
+                          f"Report path '{source}' in '{metadata_file}' does not exist in downloaded artifacts."
+                      )
+
+                  include_in_codecov = report.get("codecov", True)
+                  if not isinstance(include_in_codecov, bool):
+                      raise SystemExit(
+                          f"Invalid codecov flag for report '{source}' in '{metadata_file}'."
+                      )
+
+                  language_slug = re.sub(r"[^a-z0-9]+", "-", language.lower()).strip("-") or "unknown"
+                  destination_dir = pathlib.Path("coverage") / language_slug
+                  destination_dir.mkdir(parents=True, exist_ok=True)
+
+                  destination = destination_dir / absolute_source.name
+                  stem = destination.stem
+                  suffix = destination.suffix
+                  duplicate_index = 2
+                  while destination.exists():
+                      destination = destination_dir / f"{stem}-{duplicate_index}{suffix}"
+                      duplicate_index += 1
+
+                  shutil.copy2(absolute_source, destination)
+
+                  entry = {
+                      "language": language,
+                      "path": destination.as_posix(),
+                      "codecov": include_in_codecov,
+                  }
+
+                  sonar_property = report.get("sonar_property")
+                  if sonar_property is not None:
+                      if not isinstance(sonar_property, str) or not sonar_property:
+                          raise SystemExit(
+                              f"Invalid sonar_property for report '{source}' in '{metadata_file}'."
+                          )
+                      entry["sonar_property"] = sonar_property
+
+                  reports.append(entry)
 
           if not reports:
               raise SystemExit("coverage-enabled is true, but no coverage reports were produced by enabled coverage jobs.")
@@ -223,6 +282,14 @@ jobs:
           manifest_file.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           print(f"Wrote manifest to {manifest_path}")
           PY
+
+      - name: Debug bundled coverage files
+        if: ${{ inputs['coverage-enabled'] }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Bundled coverage files:"
+          find coverage -maxdepth 6 -type f | sort
 
       - name: Upload bundled coverage artifact
         if: ${{ inputs['coverage-enabled'] }}
