@@ -80,7 +80,7 @@ jobs:
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: ${{ inputs['coverage-artifact-name'] }}
-          path: .
+          path: coverage
 
       - name: Resolve Codecov files from manifest
         id: coverage_files
@@ -96,7 +96,14 @@ jobs:
 
           manifest = pathlib.Path(os.environ["MANIFEST_PATH"])
           if not manifest.is_file():
-              raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
+              fallback = pathlib.Path("manifest.json")
+              if fallback.is_file():
+                  print(
+                      f"::warning::Coverage manifest not found at '{manifest}'. Falling back to '{fallback}'."
+                  )
+                  manifest = fallback
+              else:
+                  raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
 
           data = json.loads(manifest.read_text(encoding="utf-8"))
           reports = data.get("reports")
