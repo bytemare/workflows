@@ -113,6 +113,18 @@ jobs:
       coverage-python-enabled: true
       coverage-python-version: "3.12"
       coverage-python-command: "make -C .github python-coverage"
+      coverage-java-enabled: true
+      coverage-java-version: "21"
+      coverage-java-command: "make -C .github java-coverage"
+      coverage-java-report-path: ".github/coverage-java.xml"
+      coverage-typescript-enabled: true
+      coverage-node-version: "22"
+      coverage-typescript-command: "make -C .github typescript-coverage"
+      coverage-typescript-report-path: ".github/coverage-typescript.lcov"
+      coverage-rust-enabled: true
+      coverage-rust-toolchain: "stable"
+      coverage-rust-command: "make -C .github rust-coverage"
+      coverage-rust-report-path: ".github/coverage-rust.lcov"
       coverage-artifact-name: "coverage-report-all"
       coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck

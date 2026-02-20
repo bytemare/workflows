@@ -1,4 +1,4 @@
-.PHONY: release coverage
+.PHONY: release go-coverage python-coverage java-coverage typescript-coverage rust-coverage
 
 release:
 	@echo "Creating a new release ..."\
@@ -36,3 +36,32 @@ python-coverage:
 	        --quiet && \
 	    deactivate
 	@echo "Python coverage report generated: coverage.xml"
+
+# Generate Java coverage report
+java-coverage:
+	@echo "Generating Java coverage..."
+	@cd .. && \
+		mvn --batch-mode --quiet -f tests/coverage-fixtures/java/pom.xml clean test jacoco:report && \
+		cp tests/coverage-fixtures/java/target/site/jacoco/jacoco.xml .github/coverage-java.xml
+	@echo "Java coverage report generated: coverage-java.xml"
+
+# Generate TypeScript coverage report
+typescript-coverage:
+	@echo "Generating TypeScript coverage..."
+	@cd .. && \
+		cd tests/coverage-fixtures/typescript && \
+		npm install --quiet --no-fund --no-audit && \
+		npm run --silent coverage && \
+		cd ../../.. && \
+		cp tests/coverage-fixtures/typescript/coverage/lcov.info .github/coverage-typescript.lcov
+	@echo "TypeScript coverage report generated: coverage-typescript.lcov"
+
+# Generate Rust coverage report
+rust-coverage:
+	@echo "Generating Rust coverage..."
+	@cd .. && \
+		cd tests/coverage-fixtures/rust && \
+		cargo llvm-cov --workspace --lcov --output-path coverage/lcov.info && \
+		cd ../../.. && \
+		cp tests/coverage-fixtures/rust/coverage/lcov.info .github/coverage-rust.lcov
+	@echo "Rust coverage report generated: coverage-rust.lcov"

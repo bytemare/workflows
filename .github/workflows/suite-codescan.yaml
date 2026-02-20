@@ -87,6 +87,66 @@ on:
         required: false
         type: string
         default: 'coverage.xml'
+      coverage-java-enabled:
+        description: 'Generate Java coverage report'
+        required: false
+        type: boolean
+        default: false
+      coverage-java-version:
+        description: 'Java version used when generating Java coverage'
+        required: false
+        type: string
+        default: '21'
+      coverage-java-command:
+        description: 'Java coverage command. Must produce coverage-java-report-path.'
+        required: false
+        type: string
+        default: 'mvn --batch-mode --quiet clean test jacoco:report'
+      coverage-java-report-path:
+        description: 'Java coverage report path produced by coverage-java-command'
+        required: false
+        type: string
+        default: 'target/site/jacoco/jacoco.xml'
+      coverage-typescript-enabled:
+        description: 'Generate TypeScript coverage report'
+        required: false
+        type: boolean
+        default: false
+      coverage-node-version:
+        description: 'Node.js version used when generating TypeScript coverage'
+        required: false
+        type: string
+        default: '22'
+      coverage-typescript-command:
+        description: 'TypeScript coverage command. Must produce coverage-typescript-report-path.'
+        required: false
+        type: string
+        default: 'npm install --quiet --no-fund --no-audit && npm run --silent coverage'
+      coverage-typescript-report-path:
+        description: 'TypeScript coverage report path produced by coverage-typescript-command'
+        required: false
+        type: string
+        default: 'coverage/lcov.info'
+      coverage-rust-enabled:
+        description: 'Generate Rust coverage report'
+        required: false
+        type: boolean
+        default: false
+      coverage-rust-toolchain:
+        description: 'Rust toolchain used when generating Rust coverage'
+        required: false
+        type: string
+        default: 'stable'
+      coverage-rust-command:
+        description: 'Rust coverage command. Must produce coverage-rust-report-path.'
+        required: false
+        type: string
+        default: 'cargo llvm-cov --workspace --lcov --output-path coverage/lcov.info'
+      coverage-rust-report-path:
+        description: 'Rust coverage report path produced by coverage-rust-command'
+        required: false
+        type: string
+        default: 'coverage/lcov.info'
       coverage-artifact-name:
         description: 'Unified artifact name containing coverage reports and manifest'
         required: false
@@ -166,6 +226,18 @@ jobs:
       coverage-python-version: ${{ inputs['coverage-python-version'] }}
       coverage-python-command: ${{ inputs['coverage-python-command'] }}
       coverage-python-report-path: ${{ inputs['coverage-python-report-path'] }}
+      coverage-java-enabled: ${{ inputs['coverage-java-enabled'] }}
+      coverage-java-version: ${{ inputs['coverage-java-version'] }}
+      coverage-java-command: ${{ inputs['coverage-java-command'] }}
+      coverage-java-report-path: ${{ inputs['coverage-java-report-path'] }}
+      coverage-typescript-enabled: ${{ inputs['coverage-typescript-enabled'] }}
+      coverage-node-version: ${{ inputs['coverage-node-version'] }}
+      coverage-typescript-command: ${{ inputs['coverage-typescript-command'] }}
+      coverage-typescript-report-path: ${{ inputs['coverage-typescript-report-path'] }}
+      coverage-rust-enabled: ${{ inputs['coverage-rust-enabled'] }}
+      coverage-rust-toolchain: ${{ inputs['coverage-rust-toolchain'] }}
+      coverage-rust-command: ${{ inputs['coverage-rust-command'] }}
+      coverage-rust-report-path: ${{ inputs['coverage-rust-report-path'] }}
       coverage-artifact-name: ${{ inputs['coverage-artifact-name'] }}
       coverage-manifest-path: ${{ inputs['coverage-manifest-path'] }}
 

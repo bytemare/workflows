@@ -1,0 +1,133 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Coverage (Java)
+
+on:
+  workflow_call:
+    inputs:
+      coverage-java-version:
+        description: 'Java version used when generating Java coverage'
+        required: false
+        type: string
+        default: '21'
+      coverage-java-command:
+        description: 'Java coverage command. Must produce coverage-java-report-path.'
+        required: true
+        type: string
+      coverage-java-report-path:
+        description: 'Java coverage report path produced by coverage-java-command'
+        required: false
+        type: string
+        default: 'target/site/jacoco/jacoco.xml'
+
+permissions: { }
+
+jobs:
+  CoverageJava:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.adoptium.net:443
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            repo.maven.apache.org:443
+            repo1.maven.org:443
+
+      - name: Checkout repository
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
+        with:
+          distribution: temurin
+          java-version: ${{ inputs['coverage-java-version'] }}
+
+      - name: Validate coverage config
+        shell: bash
+        env:
+          JAVA_VERSION: ${{ inputs['coverage-java-version'] }}
+          COVERAGE_CMD: ${{ inputs['coverage-java-command'] }}
+          REPORT_PATH: ${{ inputs['coverage-java-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ -z "$JAVA_VERSION" ]; then
+            echo "coverage-java-version is empty while Java coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$COVERAGE_CMD" ]; then
+            echo "coverage-java-command is empty while Java coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$REPORT_PATH" ]; then
+            echo "coverage-java-report-path is empty while Java coverage is enabled." >&2
+            exit 1
+          fi
+
+      - name: Run Java coverage
+        shell: bash
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-java-command'] }}
+        run: $COVERAGE_CMD
+
+      - name: Normalize Java coverage output
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-java-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "Expected Java coverage report '$REPORT_PATH' was not found." >&2
+            exit 1
+          fi
+          report_name="$(basename "$REPORT_PATH")"
+          mkdir -p coverage/reports
+          cp "$REPORT_PATH" "coverage/reports/$report_name"
+
+      - name: Write Java coverage metadata
+        shell: bash
+        env:
+          JAVA_VERSION: ${{ inputs['coverage-java-version'] }}
+          REPORT_PATH: ${{ inputs['coverage-java-report-path'] }}
+        run: |
+          set -euo pipefail
+          report_name="$(basename "$REPORT_PATH")"
+          cat > coverage/coverage-metadata.json <<EOF
+          {
+            "version": "1",
+            "reports": [
+              {
+                "language": "java",
+                "language_version": "$JAVA_VERSION",
+                "path": "reports/$report_name",
+                "sonar_property": "sonar.coverage.jacoco.xmlReportPaths",
+                "codecov": true
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload Java coverage artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: coverage-report-java
+          path: coverage/
+          if-no-files-found: error
