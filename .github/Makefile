@@ -1,6 +1,8 @@
 .PHONY: release go-coverage python-coverage
 
 GO_COVERAGE_REPORT_PATH ?= coverage.out
+GO_COVERAGE_PACKAGE ?= ../...
+GO_COVERAGE_TEST_TARGET ?= ../...
 PYTHON_COVERAGE_REPORT_PATH ?= coverage.xml
 
 release:
@@ -21,8 +23,10 @@ release:
 go-coverage:
 	@echo "Generating Go coverage..."
 	@report_path="$(GO_COVERAGE_REPORT_PATH)" && \
+	    cover_pkg="$(GO_COVERAGE_PACKAGE)" && \
+	    test_target="$(GO_COVERAGE_TEST_TARGET)" && \
 	    mkdir -p "$$(dirname "$$report_path")" && \
-	    go test -v -race -covermode=atomic -coverpkg=../... -coverprofile="$$report_path" ../... && \
+	    go test -v -race -covermode=atomic -coverpkg="$$cover_pkg" -coverprofile="$$report_path" $$test_target && \
 	    echo "Go coverage report generated: $$report_path"
 
 # Generate Python coverage report

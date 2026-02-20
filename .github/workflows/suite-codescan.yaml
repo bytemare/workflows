@@ -102,6 +102,11 @@ on:
         required: false
         type: boolean
         default: false
+      govulncheck-go-package:
+        description: 'Go package pattern passed to Govulncheck'
+        required: false
+        type: string
+        default: './...'
       gitleaks:
         description: 'Run gitleaks secret scanning'
         required: false
@@ -156,7 +161,7 @@ jobs:
     permissions:
       actions: read
       contents: read
-    uses: ./.github/workflows/coverage-suite.yaml
+    uses: ./.github/workflows/suite-coverage.yaml
     with:
       coverage-enabled: ${{ inputs['coverage-enabled'] }}
       coverage-go-enabled: ${{ inputs['coverage-go-enabled'] }}
@@ -221,6 +226,8 @@ jobs:
       contents: read
       security-events: write
     uses: ./.github/workflows/govulncheck.yaml
+    with:
+      go-package: ${{ inputs['govulncheck-go-package'] }}
 
   Gitleaks:
     if: ${{ inputs.gitleaks }}
