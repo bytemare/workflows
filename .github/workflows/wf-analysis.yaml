@@ -108,7 +108,7 @@ jobs:
       # Shared coverage generation (one-time, consumed by SonarQube and Codecov)
       coverage-enabled: true
       coverage-go-enabled: true
-      coverage-go-command: "make -C .github go-coverage GO_COVERAGE_REPORT_PATH=coverage.out GO_COVERAGE_PACKAGE=../tests/fixtures/go/... GO_COVERAGE_TEST_TARGET='../tests/fixtures/go ../tests/fixtures/go/tests'"
+      coverage-go-command: "make -C .github go-coverage GO_COVERAGE_REPORT_PATH=coverage.out GO_COVERAGE_PACKAGE=../tests/... GO_COVERAGE_TEST_TARGET='../tests ../tests'"
       coverage-go-report-path: ".github/coverage.out"
       coverage-python-enabled: true
       coverage-python-version: "3.12"
