@@ -61,7 +61,6 @@ jobs:
               keybase.io:443
               o26192.ingest.us.sentry.io:443
               objects.githubusercontent.com:443
-              storage.googleapis.com:443
 
       - name: Checkout repository
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
@@ -131,16 +130,9 @@ jobs:
               fh.write(f"files={','.join(files)}\n")
           PY
 
-      - name: Show Codecov files
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Uploading coverage files: ${{ steps.coverage_files.outputs.files }}"
-
       - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
         env:
           CODECOV_TOKEN: ${{ secrets.token }}
         with:
           files: ${{ steps.coverage_files.outputs.files }}
           disable_search: ${{ inputs.disable_search }}
-          fail_ci_if_error: true
