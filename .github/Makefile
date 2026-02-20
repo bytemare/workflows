@@ -1,4 +1,9 @@
-.PHONY: release coverage
+.PHONY: release go-coverage python-coverage
+
+GO_COVERAGE_REPORT_PATH ?= coverage.out
+GO_COVERAGE_PACKAGE ?= ../...
+GO_COVERAGE_TEST_TARGET ?= ../...
+PYTHON_COVERAGE_REPORT_PATH ?= coverage.xml
 
 release:
 	@echo "Creating a new release ..."\
@@ -17,22 +22,27 @@ release:
 # Generate Go coverage report
 go-coverage:
 	@echo "Generating Go coverage..."
-	@go test -v -race -covermode=atomic -coverpkg=../... -coverprofile=coverage.out ../
-	@echo "Go coverage report generated: coverage.out"
+	@report_path="$(GO_COVERAGE_REPORT_PATH)" && \
+	    cover_pkg="$(GO_COVERAGE_PACKAGE)" && \
+	    test_target="$(GO_COVERAGE_TEST_TARGET)" && \
+	    mkdir -p "$$(dirname "$$report_path")" && \
+	    go test -v -race -covermode=atomic -coverpkg="$$cover_pkg" -coverprofile="$$report_path" $$test_target && \
+	    echo "Go coverage report generated: $$report_path"
 
 # Generate Python coverage report
 python-coverage:
 	@echo "Generating Python coverage..."
-	@cd .. && \
+	@report_path="$(PYTHON_COVERAGE_REPORT_PATH)" && \
+	    mkdir -p "$$(dirname "$$report_path")" && \
 	    if [ ! -d ".venv" ]; then \
 	        python3 -m venv .venv; \
 	    fi && \
 	    . .venv/bin/activate && \
-	    pip install --require-hashes --only-binary :all: --quiet -r tests/requirements-test.txt && \
-	    pytest -c .github/pyproject.toml tests/test_ort_report.py \
-	        --cov=scripts/ort-report \
-	        --cov-report=xml \
+	    pip install --require-hashes --only-binary :all: --quiet -r ../tests/requirements-test.txt && \
+	    pytest -c pyproject.toml ../tests/test_ort_report.py \
+	        --cov=../scripts/ort-report \
+	        --cov-report=xml:"$$report_path" \
 	        --cov-report=term \
 	        --quiet && \
-	    deactivate
-	@echo "Python coverage report generated: coverage.xml"
+	    deactivate && \
+	    echo "Python coverage report generated: $$report_path"
