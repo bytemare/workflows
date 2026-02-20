@@ -118,7 +118,7 @@ jobs:
       coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck
       govulncheck: true
-      govulncheck-go-package: "./tests/fixtures/go/..."
+      govulncheck-go-package: "./tests/..."
       # Gitleaks
       gitleaks: true
       # Codecov upload

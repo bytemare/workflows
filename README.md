@@ -13,14 +13,18 @@ All reusable workflows that execute code enforce egress filtering using [Harden-
   - [A single top-level workflow to use them all (recommended)](#a-single-top-level-workflow-to-use-them-all-recommended)
   - [Workflow Suites](#workflow-suites)
     - [Code Scan Suite](#code-scan-suite)
+    - [Coverage Suite](#coverage-suite)
     - [Lint Suite](#lint-suite)
     - [Governance Suite](#governance-suite)
     - [Test Suite](#test-suite)
 - [Individual workflows by tool](#individual-workflows-by-tool)
+  - [Coverage Suite (Direct Use)](#coverage-suite-direct-use)
+  - [Go Coverage (Producer)](#go-coverage-producer)
+  - [Python Coverage (Producer)](#python-coverage-producer)
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
-  - [OSS Review Toolkit (ORT)](#oss-review-toolkit-ort)
+  - [OSS Review Toolkit (ORT)](#oss-review-toolkit--ort-)
   - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
   - [Do not submit](#do-not-submit)
@@ -35,7 +39,7 @@ All reusable workflows that execute code enforce egress filtering using [Harden-
 
 ### A single top-level workflow to use them all (recommended)
 
-The [wf-analysis.yaml](.github/workflows/wf-analysis.yaml) calls all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak, including code scanning, SAST, linting, governance and license scans, etc.
+The [wf-analysis.yaml](.github/workflows/wf-analysis.yaml) calls all the available suites with opinionated defaults, easy to copy/paste while remaining easy to tweak, including CodeScan, linting, governance, and license scans.
 
 Copy that file to your `.github/workflows/` directory and flip the booleans or tokens to match your project’s needs.
 
@@ -43,9 +47,9 @@ Copy that file to your `.github/workflows/` directory and flip the booleans or t
 
 ### Workflow Suites
 
-Four orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
+Five orchestration workflows keep caller YAML minimal while still letting you opt into the checks you need. Each suite exposes simple, typed inputs and fans out to the hardened building blocks in this repository.
 
-### Code scan suite
+### Code Scan Suite
 
 Code scanners such as Semgrep, CodeQL, SonarQube, Govulncheck, Gitleaks, Codecov, and Do Not Submit. Enable a tool by setting its boolean input to `true` and supply the secret's token name.
 
@@ -68,16 +72,19 @@ jobs:
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
-      sonarqube-coverage: true
-      sonarqube-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      sonarqube-coverage-setup-go: true # set to true when using Go
+      # Shared coverage generation (produced once, consumed by SonarQube and Codecov)
+      coverage-enabled: true
+      coverage-go-enabled: true
+      coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      coverage-python-enabled: false
+      coverage-artifact-name: coverage-report-all # optional; defaults to coverage-report-all
+      coverage-manifest-path: coverage/manifest.json # optional; defaults to coverage/manifest.json
       # Codecov upload
       codecov: true
-      codecov-coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      codecov-coverage-file: coverage.out # optional: defaults to coverage.out
-      codecov-coverage-setup-go: true # set to true when using Go
+      codecov-disable-search: true # recommended with manifest-driven uploads
       # Govulncheck
       govulncheck: true
+      govulncheck-go-package: ./... # optional; defaults to ./...
       # Gitleaks
       gitleaks: true
     secrets:
@@ -89,11 +96,42 @@ jobs:
       codecov: ${{ secrets.CODECOV_TOKEN }}
 ```
 
-Tokens are optional. If you enable Semgrep, SonarQube, or Codecov without providing one, the suite fails fast with a clear message. For bash, rely on Semgrep (CodeQL does not support it).
+When `coverage-enabled` is true, the suite calls `suite-coverage.yaml` (which fan-outs to language producers such as `coverage-go.yaml` and `coverage-python.yaml`). Each producer publishes `coverage-report-<language>` with a normalized report and a `coverage-metadata.json` descriptor.
+The bundle job then downloads all `coverage-report-*` artifacts, builds `coverage/manifest.json`, and publishes one unified artifact (default `coverage-report-all`). SonarQube and Codecov then download and use that manifest instead of running coverage tests themselves.
+
+### Coverage suite
+
+`suite-coverage.yaml` orchestrates parallel language coverage generation and bundles the outputs into one artifact + manifest. You can use it directly, or through `suite-codescan.yaml` (recommended for most users).
+
+Producer metadata schema:
+- `language`: language identifier used in reporting
+- `language_version`: optional language/runtime version (used by analyzers such as SonarQube)
+- `path`: coverage file path inside the producer artifact (relative, no `..`)
+- `sonar_property`: optional Sonar property key for that report
+- `codecov`: optional boolean to include/exclude the report from Codecov upload
+
+```yaml
+jobs:
+  coverage:
+    uses: bytemare/workflows/.github/workflows/suite-coverage.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+      actions: read
+    with:
+      coverage-enabled: true
+      coverage-go-enabled: true
+      coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      coverage-python-enabled: false
+      coverage-artifact-name: coverage-report-all
+      coverage-manifest-path: coverage/manifest.json
+```
+
+The Coverage Suite only requires secret tokens if the downstream analyzers (for example SonarQube or Codecov) are enabled.
 
 ### Lint Suite
 
-`suite-lint.yaml` covers formatting and content/style linters across multiple languages (e.g. Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets. Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
+`suite-lint.yaml` covers formatting and content/style linters across multiple languages (e.g. Go, shell, workflows, Markdown, YAML, Python, spelling) and requires no additional secrets.
+Super-Linter handles the heavy lifting while still giving you control over which validators run and which configuration files they consume.
 
 ```yaml
 jobs:
@@ -172,25 +210,84 @@ When enabling OpenSSF Scorecard ensure the caller job grants the required permis
 ### Test Suite
 
 `test-go.yaml` provides Go testing for a single version. Use a matrix in your caller for multiple versions (see Go Tests below).
-It runs `go test -v -race -vet=all ./...` and enforces egress filtering through Harden-Runner.
+By default, it runs `go test -v -race -vet=all ./...` and enforces egress filtering through Harden-Runner.
+Set optional `test-command` to override the executed test command.
 
 ```yaml
 jobs:
   tests:
     uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
     with:
-      version: '1.25'
+      version: '1.26'
+      # optional override
+      test-command: 'go test -v -race -vet=all ./...'
 ```
 
 All suites default to safe, conservative values. If you omit an input the workflow simply skips the corresponding capability.
 
 ## Individual workflows by tool
 
+### Coverage Suite (Direct Use)
+
+Use this when you want only coverage production and artifact bundling outside the full Code Scan Suite.
+
+```yaml
+jobs:
+  coverage:
+    uses: bytemare/workflows/.github/workflows/suite-coverage.yaml@[pinned commit SHA]
+    permissions:
+      contents: read
+      actions: read
+    with:
+      coverage-enabled: true
+      coverage-go-enabled: true
+      coverage-python-enabled: true
+      coverage-artifact-name: coverage-report-all
+      coverage-manifest-path: coverage/manifest.json
+```
+
+### Go Coverage (Producer)
+
+Low-level reusable producer used by `suite-coverage.yaml` to generate a normalized Go report. It uploads artifact `coverage-report-go` containing `coverage/coverage-metadata.json` and report files under `coverage/reports/`.
+
+```yaml
+jobs:
+  go-coverage:
+    uses: bytemare/workflows/.github/workflows/coverage-go.yaml@[pinned commit SHA]
+    with:
+      coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
+      coverage-go-report-path: coverage.out
+```
+
+When using this repository's local make helpers, you can set the report output path explicitly:
+`make -C .github go-coverage GO_COVERAGE_REPORT_PATH=.github/coverage.out`
+
+For this repository's own CI smoke fixture (kept under `tests`), the top-level analysis workflow sets:
+`GO_COVERAGE_PACKAGE=../tests/... GO_COVERAGE_TEST_TARGET='../tests ../tests'`.
+
+### Python Coverage (Producer)
+
+Low-level reusable producer used by `suite-coverage.yaml` to generate a normalized Python report. It uploads artifact `coverage-report-python` containing `coverage/coverage-metadata.json` and report files under `coverage/reports/`.
+
+```yaml
+jobs:
+  python-coverage:
+    uses: bytemare/workflows/.github/workflows/coverage-python.yaml@[pinned commit SHA]
+    with:
+      coverage-python-version: "3.13"
+      coverage-python-command: "pytest --cov=. --cov-report=xml --cov-report=term --quiet"
+      coverage-python-report-path: coverage.xml
+```
+
+When using this repository's local make helpers, you can set the report output path explicitly:
+`make -C .github python-coverage PYTHON_COVERAGE_REPORT_PATH=.github/coverage.xml`
+
 ### [Codecov](https://github.com/codecov/codecov-action)
 
 Test coverage reporting and tracking with trend analysis.
 
-**Note:** Requires Codecov setup and `CODECOV_TOKEN` repository secret. The default coverage file path is `coverage.out`.
+**Note:** Requires Codecov setup and `CODECOV_TOKEN` repository secret. This workflow now consumes a coverage artifact + manifest generated upstream (for example by `suite-codescan.yaml`).
+The manifest path is strict and must exist at `coverage-manifest-path` (no fallback path lookup).
 
 **Configuration:**
 
@@ -200,10 +297,11 @@ jobs:
     uses: bytemare/workflows/.github/workflows/codecov.yaml@[pinned commit SHA]
     permissions:
       contents: read
+      actions: read
     with:
-      coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      coverage-file: coverage.out # optional; defaults to coverage.out
-      setup-go: true # set to true if you're using Go
+      coverage-artifact-name: coverage-report-all
+      coverage-manifest-path: coverage/manifest.json # optional; defaults to coverage/manifest.json
+      disable_search: true # recommended when using explicit files
     secrets:
       token: ${{ secrets.CODECOV_TOKEN }}
 ```
@@ -297,6 +395,8 @@ jobs:
       contents: read
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
+    with:
+      go-package: ./... # optional; defaults to ./...
 ```
 
 ---
@@ -389,7 +489,8 @@ Continuous code quality and security inspection with detailed metrics.
 **Notes:**
 - Requires SonarCloud setup and the `SONAR_TOKEN` repository secret.
 - It's recommended to provide an adapted `sonar-project.properties` configuration file.
-- Coverage is optional. You can disable it or supply a custom command for non-Go repos.
+- Coverage is optional. If provided, SonarQube consumes a coverage artifact + manifest generated upstream.
+- The manifest path is strict and must exist at `coverage-manifest-path`.
 
 **Configuration:**
 
@@ -399,9 +500,8 @@ jobs:
     uses: bytemare/workflows/.github/workflows/sonarqube.yaml@[pinned commit SHA]
     with:
       configuration: .github/sonar-project.properties
-      coverage: true
-      coverage-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
-      setup-go: true # set to true if you're using Go
+      coverage-artifact-name: coverage-report-all
+      coverage-manifest-path: coverage/manifest.json # optional; defaults to coverage/manifest.json
     secrets:
       github: ${{ secrets.GITHUB_TOKEN }}
       sonar: ${{ secrets.SONAR_TOKEN }}
@@ -414,8 +514,9 @@ jobs:
 
 ### Go Tests
 
-Run your Go test suite with `go test -v -race -vet=all ./...`.
+Run your Go test suite with `go test -v -race -vet=all ./...` by default, or override with `test-command`.
 This is equivalent to copying `wf-go-tests.yaml` from this repo.
+In this repository, `wf-go-tests.yaml` sets `test-command` to run against the fixture module under `tests`.
 
 **Configuration:**
 
@@ -436,6 +537,8 @@ jobs:
     uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
     with:
       version: ${{ matrix.go }}
+      # optional override
+      test-command: "go test -v ./..."
 ```
 
 ---
