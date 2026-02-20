@@ -36,7 +36,7 @@ python-coverage:
 	    . .venv/bin/activate && \
 	    pip install --require-hashes --only-binary :all: --quiet -r ../tests/requirements-test.txt && \
 	    pytest -c pyproject.toml ../tests/test_ort_report.py \
-	        --cov=scripts/ort-report \
+	        --cov=../scripts/ort-report \
 	        --cov-report=xml:"$$report_path" \
 	        --cov-report=term \
 	        --quiet && \

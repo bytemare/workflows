@@ -54,17 +54,6 @@ jobs:
         with:
           go-version: ${{ inputs.version }}
 
-      - name: Validate test command
-        shell: bash
-        env:
-          TEST_COMMAND: ${{ inputs['test-command'] }}
-        run: |
-          set -euo pipefail
-          if [ -z "$TEST_COMMAND" ]; then
-            echo "test-command must not be empty." >&2
-            exit 1
-          fi
-
       - name: Run Tests
         shell: bash
         env:
