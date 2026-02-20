@@ -1,4 +1,4 @@
-.PHONY: release coverage
+.PHONY: release go-coverage python-coverage
 
 release:
 	@echo "Creating a new release ..."\

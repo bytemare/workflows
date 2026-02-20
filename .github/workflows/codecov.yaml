@@ -93,42 +93,43 @@ jobs:
           python3 - <<'PY'
           import json
           import os
-          import pathlib
+          from pathlib import Path
 
-          manifest = pathlib.Path(os.environ["MANIFEST_PATH"])
+          manifest = Path(os.environ["MANIFEST_PATH"])
           if not manifest.is_file():
-              fallback = pathlib.Path("manifest.json")
-              if fallback.is_file():
-                  print(
-                      f"::warning::Coverage manifest not found at '{manifest}'. Falling back to '{fallback}'."
-                  )
-                  manifest = fallback
-              else:
-                  raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
+              raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
 
-          data = json.loads(manifest.read_text(encoding="utf-8"))
+          try:
+              data = json.loads(manifest.read_text(encoding="utf-8"))
+          except json.JSONDecodeError as exc:
+              raise SystemExit(f"Invalid JSON in coverage manifest '{manifest}': {exc}") from exc
+
           reports = data.get("reports")
           if not isinstance(reports, list) or not reports:
               raise SystemExit("Coverage manifest has no reports.")
 
           files = []
           for report in reports:
+              if not isinstance(report, dict):
+                  raise SystemExit(f"Invalid manifest entry: {report!r}")
+
               path = report.get("path")
               include_in_codecov = report.get("codecov", True)
-              if not path:
+              if not isinstance(path, str) or not path:
                   raise SystemExit(f"Invalid manifest entry: {report!r}")
               if not isinstance(include_in_codecov, bool):
                   raise SystemExit(f"Invalid codecov flag in manifest entry: {report!r}")
+              if not Path(path).is_file():
+                  raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")
+
               if include_in_codecov:
-                  if not pathlib.Path(path).is_file():
-                      raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")
                   files.append(path)
 
           if not files:
               raise SystemExit("No coverage files marked for Codecov in the manifest.")
 
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"files={','.join(files)}\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"files={','.join(files)}\n")
           PY
 
       - name: Show Codecov files

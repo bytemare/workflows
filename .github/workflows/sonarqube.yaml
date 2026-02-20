@@ -83,41 +83,49 @@ jobs:
           python3 - <<'PY'
           import json
           import os
-          import pathlib
+          from pathlib import Path
 
-          manifest = pathlib.Path(os.environ["MANIFEST_PATH"])
+          manifest = Path(os.environ["MANIFEST_PATH"])
           if not manifest.is_file():
-              fallback = pathlib.Path("manifest.json")
-              if fallback.is_file():
-                  print(
-                      f"::warning::Coverage manifest not found at '{manifest}'. Falling back to '{fallback}'."
-                  )
-                  manifest = fallback
-              else:
-                  raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
+              raise SystemExit(f"Coverage manifest not found at '{manifest}'.")
 
-          data = json.loads(manifest.read_text(encoding="utf-8"))
+          try:
+              data = json.loads(manifest.read_text(encoding="utf-8"))
+          except json.JSONDecodeError as exc:
+              raise SystemExit(f"Invalid JSON in coverage manifest '{manifest}': {exc}") from exc
+
           reports = data.get("reports")
           if not isinstance(reports, list) or not reports:
               raise SystemExit("Coverage manifest has no reports.")
 
           args = []
           python_versions = set()
+
           for report in reports:
+              if not isinstance(report, dict):
+                  raise SystemExit(f"Invalid manifest entry: {report!r}")
+
               path = report.get("path")
               language = report.get("language")
               language_version = report.get("language_version")
               sonar_property = report.get("sonar_property")
-              if not path:
+
+              if not isinstance(path, str) or not path:
                   raise SystemExit(f"Invalid manifest entry: {report!r}")
-              if not pathlib.Path(path).is_file():
+              if not Path(path).is_file():
                   raise SystemExit(f"Coverage report '{path}' listed in manifest does not exist.")
-              if language is not None and not isinstance(language, str):
+
+              if language is not None and (not isinstance(language, str) or not language.strip()):
                   raise SystemExit(f"Invalid language in manifest entry: {report!r}")
               if language_version is not None and (
                   not isinstance(language_version, str) or not language_version.strip()
               ):
                   raise SystemExit(f"Invalid language_version in manifest entry: {report!r}")
+              if sonar_property is not None and (
+                  not isinstance(sonar_property, str) or not sonar_property.strip()
+              ):
+                  raise SystemExit(f"Invalid sonar_property in manifest entry: {report!r}")
+
               if language == "python":
                   if language_version is None:
                       print(
@@ -126,18 +134,16 @@ jobs:
                       )
                   else:
                       python_versions.add(language_version.strip())
-              if sonar_property is None:
-                  continue
-              if not isinstance(sonar_property, str) or not sonar_property:
-                  raise SystemExit(f"Invalid sonar_property in manifest entry: {report!r}")
-              args.append(f"-D{sonar_property}={path}")
+
+              if sonar_property is not None:
+                  args.append(f"-D{sonar_property.strip()}={path}")
 
           if python_versions:
               args.append(f"-Dsonar.python.version={','.join(sorted(python_versions))}")
 
           payload = " ".join(args)
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"args={payload}\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"args={payload}\n")
           PY
 
       - uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
