@@ -108,11 +108,12 @@ jobs:
       # Shared coverage generation (one-time, consumed by SonarQube and Codecov)
       coverage-enabled: true
       coverage-go-enabled: true
-      coverage-go-command: "make -C .github go-coverage"
+      coverage-go-command: "make -C .github go-coverage GO_COVERAGE_REPORT_PATH=.github/coverage.out"
       coverage-go-report-path: ".github/coverage.out"
       coverage-python-enabled: true
       coverage-python-version: "3.12"
-      coverage-python-command: "make -C .github python-coverage"
+      coverage-python-command: "make -C .github python-coverage PYTHON_COVERAGE_REPORT_PATH=.github/coverage.xml"
+      coverage-python-report-path: ".github/coverage.xml"
       coverage-artifact-name: "coverage-report-all"
       coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck
