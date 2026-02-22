@@ -52,7 +52,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
         with:
           disable-sudo: true
           egress-policy: block
@@ -85,7 +85,7 @@ jobs:
 
       - name: Init go
         if: ${{ inputs.coverage && inputs['setup-go'] }}
-        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
+        uses: bytemare/actions/init-go@08d18e3aa189ffa507803210307e0b1aee793d5a
         with:
           go-version: '1.25'
           go-mod: 'go.mod'
@@ -97,7 +97,7 @@ jobs:
           COVERAGE_CMD: ${{ inputs['coverage-command'] }}
         run: $COVERAGE_CMD
 
-      - uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
+      - uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
           SONAR_TOKEN: ${{ secrets.sonar }}

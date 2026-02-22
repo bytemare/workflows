@@ -24,7 +24,7 @@ permissions: { }
 
 jobs:
   Release:
-    uses: bytemare/slsa/.github/workflows/slsa.yaml@70b0ebac660df85768a16b2efc0651650a84aba9
+    uses: bytemare/slsa/.github/workflows/slsa.yaml@eaa15be26e15b6ed07cb096fc16653fdc492a45d
     with:
       workflow_ref: 70b0ebac660df85768a16b2efc0651650a84aba9
       dry_run: ${{ github.event_name == 'pull_request' }}
