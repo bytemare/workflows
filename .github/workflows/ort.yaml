@@ -57,7 +57,7 @@ jobs:
       actions: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
         with:
           disable-sudo: true
           egress-policy: block
@@ -208,7 +208,7 @@ jobs:
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ always() && github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/actions/ort-report@f59fbc62c9788357c171183d6e08973b7d2d4eda
+        uses: bytemare/workflows/actions/ort-report@1613643dad14d2c3be3b3adc097b68c8f1e54fee
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}

@@ -51,7 +51,7 @@ jobs:
       contents: read
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
         with:
           disable-sudo: true
           egress-policy: block
@@ -70,7 +70,7 @@ jobs:
           fetch-depth: 0
 
       - name: Init go
-        uses: bytemare/actions/init-go@d693c2cf1d83d323e3178be93793b06b46208148
+        uses: bytemare/actions/init-go@08d18e3aa189ffa507803210307e0b1aee793d5a
 
       - name: Check formatting
         run: |
