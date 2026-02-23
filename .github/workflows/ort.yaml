@@ -211,7 +211,7 @@ jobs:
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ always() && github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/actions/ort-report@baa733fbafb4a03699f7b2d54754fc74229ba252
+        uses: bytemare/workflows/actions/ort-report@3739d7c92ef7e384d19c49c3b598888d5661fdd5
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
