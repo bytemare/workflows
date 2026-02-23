@@ -57,6 +57,21 @@ on:
         required: false
         type: boolean
         default: true
+      coverage-go-version:
+        description: 'Go version used when generating Go coverage (overrides coverage-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      coverage-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for Go coverage'
+        required: false
+        type: string
+        default: 'go.mod'
+      coverage-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       coverage-go-command:
         description: 'Go coverage command. Must produce coverage-go-report-path.'
         required: false
@@ -107,6 +122,21 @@ on:
         required: false
         type: string
         default: './...'
+      govulncheck-go-version:
+        description: 'Go version used for Govulncheck (overrides govulncheck-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      govulncheck-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for Govulncheck'
+        required: false
+        type: string
+        default: 'go.mod'
+      govulncheck-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       govulncheck-work-dir:
         description: 'Working directory passed to Govulncheck'
         required: false
@@ -170,6 +200,9 @@ jobs:
     with:
       coverage-enabled: ${{ inputs['coverage-enabled'] }}
       coverage-go-enabled: ${{ inputs['coverage-go-enabled'] }}
+      coverage-go-version: ${{ inputs['coverage-go-version'] }}
+      coverage-go-version-file: ${{ inputs['coverage-go-version-file'] }}
+      coverage-go-check-latest: ${{ inputs['coverage-go-check-latest'] }}
       coverage-go-command: ${{ inputs['coverage-go-command'] }}
       coverage-go-report-path: ${{ inputs['coverage-go-report-path'] }}
       coverage-python-enabled: ${{ inputs['coverage-python-enabled'] }}
@@ -232,6 +265,9 @@ jobs:
       security-events: write
     uses: ./.github/workflows/govulncheck.yaml
     with:
+      go-version: ${{ inputs['govulncheck-go-version'] }}
+      go-version-file: ${{ inputs['govulncheck-go-version-file'] }}
+      go-check-latest: ${{ inputs['govulncheck-go-check-latest'] }}
       work-dir: ${{ inputs['govulncheck-work-dir'] }}
       go-package: ${{ inputs['govulncheck-go-package'] }}
 

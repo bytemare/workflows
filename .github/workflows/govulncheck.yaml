@@ -15,6 +15,21 @@ name: Govulncheck
 on:
   workflow_call:
     inputs:
+      go-version:
+        description: 'Go version used for govulncheck (overrides go-version-file)'
+        required: false
+        type: string
+        default: ''
+      go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for govulncheck'
+        required: false
+        type: string
+        default: 'go.mod'
+      go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       work-dir:
         description: 'Working directory passed to govulncheck'
         required: false
@@ -55,6 +70,9 @@ jobs:
       - name: Govulncheck
         uses: golang/govulncheck-action@357ea4a5418cb457db33ccd168e28f68e075eba0
         with:
+          go-version-input: ${{ inputs['go-version'] }}
+          go-version-file: ${{ inputs['go-version-file'] }}
+          check-latest: ${{ inputs['go-check-latest'] }}
           work-dir: ${{ inputs['work-dir'] }}
           go-package: ${{ inputs['go-package'] }}
           output-file: govulncheck.sarif

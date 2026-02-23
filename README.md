@@ -75,6 +75,8 @@ jobs:
       # Shared coverage generation (produced once, consumed by SonarQube and Codecov)
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod # optional; defaults to go.mod
+      coverage-go-check-latest: true # optional; defaults to true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-python-enabled: false
       coverage-artifact-name: coverage-report-all # optional; defaults to coverage-report-all
@@ -84,6 +86,8 @@ jobs:
       codecov-disable-search: true # recommended with manifest-driven uploads
       # Govulncheck
       govulncheck: true
+      govulncheck-go-version-file: go.mod # optional; defaults to go.mod
+      govulncheck-go-check-latest: true # optional; defaults to true
       govulncheck-go-package: ./... # optional; defaults to ./...
       govulncheck-work-dir: . # optional; defaults to .
       # Gitleaks
@@ -121,6 +125,8 @@ jobs:
     with:
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod
+      coverage-go-check-latest: true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-python-enabled: false
       coverage-artifact-name: coverage-report-all
@@ -242,6 +248,8 @@ jobs:
     with:
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod
+      coverage-go-check-latest: true
       coverage-python-enabled: true
       coverage-artifact-name: coverage-report-all
       coverage-manifest-path: coverage/manifest.json
@@ -256,12 +264,16 @@ jobs:
   go-coverage:
     uses: bytemare/workflows/.github/workflows/coverage-go.yaml@[pinned commit SHA]
     with:
+      coverage-go-version-file: go.mod # optional; defaults to go.mod
+      coverage-go-check-latest: true # optional; defaults to true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-go-report-path: coverage.out
 ```
 
 When using this repository's local make helpers, you can set the report output path explicitly:
 `make -C .github go-coverage GO_COVERAGE_REPORT_PATH=.github/coverage.out`
+
+Use `coverage-go-version` to force a specific Go version, or `coverage-go-version-file` (for example `tests/go.mod`) to infer it from a nested module. `coverage-go-check-latest` defaults to `true` to avoid stale runner toolchains when a newer compatible patch is required.
 
 ### Python Coverage (Producer)
 
@@ -394,9 +406,13 @@ jobs:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
     with:
+      go-version-file: go.mod # optional; defaults to go.mod
+      go-check-latest: true # optional; defaults to true
       work-dir: . # optional; defaults to .
       go-package: ./... # optional; defaults to ./...
 ```
+
+For nested modules, set `work-dir` to the module directory (for example `./tests`) and `go-version-file` to the matching module file (for example `tests/go.mod`).
 
 ---
 

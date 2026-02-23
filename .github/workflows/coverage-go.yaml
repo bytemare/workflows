@@ -15,6 +15,21 @@ name: Coverage (Go)
 on:
   workflow_call:
     inputs:
+      coverage-go-version:
+        description: 'Go version used when generating Go coverage (overrides coverage-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      coverage-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for coverage'
+        required: false
+        type: string
+        default: 'go.mod'
+      coverage-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       coverage-go-command:
         description: 'Go coverage command. Must produce coverage-go-report-path.'
         required: true
@@ -54,6 +69,10 @@ jobs:
 
       - name: Setup Go
         uses: actions/setup-go@a5f9b05d2d216f63e13859e0d847461041025775
+        with:
+          go-version: ${{ inputs['coverage-go-version'] }}
+          go-version-file: ${{ inputs['coverage-go-version-file'] }}
+          check-latest: ${{ inputs['coverage-go-check-latest'] }}
 
       - name: Validate coverage config
         shell: bash
