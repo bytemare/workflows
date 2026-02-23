@@ -30,4 +30,12 @@ runs:
         ARTIFACT_DIR: ${{ inputs.artifact_dir }}
         ORT_FAILED: ${{ inputs.ort_failed }}
       run: |
-        python3 "$GITHUB_WORKSPACE/scripts/ort-report/ort_report.py"
+        set -euo pipefail
+        SCRIPT_PATH="${GITHUB_ACTION_PATH}/../../scripts/ort-report/ort_report.py"
+
+        if [ ! -f "$SCRIPT_PATH" ]; then
+          echo "::error::ORT report script not found at '$SCRIPT_PATH'." >&2
+          exit 1
+        fi
+
+        python3 "$SCRIPT_PATH"

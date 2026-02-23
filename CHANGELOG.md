@@ -39,6 +39,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 
 ### Changed
 - **Terminology**: "CodeScan" naming for security and code analysis workflows (previously referenced as "SAST")
+- **ORT report composite action path resolution fixed for consumers**: `actions/ort-report` now resolves its Python helper from the action checkout (`GITHUB_ACTION_PATH`) instead of the caller workspace.
 
 #### Coverage Orchestration
 - **Coverage generation moved to dedicated reusable coverage workflows** and is now executed once per workflow run.
