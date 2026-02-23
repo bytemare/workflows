@@ -24,7 +24,7 @@ All reusable workflows that execute code enforce egress filtering using [Harden-
   - [CodeQL](#codeql)
   - [Govulncheck](#govulncheck)
   - [Dependency Review](#dependency-review)
-  - [OSS Review Toolkit (ORT)](#oss-review-toolkit--ort-)
+  - [OSS Review Toolkit (ORT)](#oss-review-toolkit-ort)
   - [Semgrep](#semgrep)
   - [OpenSSF Scorecard](#openssf-scorecard)
   - [Do not submit](#do-not-submit)
