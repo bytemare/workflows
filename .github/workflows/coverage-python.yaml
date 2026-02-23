@@ -1,0 +1,131 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Coverage (Python)
+
+on:
+  workflow_call:
+    inputs:
+      coverage-python-version:
+        description: 'Python version used when generating Python coverage'
+        required: false
+        type: string
+        default: '3.13'
+      coverage-python-command:
+        description: 'Python coverage command. Must produce coverage-python-report-path.'
+        required: true
+        type: string
+      coverage-python-report-path:
+        description: 'Python coverage report path produced by coverage-python-command'
+        required: false
+        type: string
+        default: 'coverage.xml'
+
+permissions: { }
+
+jobs:
+  CoveragePython:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            files.pythonhosted.org:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pypi.org:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout repository
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: ${{ inputs['coverage-python-version'] }}
+
+      - name: Validate coverage config
+        shell: bash
+        env:
+          PYTHON_VERSION: ${{ inputs['coverage-python-version'] }}
+          COVERAGE_CMD: ${{ inputs['coverage-python-command'] }}
+          REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PYTHON_VERSION" ]; then
+            echo "coverage-python-version is empty while Python coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$COVERAGE_CMD" ]; then
+            echo "coverage-python-command is empty while Python coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$REPORT_PATH" ]; then
+            echo "coverage-python-report-path is empty while Python coverage is enabled." >&2
+            exit 1
+          fi
+
+      - name: Run Python coverage
+        shell: bash
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-python-command'] }}
+        run: $COVERAGE_CMD
+
+      - name: Normalize Python coverage output
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "Expected Python coverage report '$REPORT_PATH' was not found." >&2
+            exit 1
+          fi
+          report_name="$(basename "$REPORT_PATH")"
+          mkdir -p coverage/reports
+          cp "$REPORT_PATH" "coverage/reports/$report_name"
+
+      - name: Write Python coverage metadata
+        shell: bash
+        env:
+          PYTHON_VERSION: ${{ inputs['coverage-python-version'] }}
+          REPORT_PATH: ${{ inputs['coverage-python-report-path'] }}
+        run: |
+          set -euo pipefail
+          report_name="$(basename "$REPORT_PATH")"
+          cat > coverage/coverage-metadata.json <<EOF
+          {
+            "version": "1",
+            "reports": [
+              {
+                "language": "python",
+                "language_version": "$PYTHON_VERSION",
+                "path": "reports/$report_name",
+                "sonar_property": "sonar.python.coverage.reportPaths",
+                "codecov": true
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload Python coverage artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: coverage-report-python
+          path: coverage/
+          if-no-files-found: error

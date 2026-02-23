@@ -6,12 +6,12 @@
 // LICENSE file in the root directory of this source tree or at
 // https://spdx.org/licenses/MIT.html
 
-package actions_test
+package tests_test
 
 import (
 	"fmt"
 
-	"github.com/bytemare/workflows/internal"
+	"github.com/bytemare/workflows/tests/internal"
 )
 
 // ExampleAddition shows how to add numbers.

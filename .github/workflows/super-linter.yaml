@@ -56,6 +56,7 @@ jobs:
             objects.githubusercontent.com:443
             proxy.golang.org:443
             registry-1.docker.io:443
+            storage.googleapis.com:443
 
       - name: Checkout code
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98

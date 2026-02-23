@@ -1,0 +1,120 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2026 Daniel Bourdrez. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree or at
+# https://spdx.org/licenses/MIT.html
+#
+
+---
+
+name: Coverage (Go)
+
+on:
+  workflow_call:
+    inputs:
+      coverage-go-command:
+        description: 'Go coverage command. Must produce coverage-go-report-path.'
+        required: true
+        type: string
+      coverage-go-report-path:
+        description: 'Go coverage report path produced by coverage-go-command'
+        required: false
+        type: string
+        default: 'coverage.out'
+
+permissions: { }
+
+jobs:
+  CoverageGo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            go.dev:443
+            golang.org:443
+            objects.githubusercontent.com:443
+            proxy.golang.org:443
+            release-assets.githubusercontent.com:443
+            storage.googleapis.com:443
+            sum.golang.org:443
+
+      - name: Checkout repository
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Setup Go
+        uses: actions/setup-go@a5f9b05d2d216f63e13859e0d847461041025775
+
+      - name: Validate coverage config
+        shell: bash
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-go-command'] }}
+          REPORT_PATH: ${{ inputs['coverage-go-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ -z "$COVERAGE_CMD" ]; then
+            echo "coverage-go-command is empty while Go coverage is enabled." >&2
+            exit 1
+          fi
+          if [ -z "$REPORT_PATH" ]; then
+            echo "coverage-go-report-path is empty while Go coverage is enabled." >&2
+            exit 1
+          fi
+
+      - name: Run Go coverage
+        shell: bash
+        env:
+          COVERAGE_CMD: ${{ inputs['coverage-go-command'] }}
+        run: $COVERAGE_CMD
+
+      - name: Normalize Go coverage output
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-go-report-path'] }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "Expected Go coverage report '$REPORT_PATH' was not found." >&2
+            exit 1
+          fi
+          report_name="$(basename "$REPORT_PATH")"
+          mkdir -p coverage/reports
+          cp "$REPORT_PATH" "coverage/reports/$report_name"
+
+      - name: Write Go coverage metadata
+        shell: bash
+        env:
+          REPORT_PATH: ${{ inputs['coverage-go-report-path'] }}
+        run: |
+          set -euo pipefail
+          report_name="$(basename "$REPORT_PATH")"
+          cat > coverage/coverage-metadata.json <<EOF
+          {
+            "version": "1",
+            "reports": [
+              {
+                "language": "go",
+                "path": "reports/$report_name",
+                "sonar_property": "sonar.go.coverage.reportPaths",
+                "codecov": true
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload Go coverage artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: coverage-report-go
+          path: coverage/
+          if-no-files-found: error
