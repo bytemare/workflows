@@ -1,3 +1,3 @@
 module github.com/bytemare/workflows/tests
 
-go 1.26
+go 1.24

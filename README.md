@@ -554,7 +554,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ '1.25', '1.24', '1.23' ] # Test against multiple Go versions
+        go: [ '1.26', '1.25', '1.24' ] # Test against multiple Go versions
     uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
     with:
       version: ${{ matrix.go }}
