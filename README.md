@@ -69,6 +69,8 @@ jobs:
       # CodeQL
       codeql: true
       codeql-language: go # comma-separated list supported
+      codeql-go-version-file: go.mod # optional; empty auto-detects go.mod then go.work
+      codeql-go-check-latest: true # optional; defaults to true
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
@@ -330,11 +332,15 @@ jobs:
     uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned commit SHA]
     with:
       language: go
+      go-version-file: go.mod # optional; empty auto-detects go.mod then go.work
+      go-check-latest: true # optional; defaults to true
     permissions:
       actions: read
       contents: read
       security-events: write
 ```
+
+Use `go-version` to force a specific Go version (for example when tests run as a matrix and CodeQL should run once on a pinned version). For workspace-only repositories, leave `go-version-file` empty to auto-detect `go.work`, or set it explicitly to `go.work`.
 
 ---
 

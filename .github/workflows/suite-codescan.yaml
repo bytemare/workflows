@@ -37,6 +37,21 @@ on:
         required: false
         type: string
         default: go
+      codeql-go-version:
+        description: 'Go version used for CodeQL Go autobuild (overrides codeql-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      codeql-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for CodeQL Go autobuild (empty = auto-detect go.mod, then go.work)'
+        required: false
+        type: string
+        default: ''
+      codeql-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       sonarqube:
         description: 'Run SonarQube scan'
         required: false
@@ -190,6 +205,9 @@ jobs:
     uses: ./.github/workflows/codeql.yaml
     with:
       language: ${{ inputs['codeql-language'] }}
+      go-version: ${{ inputs['codeql-go-version'] }}
+      go-version-file: ${{ inputs['codeql-go-version-file'] }}
+      go-check-latest: ${{ inputs['codeql-go-check-latest'] }}
 
   Coverage:
     if: ${{ inputs.sonarqube || inputs.codecov }}

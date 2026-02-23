@@ -49,6 +49,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 - **Consumer manifest resolution is strict**: `coverage-manifest-path` must exist exactly (no fallback lookup).
 - **Coverage make helpers now support configurable output paths and package targets** via `GO_COVERAGE_REPORT_PATH`, `GO_COVERAGE_PACKAGE`, `GO_COVERAGE_TEST_TARGET`, and `PYTHON_COVERAGE_REPORT_PATH`.
 - **Reusable Go coverage and Govulncheck workflows now support toolchain selection** via explicit version / version-file inputs plus `check-latest` controls, with suite passthroughs for flexible consumer defaults.
+- **CodeQL Go autobuild now supports Go toolchain selection** via explicit version / version-file inputs plus `check-latest`, and auto-detects `go.mod` then `go.work` when no version file is provided.
 
 #### Test Workflow
 - **`test-go.yaml` now supports an optional `test-command` input** to override the default Go test command.

@@ -102,6 +102,8 @@ jobs:
       # CodeQL
       codeql: true
       codeql-language: go # comma-separated list supported
+      codeql-go-version-file: "go.work"
+      codeql-go-check-latest: true
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
