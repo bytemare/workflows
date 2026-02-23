@@ -85,6 +85,7 @@ jobs:
       # Govulncheck
       govulncheck: true
       govulncheck-go-package: ./... # optional; defaults to ./...
+      govulncheck-work-dir: . # optional; defaults to .
       # Gitleaks
       gitleaks: true
     secrets:
@@ -262,9 +263,6 @@ jobs:
 When using this repository's local make helpers, you can set the report output path explicitly:
 `make -C .github go-coverage GO_COVERAGE_REPORT_PATH=.github/coverage.out`
 
-For this repository's own CI smoke fixture (kept under `tests`), the top-level analysis workflow sets:
-`GO_COVERAGE_PACKAGE=../tests/... GO_COVERAGE_TEST_TARGET='../tests ../tests'`.
-
 ### Python Coverage (Producer)
 
 Low-level reusable producer used by `suite-coverage.yaml` to generate a normalized Python report. It uploads artifact `coverage-report-python` containing `coverage/coverage-metadata.json` and report files under `coverage/reports/`.
@@ -396,6 +394,7 @@ jobs:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
     with:
+      work-dir: . # optional; defaults to .
       go-package: ./... # optional; defaults to ./...
 ```
 

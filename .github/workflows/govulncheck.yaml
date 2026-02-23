@@ -15,6 +15,11 @@ name: Govulncheck
 on:
   workflow_call:
     inputs:
+      work-dir:
+        description: 'Working directory passed to govulncheck'
+        required: false
+        type: string
+        default: '.'
       go-package:
         description: 'Go package pattern passed to govulncheck'
         required: false
@@ -50,6 +55,7 @@ jobs:
       - name: Govulncheck
         uses: golang/govulncheck-action@357ea4a5418cb457db33ccd168e28f68e075eba0
         with:
+          work-dir: ${{ inputs['work-dir'] }}
           go-package: ${{ inputs['go-package'] }}
           output-file: govulncheck.sarif
           output-format: sarif

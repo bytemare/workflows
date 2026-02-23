@@ -55,7 +55,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 #### Repository Go Fixture Layout
 - **Go smoke fixture moved from repo root to `tests`** (`tests/go.mod`, `tests/examples_test.go`, `tests/internal/addition.go`, and `tests/addition_test.go`).
 - **Root Go workspace shim added**: `go.work` keeps root-run Go commands that target the fixture path working without presenting the repository as a root Go module.
-- **Govulncheck package targeting is now configurable**: `govulncheck.yaml` adds `go-package`, and `suite-codescan.yaml` forwards it via `govulncheck-go-package`.
+- **Govulncheck targeting is now configurable**: `govulncheck.yaml` adds `go-package` and `work-dir`, and `suite-codescan.yaml` forwards them via `govulncheck-go-package` and `govulncheck-work-dir`.
 
 ### Removed
 - **Breaking API removal in `suite-codescan.yaml`**: removed `sonarqube-coverage`, `sonarqube-coverage-command`, `sonarqube-setup-go`, `codecov-coverage-command`, `codecov-coverage-file`, and `codecov-setup-go`.

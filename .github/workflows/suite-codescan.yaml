@@ -107,6 +107,11 @@ on:
         required: false
         type: string
         default: './...'
+      govulncheck-work-dir:
+        description: 'Working directory passed to Govulncheck'
+        required: false
+        type: string
+        default: '.'
       gitleaks:
         description: 'Run gitleaks secret scanning'
         required: false
@@ -227,6 +232,7 @@ jobs:
       security-events: write
     uses: ./.github/workflows/govulncheck.yaml
     with:
+      work-dir: ${{ inputs['govulncheck-work-dir'] }}
       go-package: ${{ inputs['govulncheck-go-package'] }}
 
   Gitleaks:
