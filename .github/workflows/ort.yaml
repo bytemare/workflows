@@ -64,6 +64,9 @@ jobs:
           allowed-endpoints: >
             ghcr.io:443
             github.com:443
+            go.dev:443
+            golang.org:443
+            hosted-compute-request-orchestrator-prod-iad-01.githubapp.com:443
             hosted-compute-watchdog-prod-eus-01.githubapp.com:443
             pkg-containers.githubusercontent.com:443
 
@@ -208,7 +211,7 @@ jobs:
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ always() && github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/actions/ort-report@ae42588a5b63e8adb1ded724a0bdac20ac797046
+        uses: bytemare/workflows/actions/ort-report@3739d7c92ef7e384d19c49c3b598888d5661fdd5
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}

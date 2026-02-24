@@ -102,12 +102,16 @@ jobs:
       # CodeQL
       codeql: true
       codeql-language: go # comma-separated list supported
+      codeql-go-version-file: "go.work"
+      codeql-go-check-latest: true
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
       # Shared coverage generation (one-time, consumed by SonarQube and Codecov)
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: "tests/go.mod"
+      coverage-go-check-latest: true
       coverage-go-command: "make -C .github go-coverage GO_COVERAGE_REPORT_PATH=coverage.out GO_COVERAGE_PACKAGE=../tests/... GO_COVERAGE_TEST_TARGET=../tests/..."
       coverage-go-report-path: ".github/coverage.out"
       coverage-python-enabled: true
@@ -118,6 +122,8 @@ jobs:
       coverage-manifest-path: "coverage/manifest.json"
       # Govulncheck
       govulncheck: true
+      govulncheck-go-version-file: "tests/go.mod"
+      govulncheck-go-check-latest: true
       govulncheck-work-dir: "./tests"
       govulncheck-go-package: "./..."
       # Gitleaks

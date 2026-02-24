@@ -27,6 +27,21 @@ on:
         required: false
         type: boolean
         default: true
+      coverage-go-version:
+        description: 'Go version used when generating Go coverage (overrides coverage-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      coverage-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for Go coverage'
+        required: false
+        type: string
+        default: 'go.mod'
+      coverage-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       coverage-go-command:
         description: 'Go coverage command. Must produce coverage-go-report-path.'
         required: false
@@ -82,6 +97,9 @@ jobs:
       contents: read
     uses: ./.github/workflows/coverage-go.yaml
     with:
+      coverage-go-version: ${{ inputs['coverage-go-version'] }}
+      coverage-go-version-file: ${{ inputs['coverage-go-version-file'] }}
+      coverage-go-check-latest: ${{ inputs['coverage-go-check-latest'] }}
       coverage-go-command: ${{ inputs['coverage-go-command'] }}
       coverage-go-report-path: ${{ inputs['coverage-go-report-path'] }}
 

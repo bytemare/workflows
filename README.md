@@ -69,12 +69,16 @@ jobs:
       # CodeQL
       codeql: true
       codeql-language: go # comma-separated list supported
+      codeql-go-version-file: go.mod # optional; empty auto-detects go.mod then go.work
+      codeql-go-check-latest: true # optional; defaults to true
       # SonarQube
       sonarqube: true
       sonarqube-configuration: .github/sonar-project.properties
       # Shared coverage generation (produced once, consumed by SonarQube and Codecov)
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod # optional; defaults to go.mod
+      coverage-go-check-latest: true # optional; defaults to true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-python-enabled: false
       coverage-artifact-name: coverage-report-all # optional; defaults to coverage-report-all
@@ -84,6 +88,8 @@ jobs:
       codecov-disable-search: true # recommended with manifest-driven uploads
       # Govulncheck
       govulncheck: true
+      govulncheck-go-version-file: go.mod # optional; defaults to go.mod
+      govulncheck-go-check-latest: true # optional; defaults to true
       govulncheck-go-package: ./... # optional; defaults to ./...
       govulncheck-work-dir: . # optional; defaults to .
       # Gitleaks
@@ -121,6 +127,8 @@ jobs:
     with:
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod
+      coverage-go-check-latest: true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-python-enabled: false
       coverage-artifact-name: coverage-report-all
@@ -242,6 +250,8 @@ jobs:
     with:
       coverage-enabled: true
       coverage-go-enabled: true
+      coverage-go-version-file: go.mod
+      coverage-go-check-latest: true
       coverage-python-enabled: true
       coverage-artifact-name: coverage-report-all
       coverage-manifest-path: coverage/manifest.json
@@ -256,12 +266,16 @@ jobs:
   go-coverage:
     uses: bytemare/workflows/.github/workflows/coverage-go.yaml@[pinned commit SHA]
     with:
+      coverage-go-version-file: go.mod # optional; defaults to go.mod
+      coverage-go-check-latest: true # optional; defaults to true
       coverage-go-command: "go test -v -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./..."
       coverage-go-report-path: coverage.out
 ```
 
 When using this repository's local make helpers, you can set the report output path explicitly:
 `make -C .github go-coverage GO_COVERAGE_REPORT_PATH=.github/coverage.out`
+
+Use `coverage-go-version` to force a specific Go version, or `coverage-go-version-file` (for example `tests/go.mod`) to infer it from a nested module. `coverage-go-check-latest` defaults to `true` to avoid stale runner toolchains when a newer compatible patch is required.
 
 ### Python Coverage (Producer)
 
@@ -318,11 +332,15 @@ jobs:
     uses: bytemare/workflows/.github/workflows/codeql.yaml@[pinned commit SHA]
     with:
       language: go
+      go-version-file: go.mod # optional; empty auto-detects go.mod then go.work
+      go-check-latest: true # optional; defaults to true
     permissions:
       actions: read
       contents: read
       security-events: write
 ```
+
+Use `go-version` to force a specific Go version (for example when tests run as a matrix and CodeQL should run once on a pinned version). For workspace-only repositories, leave `go-version-file` empty to auto-detect `go.work`, or set it explicitly to `go.work`.
 
 ---
 
@@ -394,9 +412,13 @@ jobs:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
     with:
+      go-version-file: go.mod # optional; defaults to go.mod
+      go-check-latest: true # optional; defaults to true
       work-dir: . # optional; defaults to .
       go-package: ./... # optional; defaults to ./...
 ```
+
+For nested modules, set `work-dir` to the module directory (for example `./tests`) and `go-version-file` to the matching module file (for example `tests/go.mod`).
 
 ---
 
@@ -532,7 +554,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ '1.25', '1.24', '1.23' ] # Test against multiple Go versions
+        go: [ '1.26', '1.25', '1.24' ] # Test against multiple Go versions
     uses: bytemare/workflows/.github/workflows/test-go.yaml@[pinned commit SHA]
     with:
       version: ${{ matrix.go }}

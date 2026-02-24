@@ -39,6 +39,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 
 ### Changed
 - **Terminology**: "CodeScan" naming for security and code analysis workflows (previously referenced as "SAST")
+- **ORT report composite action path resolution fixed for consumers**: `actions/ort-report` now resolves its Python helper from the action checkout (`GITHUB_ACTION_PATH`) instead of the caller workspace.
 
 #### Coverage Orchestration
 - **Coverage generation moved to dedicated reusable coverage workflows** and is now executed once per workflow run.
@@ -48,6 +49,8 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 - **Top-level `wf-analysis.yaml` now uses shared coverage inputs** (`coverage-enabled` plus Go/Python coverage commands) to avoid duplicate coverage execution.
 - **Consumer manifest resolution is strict**: `coverage-manifest-path` must exist exactly (no fallback lookup).
 - **Coverage make helpers now support configurable output paths and package targets** via `GO_COVERAGE_REPORT_PATH`, `GO_COVERAGE_PACKAGE`, `GO_COVERAGE_TEST_TARGET`, and `PYTHON_COVERAGE_REPORT_PATH`.
+- **Reusable Go coverage and Govulncheck workflows now support toolchain selection** via explicit version / version-file inputs plus `check-latest` controls, with suite passthroughs for flexible consumer defaults.
+- **CodeQL Go autobuild now supports Go toolchain selection** via explicit version / version-file inputs plus `check-latest`, and auto-detects `go.mod` then `go.work` when no version file is provided.
 
 #### Test Workflow
 - **`test-go.yaml` now supports an optional `test-command` input** to override the default Go test command.
@@ -55,7 +58,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 #### Repository Go Fixture Layout
 - **Go smoke fixture moved from repo root to `tests`** (`tests/go.mod`, `tests/examples_test.go`, `tests/internal/addition.go`, and `tests/addition_test.go`).
 - **Root Go workspace shim added**: `go.work` keeps root-run Go commands that target the fixture path working without presenting the repository as a root Go module.
-- **Govulncheck targeting is now configurable**: `govulncheck.yaml` adds `go-package` and `work-dir`, and `suite-codescan.yaml` forwards them via `govulncheck-go-package` and `govulncheck-work-dir`.
+- **Govulncheck targeting is now configurable**: `govulncheck.yaml` adds `go-package`, `work-dir`, and Go toolchain inputs; `suite-codescan.yaml` forwards them via `govulncheck-go-package`, `govulncheck-work-dir`, and `govulncheck-go-*`.
 
 ### Removed
 - **Breaking API removal in `suite-codescan.yaml`**: removed `sonarqube-coverage`, `sonarqube-coverage-command`, `sonarqube-setup-go`, `codecov-coverage-command`, `codecov-coverage-file`, and `codecov-setup-go`.

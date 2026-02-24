@@ -37,6 +37,21 @@ on:
         required: false
         type: string
         default: go
+      codeql-go-version:
+        description: 'Go version used for CodeQL Go autobuild (overrides codeql-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      codeql-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for CodeQL Go autobuild (empty = auto-detect go.mod, then go.work)'
+        required: false
+        type: string
+        default: ''
+      codeql-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       sonarqube:
         description: 'Run SonarQube scan'
         required: false
@@ -54,6 +69,21 @@ on:
         default: false
       coverage-go-enabled:
         description: 'Generate Go coverage report'
+        required: false
+        type: boolean
+        default: true
+      coverage-go-version:
+        description: 'Go version used when generating Go coverage (overrides coverage-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      coverage-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for Go coverage'
+        required: false
+        type: string
+        default: 'go.mod'
+      coverage-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
         required: false
         type: boolean
         default: true
@@ -107,6 +137,21 @@ on:
         required: false
         type: string
         default: './...'
+      govulncheck-go-version:
+        description: 'Go version used for Govulncheck (overrides govulncheck-go-version-file)'
+        required: false
+        type: string
+        default: ''
+      govulncheck-go-version-file:
+        description: 'Path to go.mod or go.work used to infer Go version for Govulncheck'
+        required: false
+        type: string
+        default: 'go.mod'
+      govulncheck-go-check-latest:
+        description: 'Check for the latest Go patch version matching the requested/inferred version'
+        required: false
+        type: boolean
+        default: true
       govulncheck-work-dir:
         description: 'Working directory passed to Govulncheck'
         required: false
@@ -160,6 +205,9 @@ jobs:
     uses: ./.github/workflows/codeql.yaml
     with:
       language: ${{ inputs['codeql-language'] }}
+      go-version: ${{ inputs['codeql-go-version'] }}
+      go-version-file: ${{ inputs['codeql-go-version-file'] }}
+      go-check-latest: ${{ inputs['codeql-go-check-latest'] }}
 
   Coverage:
     if: ${{ inputs.sonarqube || inputs.codecov }}
@@ -170,6 +218,9 @@ jobs:
     with:
       coverage-enabled: ${{ inputs['coverage-enabled'] }}
       coverage-go-enabled: ${{ inputs['coverage-go-enabled'] }}
+      coverage-go-version: ${{ inputs['coverage-go-version'] }}
+      coverage-go-version-file: ${{ inputs['coverage-go-version-file'] }}
+      coverage-go-check-latest: ${{ inputs['coverage-go-check-latest'] }}
       coverage-go-command: ${{ inputs['coverage-go-command'] }}
       coverage-go-report-path: ${{ inputs['coverage-go-report-path'] }}
       coverage-python-enabled: ${{ inputs['coverage-python-enabled'] }}
@@ -232,6 +283,9 @@ jobs:
       security-events: write
     uses: ./.github/workflows/govulncheck.yaml
     with:
+      go-version: ${{ inputs['govulncheck-go-version'] }}
+      go-version-file: ${{ inputs['govulncheck-go-version-file'] }}
+      go-check-latest: ${{ inputs['govulncheck-go-check-latest'] }}
       work-dir: ${{ inputs['govulncheck-work-dir'] }}
       go-package: ${{ inputs['govulncheck-go-package'] }}
 
