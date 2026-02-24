@@ -115,6 +115,7 @@ jobs:
 
   ORT:
     if: ${{ inputs['ort'] }}
+    name: OSS Review Toolkit (ORT)
     permissions:
       pull-requests: write
       id-token: write
