@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc
         with:
           disable-sudo: true
           egress-policy: block
@@ -96,25 +96,25 @@ jobs:
 
       - name: Setup Go (explicit version)
         if: ${{ contains(inputs.language, 'go') && inputs['go-version'] != '' }}
-        uses: actions/setup-go@a5f9b05d2d216f63e13859e0d847461041025775
+        uses: actions/setup-go@27fdb267c15a8835f1ead03dfa07f89be2bb741a
         with:
           go-version: ${{ inputs['go-version'] }}
           check-latest: ${{ inputs['go-check-latest'] }}
 
       - name: Setup Go (version file)
         if: ${{ contains(inputs.language, 'go') && inputs['go-version'] == '' && steps.go_version_file.outputs.path != '' }}
-        uses: actions/setup-go@a5f9b05d2d216f63e13859e0d847461041025775
+        uses: actions/setup-go@27fdb267c15a8835f1ead03dfa07f89be2bb741a
         with:
           go-version-file: ${{ steps.go_version_file.outputs.path }}
           check-latest: ${{ inputs['go-check-latest'] }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@cb4e075f119f8bccbc942d49655b2cd4dc6e615a
+        uses: github/codeql-action/init@d1a65275e8dac7b2cc72bb121bf58f0ee7b0f92d
         with:
           languages: ${{ inputs.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@cb4e075f119f8bccbc942d49655b2cd4dc6e615a
+        uses: github/codeql-action/autobuild@d1a65275e8dac7b2cc72bb121bf58f0ee7b0f92d
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@cb4e075f119f8bccbc942d49655b2cd4dc6e615a
+        uses: github/codeql-action/analyze@d1a65275e8dac7b2cc72bb121bf58f0ee7b0f92d

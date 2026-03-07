@@ -39,7 +39,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc
         with:
           disable-sudo: true
           egress-policy: block
@@ -124,7 +124,7 @@ jobs:
           EOF
 
       - name: Upload Python coverage artifact
-        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: coverage-report-python
           path: coverage/
