@@ -44,7 +44,7 @@ jobs:
       statuses: write
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
         with:
           disable-sudo: true
           egress-policy: block
@@ -88,7 +88,7 @@ jobs:
           done
 
       - name: Run super-linter
-        uses: super-linter/super-linter@f33a1a1d0c58e680afdceb57307a6d022732731f
+        uses: super-linter/super-linter@f9e50a2b23a6aec9d8489c4cf5fbbdb86ad04dfb
         env:
           LINTER_RULES_PATH: .github
           VALIDATE_ALL_CODEBASE: true

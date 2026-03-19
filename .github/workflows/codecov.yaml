@@ -48,7 +48,7 @@ jobs:
       contents: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
         with:
           disable-sudo: true
           egress-policy: block
@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: ${{ inputs['coverage-artifact-name'] }}
           path: coverage
@@ -138,7 +138,7 @@ jobs:
           set -euo pipefail
           echo "Uploading coverage files: ${{ steps.coverage_files.outputs.files }}"
 
-      - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
+      - uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad
         env:
           CODECOV_TOKEN: ${{ secrets.token }}
         with:

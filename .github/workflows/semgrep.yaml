@@ -32,7 +32,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -47,6 +47,6 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep }}
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@cb4e075f119f8bccbc942d49655b2cd4dc6e615a
+        uses: github/codeql-action/upload-sarif@30c555a528e360aaf7570127a2440e1396c211cb
         with:
           sarif_file: semgrep.sarif
