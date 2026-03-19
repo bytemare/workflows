@@ -62,6 +62,7 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
+            dl.google.com:443
             ghcr.io:443
             github.com:443
             go.dev:443
