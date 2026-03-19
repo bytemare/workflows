@@ -46,7 +46,7 @@ jobs:
       statuses: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
         with:
           disable-sudo: true
           egress-policy: block
@@ -70,7 +70,7 @@ jobs:
           persist-credentials: false
 
       - name: "Run analysis"
-        uses: ossf/scorecard-action@4a0b87a20cc42672e6c80e82e63b5cd8f25f108a
+        uses: ossf/scorecard-action@05bb7c663f6ec9bd8484da0a5b5a77d423e3f88c
         with:
           results_file: results.sarif
           results_format: sarif
@@ -78,13 +78,13 @@ jobs:
           publish_results: true
 
       - name: "Upload artifact"
-        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: SARIF file
           path: results.sarif
           retention-days: 5
 
       - name: "Upload SARIF results to GitHub's code scanning dashboard"
-        uses: github/codeql-action/upload-sarif@cb4e075f119f8bccbc942d49655b2cd4dc6e615a
+        uses: github/codeql-action/upload-sarif@30c555a528e360aaf7570127a2440e1396c211cb
         with:
           sarif_file: results.sarif

@@ -49,7 +49,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
         with:
           disable-sudo: true
           egress-policy: block
@@ -67,7 +67,7 @@ jobs:
 
       - name: Download coverage artifact
         if: ${{ inputs['coverage-artifact-name'] != '' }}
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: ${{ inputs['coverage-artifact-name'] }}
           path: coverage
@@ -146,7 +146,7 @@ jobs:
               handle.write(f"args={payload}\n")
           PY
 
-      - uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
+      - uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
           SONAR_TOKEN: ${{ secrets.sonar }}
