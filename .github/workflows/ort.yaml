@@ -70,6 +70,7 @@ jobs:
             hosted-compute-request-orchestrator-prod-iad-01.githubapp.com:443
             hosted-compute-watchdog-prod-eus-01.githubapp.com:443
             pkg-containers.githubusercontent.com:443
+            sum.golang.org:443
 
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
