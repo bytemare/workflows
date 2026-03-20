@@ -84,6 +84,18 @@ jobs:
       ort_config_target: "~/.ort/config" # optional: target directory to stage the policy configuration to, defaults to ~/.ort/config, because that's where ORT looks for it
       ort_fail_on: "violations"   # fail mode: violations|issues|never
       ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
+      ort_extra_allowed_endpoints: >
+        dl.google.com:443
+        filippo.io:443
+        go.dev:443
+        go.googlesource.com:443
+        golang.org:443
+        proxy.golang.org:443
+        hosted-compute-request-orchestrator-prod-iad-01.githubapp.com:443
+        hosted-compute-watchdog-prod-eus-01.githubapp.com:443
+        storage.googleapis.com:443
+        sum.golang.org:443
+
     secrets:
       # OpenSSF Scorecard token
       scorecard: ${{ secrets.SCORECARD_TOKEN }}

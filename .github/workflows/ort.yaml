@@ -47,6 +47,11 @@ on:
         required: false
         type: string
         default: ""
+      ort_extra_allowed_endpoints:
+        description: "Optional newline-separated host:port entries appended to the built-in ORT egress allowlist"
+        required: false
+        type: string
+        default: ""
 
 jobs:
   ort:
@@ -63,20 +68,11 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             api.github.com:443
-            dl.google.com:443
-            filippo.io:443
             ghcr.io:443
             github.com:443
-            go.dev:443
-            go.googlesource.com:443
-            golang.org:443
-            proxy.golang.org:443
-            hosted-compute-request-orchestrator-prod-iad-01.githubapp.com:443
-            hosted-compute-watchdog-prod-eus-01.githubapp.com:443
             pkg-containers.githubusercontent.com:443
             release-assets.githubusercontent.com:443
-            storage.googleapis.com:443
-            sum.golang.org:443
+            ${{ inputs.ort_extra_allowed_endpoints }}
 
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 

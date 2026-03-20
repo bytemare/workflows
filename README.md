@@ -209,6 +209,8 @@ jobs:
       ort_config_target: "~/.ort/config" # optional ORT config target directory
       ort_fail_on: "violations" # fail mode: violations|issues|never
       ort_cli_args: "-P ort.analyzer.enabledPackageManagers=GoMod"
+      ort_extra_allowed_endpoints: | # optional additive egress exceptions appended to the built-in ORT allowlist
+        golang.org:443
     secrets:
       # OpenSSF Scorecard token
       scorecard: ${{ secrets.SCORECARD_TOKEN }}
@@ -437,10 +439,14 @@ jobs:
       ort_config_revision: main # optional pin of that policy
       ort_fail_on: violations
       ort_cli_args: ""
+      ort_extra_allowed_endpoints: | # optional additive egress exceptions appended to the built-in ORT allowlist
+        golang.org:443
     permissions:
       contents: read
       actions: read # required for ORT job
 ```
+
+`ort_extra_allowed_endpoints` is additive only. It appends newline-separated `host:port` entries to the workflow-owned ORT baseline and does not let callers remove default endpoints or disable `egress-policy: block`.
 
 ---
 

@@ -1,11 +1,19 @@
 # Changelog
 
+<!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 For releases prior to this changelog, see [GitHub Releases](https://github.com/bytemare/workflows/releases).
+
+## [Unreleased]
+
+### Changed
+- **ORT findings are now reported with raw package / rule / license context** and list scanner evidence separately, making `UNHANDLED_LICENSE` and similar failures actionable without conflating package identity with best-effort file matches.
+- **ORT documentation now recommends consumer-side `.ort.yml` excludes** for community and legal boilerplate such as `.github/CONTRIBUTING.md` and `.github/CODE_OF_CONDUCT.md` when they are not part of released artifacts.
 
 ## v0.2.0 - 27/01/2026
 
@@ -40,6 +48,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 ### Changed
 - **Terminology**: "CodeScan" naming for security and code analysis workflows (previously referenced as "SAST")
 - **ORT report composite action path resolution fixed for consumers**: `actions/ort-report` now resolves its Python helper from the action checkout (`GITHUB_ACTION_PATH`) instead of the caller workspace.
+- **ORT now supports additive caller-provided egress exceptions** through `ort_extra_allowed_endpoints`, appended to the reusable workflow's built-in Harden-Runner allowlist without allowing callers to replace the baseline.
 
 #### Coverage Orchestration
 - **Coverage generation moved to dedicated reusable coverage workflows** and is now executed once per workflow run.
