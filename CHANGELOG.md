@@ -1,5 +1,7 @@
 # Changelog
 
+<!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -46,6 +48,7 @@ For releases prior to this changelog, see [GitHub Releases](https://github.com/b
 ### Changed
 - **Terminology**: "CodeScan" naming for security and code analysis workflows (previously referenced as "SAST")
 - **ORT report composite action path resolution fixed for consumers**: `actions/ort-report` now resolves its Python helper from the action checkout (`GITHUB_ACTION_PATH`) instead of the caller workspace.
+- **ORT now supports additive caller-provided egress exceptions** through `ort_extra_allowed_endpoints`, appended to the reusable workflow's built-in Harden-Runner allowlist without allowing callers to replace the baseline.
 
 #### Coverage Orchestration
 - **Coverage generation moved to dedicated reusable coverage workflows** and is now executed once per workflow run.

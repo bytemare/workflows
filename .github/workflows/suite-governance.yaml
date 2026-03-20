@@ -90,6 +90,11 @@ on:
         required: false
         type: string
         default: ""
+      ort_extra_allowed_endpoints:
+        description: "Optional newline-separated host:port entries appended to the built-in ORT egress allowlist"
+        required: false
+        type: string
+        default: ""
     secrets:
       # OpenSSF Scorecard token
       scorecard:
@@ -129,6 +134,7 @@ jobs:
       ort_config_target: ${{ inputs.ort_config_target }}
       ort_fail_on: ${{ inputs.ort_fail_on }}
       ort_cli_args: ${{ inputs.ort_cli_args }}
+      ort_extra_allowed_endpoints: ${{ inputs.ort_extra_allowed_endpoints }}
 
   Scorecard:
     if: ${{ inputs['scorecard'] }}
