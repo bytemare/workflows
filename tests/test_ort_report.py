@@ -685,10 +685,14 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=True,
             message="test violation",
-            severity="error"
+            severity="error",
+            pkg="p1",
+            rule="r1",
+            license="MIT",
         )
         msg, sev = ort_report._build_annotation(ctx)
         assert "✅ Accepted:" in msg
+        assert "r1 in p1 [MIT]" in msg
         assert "test violation" in msg
         assert "security review" in msg
         assert "approved by team" in msg
@@ -702,10 +706,13 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=True,
             message="license finding",
-            severity="warning"
+            severity="warning",
+            pkg="Go::github.com/example/lib:1.0.0",
+            license="NOASSERTION",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "❓ Unknown license:" in msg
+        assert "❓ Unknown license in Go::github.com/example/lib:1.0.0" in msg
+        assert "NOASSERTION" in msg
         assert "license finding" in msg
         assert sev == "warning"
 
@@ -717,10 +724,11 @@ class TestBuildAnnotation:
             has_rule=False,
             has_message=False,
             message="",
-            severity="error"
+            severity="error",
+            pkg="GoMod::go.mod:",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "❓ Unknown ORT finding" in msg
+        assert "❓ Unknown ORT finding in GoMod::go.mod:" in msg
         assert "missing rule/message fields" in msg
         assert sev == "warning"
 
@@ -732,10 +740,14 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=True,
             message="critical issue",
-            severity="ERROR"
+            severity="ERROR",
+            pkg="Go::github.com/example/lib:1.0.0",
+            rule="COPYLEFT_LIMITED_IN_DEPENDENCY",
+            license="GPL-3.0-only",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "❌ critical issue" in msg
+        assert "❌ COPYLEFT_LIMITED_IN_DEPENDENCY in Go::github.com/example/lib:1.0.0 [GPL-3.0-only]" in msg
+        assert "critical issue" in msg
         assert sev == "error"
 
     def test_build_annotation_warning_severity(self):
@@ -746,10 +758,14 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=True,
             message="minor issue",
-            severity="WARNING"
+            severity="WARNING",
+            pkg="Go::github.com/example/lib:1.0.0",
+            rule="PATENT_IN_DEPENDENCY",
+            license="LicenseRef-scancode-google-patent-license-golang",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "❌ minor issue" in msg
+        assert "❌ PATENT_IN_DEPENDENCY in Go::github.com/example/lib:1.0.0" in msg
+        assert "minor issue" in msg
         assert sev == "warning"
 
     def test_build_annotation_default_severity(self):
@@ -760,10 +776,14 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=True,
             message="info message",
-            severity="info"
+            severity="info",
+            pkg="Go::github.com/example/lib:1.0.0",
+            rule="COPYLEFT_LIMITED_IN_DEPENDENCY",
+            license="CC-BY-SA-4.0",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "❌ info message" in msg
+        assert "❌ COPYLEFT_LIMITED_IN_DEPENDENCY in Go::github.com/example/lib:1.0.0 [CC-BY-SA-4.0]" in msg
+        assert "info message" in msg
         assert sev == "notice"
 
     def test_build_annotation_no_message(self):
@@ -774,10 +794,14 @@ class TestBuildAnnotation:
             has_rule=True,
             has_message=False,
             message="",
-            severity="error"
+            severity="error",
+            pkg="p1",
+            rule="r1",
+            license="MIT",
         )
         msg, sev = ort_report._build_annotation(ctx)
-        assert "ORT violation" in msg
+        assert "❌ r1 in p1 [MIT]" in msg
+        assert sev == "error"
 
 
 class TestEmitAnnotations:
@@ -899,6 +923,7 @@ class TestProcessViolation:
         }
         finding = ort_report._process_violation(violation, [], {}, {})
         assert finding.category == "violation"
+        assert finding.pkg == "npm:test@1.0.0"
         assert finding.license == "MIT"
         assert finding.message == "test message"
         assert finding.severity == "error"
@@ -929,11 +954,14 @@ class TestProcessViolation:
         violation = {
             "rule": "r1",
             "license": "LicenseRef-custom",
-            "message": "test"
+            "message": "test",
+            "pkg": "Go::github.com/example/lib:1.0.0",
         }
         finding = ort_report._process_violation(violation, [], {}, {})
         assert finding.category == "unknown"
         assert finding.license == "LicenseRef-custom"
+        assert "Go::github.com/example/lib:1.0.0" in finding.annotation_message
+        assert "LicenseRef-custom" in finding.annotation_message
 
     def test_process_violation_missing_fields(self):
         """Test violation with missing optional fields."""
@@ -1023,6 +1051,37 @@ class TestBuildFindings:
         categories = [f.category for f in findings]
         assert "violation" in categories
         assert "unknown" in categories
+
+
+class TestRenderSummary:
+    """Test job summary rendering."""
+
+    def test_render_summary_includes_package_and_evidence_note(self, tmp_path):
+        """Summary should show raw ORT identity and separate scan evidence."""
+        summary_file = tmp_path / "summary.md"
+        findings = [
+            ort_report.Finding(
+                category="unknown",
+                status="Unknown",
+                reason="License not covered by policy",
+                rule="UNHANDLED_LICENSE",
+                license="NOASSERTION",
+                files=".github/CONTRIBUTING.md:39-39<br>README.md:19-19",
+                severity="ERROR",
+                message="The license NOASSERTION is currently not covered by policy rules.",
+                annotation_message="ignored",
+                annotation_severity="warning",
+                pkg="Go::github.com/bytemare/opaque:3.0.0",
+            )
+        ]
+
+        ort_report.render_summary(findings, summary_file, ort_failed=False)
+        content = summary_file.read_text()
+
+        assert "| Status | Package | Reason | Rule | License | Evidence | Rule severity | Message |" in content
+        assert "Package, rule, and license come directly from ORT." in content
+        assert "Go::github.com/bytemare/opaque:3.0.0" in content
+        assert ".github/CONTRIBUTING.md:39-39" in content
 
 
 class TestFindEvalJson:

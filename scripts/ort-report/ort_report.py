@@ -66,6 +66,7 @@ class Finding:
     message: str
     annotation_message: str
     annotation_severity: str
+    pkg: str = ""
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,9 @@ class ViolationContext:
     has_message: bool
     message: str
     severity: str
+    pkg: str = ""
+    rule: str = ""
+    license: str = ""
 
 
 def gh_warning(message: str) -> None:
@@ -406,6 +410,12 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path], ort_fa
         lines.append("Status: ✅ Passed - all findings are accepted by policy.")
         lines.append("")
 
+    lines.append(
+        "Package, rule, and license come directly from ORT. "
+        "Evidence lists best-effort scanner matches and may not be the exact cause."
+    )
+    lines.append("")
+
     def print_section(title: str, description: str, category: str) -> None:
         section = rows_for(category)
         if not section:
@@ -416,14 +426,15 @@ def render_summary(findings: List[Finding], summary_path: Optional[Path], ort_fa
         lines.append("")
         lines.append(description)
         lines.append("")
-        lines.append("| Status | Reason | Rule | License | Files | Rule severity | Message |")
-        lines.append("|---|---|---|---|---|---|---|")
+        lines.append("| Status | Package | Reason | Rule | License | Evidence | Rule severity | Message |")
+        lines.append("|---|---|---|---|---|---|---|---|")
         for row in section[:MAX_ROWS_PER_SECTION]:
             lines.append(
                 "| "
                 + " | ".join(
                     [
                         clean_cell(row.status),
+                        clean_cell(row.pkg or "n/a"),
                         clean_cell(row.reason),
                         clean_cell(row.rule),
                         clean_cell(row.license),
@@ -528,28 +539,55 @@ def _format_file_cell(files: List[str]) -> str:
     return file_cell
 
 
+def _pkg_label(pkg: str) -> str:
+    """Return a readable package label for annotations."""
+    return pkg or "unknown package"
+
+
+def _license_label(license_id_value: str) -> str:
+    """Return a readable license label for annotations."""
+    return license_id_value or "unknown license"
+
+
+def _identity_text(rule: str, pkg: str, license_id_value: str) -> str:
+    """Build a compact rule / package / license identity string."""
+    identity = rule or "ORT finding"
+    if pkg:
+        identity += f" in {pkg}"
+    if license_id_value:
+        identity += f" [{license_id_value}]"
+    return identity
+
+
 def _build_annotation(ctx: ViolationContext) -> tuple[str, str]:
     """Build annotation message and severity level."""
     if ctx.resolution is not None:
+        resolution_reason = ctx.resolution.reason
+        if ctx.resolution.comment:
+            resolution_reason += f": {ctx.resolution.comment}"
         annotation_msg = (
-            f"✅ Accepted: {ctx.message or 'ORT violation'} "
-            f"({ctx.resolution.reason}) {ctx.resolution.comment}"
-        ).strip()
+            f"✅ Accepted: {_identity_text(ctx.rule, ctx.pkg, ctx.license)}"
+            f" - {ctx.message or 'ORT violation'} ({resolution_reason})"
+        )
         return annotation_msg, "notice"
 
     if ctx.lic_unknown:
         return (
-            f"❓ Unknown license: {ctx.message or 'ORT finding'}",
+            f"❓ Unknown license in {_pkg_label(ctx.pkg)}: "
+            f"{_license_label(ctx.license)}. {ctx.message or 'ORT finding'}",
             "warning",
         )
 
     if not ctx.has_rule and not ctx.has_message:
         return (
-            "❓ Unknown ORT finding: missing rule/message fields.",
+            f"❓ Unknown ORT finding in {_pkg_label(ctx.pkg)}: "
+            "missing rule/message fields.",
             "warning",
         )
 
-    annotation_msg = f"❌ {ctx.message or 'ORT violation'}"
+    annotation_msg = f"❌ {_identity_text(ctx.rule, ctx.pkg, ctx.license)}"
+    if ctx.message:
+        annotation_msg += f" - {ctx.message}"
     sev_upper = str(ctx.severity).upper()
     if sev_upper == "ERROR":
         return annotation_msg, "error"
@@ -562,13 +600,15 @@ def _process_violation(
     violation: Dict[str, Any],
     resolutions: List[Resolution],
     scan_by_prov: Dict[str, Any],
-    pkg_to_prov: Dict[str, str],
+    pkg_to_prov: Dict[str, Dict[str, Any]],
 ) -> Finding:
     """Process a single violation into a Finding."""
     res = resolution_for(violation, resolutions)
+    pkg = str(_extract_field(violation.get("pkg"), ["id"]) or "")
+    rule = str(_extract_field(violation.get("rule"), ["name", "id"]) or "")
     lic = license_id(violation)
     lic_unknown = is_unknown_license(lic)
-    has_rule = bool(violation.get("rule"))
+    has_rule = bool(rule)
     has_message = bool(violation.get("message"))
 
     category, status = _classify_violation(
@@ -586,6 +626,9 @@ def _process_violation(
             has_message=has_message,
             message=message,
             severity=severity,
+            pkg=pkg,
+            rule=rule,
+            license=lic,
         )
     )
 
@@ -593,11 +636,11 @@ def _process_violation(
         category=category,
         status=status,
         reason=_determine_reason(res, lic_unknown, has_rule, has_message),
-        rule=str(_extract_field(violation.get("rule"), ["name", "id"]) or ""),
+        rule=rule,
         license=lic,
         files=_format_file_cell(
             files_for(
-                str(_extract_field(violation.get("pkg"), ["id"]) or ""),
+                pkg,
                 lic,
                 scan_by_prov,
                 pkg_to_prov,
@@ -607,6 +650,7 @@ def _process_violation(
         message=str(message),
         annotation_message=annotation_msg,
         annotation_severity=annotation_sev,
+        pkg=pkg,
     )
 
 

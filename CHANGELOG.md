@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 For releases prior to this changelog, see [GitHub Releases](https://github.com/bytemare/workflows/releases).
 
+## [Unreleased]
+
+### Changed
+- **ORT findings are now reported with raw package / rule / license context** and list scanner evidence separately, making `UNHANDLED_LICENSE` and similar failures actionable without conflating package identity with best-effort file matches.
+- **ORT documentation now recommends consumer-side `.ort.yml` excludes** for community and legal boilerplate such as `.github/CONTRIBUTING.md` and `.github/CODE_OF_CONDUCT.md` when they are not part of released artifacts.
+
 ## v0.2.0 - 27/01/2026
 
 ### Added
