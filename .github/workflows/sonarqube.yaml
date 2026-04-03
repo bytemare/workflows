@@ -49,7 +49,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
+        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d
         with:
           disable-sudo: true
           egress-policy: block
@@ -146,7 +146,7 @@ jobs:
               handle.write(f"args={payload}\n")
           PY
 
-      - uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e
+      - uses: SonarSource/sonarqube-scan-action@f099b441665cb71b0414100cfaf6d835492cee5f
         env:
           GITHUB_TOKEN: ${{ secrets.github || github.token }}
           SONAR_TOKEN: ${{ secrets.sonar }}
