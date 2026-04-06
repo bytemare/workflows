@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
+        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d
         with:
           disable-sudo: true
           egress-policy: block
@@ -109,12 +109,12 @@ jobs:
           check-latest: ${{ inputs['go-check-latest'] }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@72c0b0efb7def5141326c5e13760acdda431379d
+        uses: github/codeql-action/init@34950e1b113b30df4edee1a6d3a605242df0c40b
         with:
           languages: ${{ inputs.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@72c0b0efb7def5141326c5e13760acdda431379d
+        uses: github/codeql-action/autobuild@34950e1b113b30df4edee1a6d3a605242df0c40b
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@72c0b0efb7def5141326c5e13760acdda431379d
+        uses: github/codeql-action/analyze@34950e1b113b30df4edee1a6d3a605242df0c40b

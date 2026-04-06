@@ -62,7 +62,7 @@ jobs:
       actions: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594
+        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d
         with:
           disable-sudo: true
           egress-policy: block
@@ -193,7 +193,7 @@ jobs:
         env:
           ORT_CONFIG_VCS_URL: ${{ inputs.ort_config_repository }}
           ORT_CONFIG_VCS_REVISION: ${{ inputs.ort_config_revision }}
-        uses: oss-review-toolkit/ort-ci-github-action@62e59b4b372de061b0347660971ec35bb013e1d5
+        uses: oss-review-toolkit/ort-ci-github-action@35e1afda9c9144edb7cc71b1643b2f2402291ae6
         with:
           log-level: 'debug'
           # Fail on policy violations (configurable in ORT config)
@@ -215,7 +215,7 @@ jobs:
       # Use a pinned version for third-party consumers
       - name: Compiling report and posting results
         if: ${{ always() && github.repository != 'bytemare/workflows' }}
-        uses: bytemare/workflows/actions/ort-report@1baf6385e472c1188311ed2ecee31c2ddf465b4f
+        uses: bytemare/workflows/actions/ort-report@e965440e90e3d80e63473574eba1ffe5ba9443cd
         with:
           artifact_dir: ${{ github.workspace }}/.ort/results
           ort_failed: ${{ steps.ort_run.outcome == 'failure' }}
