@@ -21,12 +21,12 @@ on:
         description: "Optional ORT config repo (global policy, rules)"
         required: false
         type: string
-        default: "https://github.com/oss-review-toolkit/ort-config"
+        default: "https://github.com/bytemare/ort-config"
       ort_config_revision:
         description: "Optional ref/commit for ORT config repo"
         required: false
         type: string
-        default: "34c5d317e44e86505d0d257f2c1076deda35d9df"
+        default: "12df6d5052d488e231389f451e8e7862575a7b43"
       ort_config_source:
         description: "Source path for ORT config files (relative to workspace, or absolute. Job fails if provided and missing)"
         required: false
